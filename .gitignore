@@ -13,6 +13,8 @@
 /.vscode
 /.zed
 /auth.json
+/awstats
+/logs
 /node_modules
 /public/build
 /public/fonts-manifest.dev.json
@@ -20,6 +22,7 @@
 /public/storage
 /storage/*.key
 /storage/pail
+/*.code-workspace
 /vendor
 _ide_helper.php
 Homestead.json
