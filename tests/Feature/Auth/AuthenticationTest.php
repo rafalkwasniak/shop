@@ -72,4 +72,27 @@ class AuthenticationTest extends TestCase
 
         $this->assertGuest();
     }
+
+    public function test_login_is_locked_after_five_failed_attempts(): void
+    {
+        $user = User::factory()->create();
+
+        // 5 nieudanych prób — dozwolone, ale zliczane.
+        foreach (range(1, 5) as $ignored) {
+            $this->post('/login', [
+                'email' => $user->email,
+                'password' => 'wrong-password',
+            ])->assertSessionHasErrors('email');
+        }
+
+        // 6. próba jest zablokowana — nawet z POPRAWNYM hasłem.
+        $this->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ])->assertSessionHasErrors([
+            'email' => 'Zbyt wiele prób logowania. Spróbuj ponownie za 5 min.',
+        ]);
+
+        $this->assertGuest();
+    }
 }

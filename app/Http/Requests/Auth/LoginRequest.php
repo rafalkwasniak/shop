@@ -47,7 +47,7 @@ class LoginRequest extends FormRequest
         $this->ensureIsNotRateLimited();
 
         if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
-            RateLimiter::hit($this->throttleKey());
+            RateLimiter::hit($this->throttleKey(), (int) config('security.login.decay_seconds'));
 
             throw ValidationException::withMessages([
                 'email' => 'Nieprawidłowy adres e-mail lub hasło.',
@@ -62,7 +62,7 @@ class LoginRequest extends FormRequest
      */
     public function ensureIsNotRateLimited(): void
     {
-        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
+        if (! RateLimiter::tooManyAttempts($this->throttleKey(), (int) config('security.login.max_attempts'))) {
             return;
         }
 
@@ -70,8 +70,12 @@ class LoginRequest extends FormRequest
 
         $seconds = RateLimiter::availableIn($this->throttleKey());
 
+        $message = $seconds >= 60
+            ? 'Zbyt wiele prób logowania. Spróbuj ponownie za '.ceil($seconds / 60).' min.'
+            : "Zbyt wiele prób logowania. Spróbuj ponownie za {$seconds} s.";
+
         throw ValidationException::withMessages([
-            'email' => "Zbyt wiele prób logowania. Spróbuj ponownie za {$seconds} s.",
+            'email' => $message,
         ]);
     }
 
