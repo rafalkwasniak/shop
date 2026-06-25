@@ -35,13 +35,18 @@ Specyfika projektu **shop.kwasniak.org**. Plik czytany przez asystenta na starci
 
 ## 3. Decyzje otwarte (DO USTALENIA)
 
-Świadomie odłożone do momentu, aż asystent pozna cały projekt — przedwczesna decyzja utrudniłaby dalszą pracę.
+**Ustalone (2026-06-24):**
 
-1. **Stos / sposób renderowania frontu** — DO USTALENIA. (Blade+Livewire / Inertia+Vue|React / Filament+Blade / czyste Blade — nie przesądzone.)
-2. **Czy serwis wystawia publiczne JSON API** — DO USTALENIA. Decyduje o tym, które sekcje API z `FOUNDATION.md` zostają w grze.
+1. **Stos / sposób renderowania frontu** — USTALONE.
+   - **Panele Admina i Sprzedawcy: Livewire dla obu.** Jeden spójny, lekki stos; pełna kontrola nad UX onboardingu „5 minut". Filament świadomie odrzucony na start — zostaje jako opcja na później, gdyby panel admina się rozrósł (Filament i Livewire mogą żyć obok siebie).
+   - **Storefront: Blade-first** (priorytet SEO + szybkość, czysty HTML od razu) **+ Livewire punktowo** tam, gdzie zarabia (koszyk itp.) **+ warstwa motywów** na wierzchu. Motywy to osobny, późniejszy temat — patrz pamięć „storefront-theme-system" (i zwykły Blade, i komponenty Livewire muszą respektować aktywny motyw).
+   - Wspólny fundament: Laravel + Blade + Livewire dla całości; storefront używa go tylko inaczej (Blade-first), panele — w pełni.
+
+2. **Czy serwis wystawia publiczne JSON API** — USTALONE: **brak publicznego JSON API.** Interaktywność robimy przez Livewire/kontrolery, nie formalny kontrakt API. Konsekwencje dla `FOUNDATION.md`: koperta JSON `{ success, message, data? }`, OpenAPI/Scramble i `api-guide.html` **odpadają**. `code-map.html` (mapa kodu) utrzymujemy niezależnie.
+
+**Nadal DO USTALENIA:**
+
 3. **Locale** — obecnie `APP_LOCALE=en`; docelowe locale (najpewniej `pl`) do potwierdzenia przy decyzji produktowej.
-
-**Konsekwencja:** dopóki 1 i 2 nie są ustalone, nie przesądzamy architektury ani kontraktu wyjścia (koperta JSON vs widoki). Przy implementacji, która by to przesądzała — pytamy.
 
 ---
 
@@ -59,10 +64,10 @@ Zweryfikowane pod kątem „cały serwis, nie tylko API":
 - Stringi przez warstwę tłumaczeń, oba locale w synchronizacji, realne testy (sek. 5).
 - Ciągłość między sesjami: handoff na koniec, log prac poza specyfikacją (sek. 6).
 
-**Warunkowe / wstrzymane do decyzji z sek. 3:**
-- Dokumentacja API: OpenAPI/Scramble + `api-guide.html` oraz dynamiczna trasa `docs/` (`FOUNDATION` sek. 4) — tylko jeśli wystawiamy JSON API. `code-map.html` (mapa kodu) możemy utrzymywać niezależnie, bo opisuje, gdzie co mieszka w kodzie.
-- Kształt odpowiedzi API `{ success, message, data?, pagination? }` (sek. 5) — tylko dla endpointów JSON/AJAX; kontrolery serwerowe zwracają widoki.
-- Serializacja encji „dla frontu, żeby nie dociągał `GET /{id}`" (sek. 5) — myślenie API. Sama zasada „jedno źródło serializacji encji + pełny CRUD tam, gdzie ma sens" zostaje jako dobra praktyka także w monolicie.
+**Rozstrzygnięte przez decyzję „brak JSON API" (sek. 3 pkt 2):**
+- Dokumentacja API: OpenAPI/Scramble + `api-guide.html` oraz dynamiczna trasa `docs/` (`FOUNDATION` sek. 4) — **odpada** (nie wystawiamy JSON API). `code-map.html` (mapa kodu) utrzymujemy niezależnie, bo opisuje, gdzie co mieszka w kodzie.
+- Kształt odpowiedzi API `{ success, message, data?, pagination? }` (sek. 5) — **nie dotyczy** kontrolerów serwerowych (zwracają widoki/Livewire). Gdyby pojawił się punktowy endpoint AJAX dla Livewire, trzymamy spójny, prosty kształt — ale to nie jest publiczny kontrakt.
+- Serializacja encji „dla frontu, żeby nie dociągał `GET /{id}`" (sek. 5) — to było myślenie API. Sama zasada „jedno źródło serializacji encji + pełny CRUD tam, gdzie ma sens" zostaje jako dobra praktyka także w monolicie.
 
 ---
 
