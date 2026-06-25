@@ -51,6 +51,12 @@ Specyfika projektu **shop.kwasniak.org**. Plik czytany przez asystenta na starci
    - **Po angielsku (warstwa kodu):** modele (`Product`), tabele (`products`), kolumny, wartości enumów (rola `seller`), **nazwy tras** (`products.show`, `seller.dashboard`), kontrolery, zmienne. URL jest odpięty od nazwy trasy — polski adres + angielska nazwa trasy to standard (`Route::get('/produkt/{product}', …)->name('products.show')`).
    - W testach i linkach odwołujemy się do tras przez `route('nazwa')`, nie sztywne ścieżki.
 
+5. **Architektura wielonajemcza (subdomena-per-sklep)** — USTALONE (2026-06-25):
+   - **Centrala** = domena platformy (`config('tenancy.central_domain')` ← `APP_DOMAIN`): zarządzanie, logowanie/rejestracja, panel sprzedawcy i administratora. **Sprzedawca zarządza sklepem w centrali, NIE loguje się do swojej subdomeny, by nim zarządzać** (na subdomenie może co najwyżej zostać własnym klientem).
+   - **Storefront** = subdomena `{shop}.{central_domain}` (np. `bukiety.shop.kwasniak.org`): publiczny sklep jednego sprzedawcy. `{shop}` = slug sklepu = etykieta subdomeny; middleware rozwiązuje `Shop` i scope'uje wszystko do niego.
+   - **Jedna baza + `shop_id`** na tabelach najemcy (nie baza-per-sklep — przerost na shared-hoście).
+   - **Stan:** wildcard DNS już działa; serwer jeszcze nie kieruje subdomen do aplikacji (wildcard vhost + wildcard SSL — działka Rafała, na później). Działamy na domenie centrali jeszcze długo. Routing per-domena (`Route::domain`) jest przewidziany (wyłączony szkielet w `routes/web.php`), włączymy go razem z budową storefrontu — wtedy jednym ruchem, bez przepisywania.
+
 ---
 
 ## 4. Stosowanie FOUNDATION w tym projekcie
