@@ -43,7 +43,7 @@ Route::middleware(['auth', 'role:admin'])
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth', 'role:seller'])
-    ->prefix('seller')
+    ->prefix('sprzedawca')          // URL po polsku; nazwa trasy 'seller.' (kod) po angielsku
     ->name('seller.')
     ->group(function () {
         Route::get('/dashboard', SellerDashboard::class)->name('dashboard');

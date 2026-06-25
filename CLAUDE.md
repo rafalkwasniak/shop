@@ -33,9 +33,9 @@ Specyfika projektu **shop.kwasniak.org**. Plik czytany przez asystenta na starci
 
 ---
 
-## 3. Decyzje otwarte (DO USTALENIA)
+## 3. Decyzje produktowe i techniczne
 
-**Ustalone (2026-06-24):**
+**Ustalone:**
 
 1. **Stos / sposób renderowania frontu** — USTALONE.
    - **Panele Admina i Sprzedawcy: Livewire dla obu.** Jeden spójny, lekki stos; pełna kontrola nad UX onboardingu „5 minut". Filament świadomie odrzucony na start — zostaje jako opcja na później, gdyby panel admina się rozrósł (Filament i Livewire mogą żyć obok siebie).
@@ -44,9 +44,12 @@ Specyfika projektu **shop.kwasniak.org**. Plik czytany przez asystenta na starci
 
 2. **Czy serwis wystawia publiczne JSON API** — USTALONE: **brak publicznego JSON API.** Interaktywność robimy przez Livewire/kontrolery, nie formalny kontrakt API. Konsekwencje dla `FOUNDATION.md`: koperta JSON `{ success, message, data? }`, OpenAPI/Scramble i `api-guide.html` **odpadają**. `code-map.html` (mapa kodu) utrzymujemy niezależnie.
 
-**Nadal DO USTALENIA:**
+3. **Locale** — USTALONE (2026-06-25): **pl-first, sklep jednojęzyczny.** `APP_LOCALE=pl`, `APP_FAKER_LOCALE=pl_PL`. `APP_FALLBACK_LOCALE=en` zostaje wyłącznie jako techniczna siatka bezpieczeństwa (gdyby brakło klucza), nie jako drugi język produktu. Polskie tłumaczenia frameworka w `lang/pl/` (validation, auth, passwords, pagination).
 
-3. **Locale** — obecnie `APP_LOCALE=en`; docelowe locale (najpewniej `pl`) do potwierdzenia przy decyzji produktowej.
+4. **Konwencja nazewnictwa** — USTALONE (2026-06-25): **„Adres i interfejs — po polsku. Kod — po angielsku."**
+   - **Po polsku (warstwa widoczna):** segmenty URL i slugi (`/produkt/132-kwiatki-komunijne`, `/koszyk`, `/sprzedawca/...`, `/administrator/...`), teksty UI. URL produktu w stylu PrestaShop: `id-slug`, szukamy po `id`, zły slug → 301 na kanoniczny.
+   - **Po angielsku (warstwa kodu):** modele (`Product`), tabele (`products`), kolumny, wartości enumów (rola `seller`), **nazwy tras** (`products.show`, `seller.dashboard`), kontrolery, zmienne. URL jest odpięty od nazwy trasy — polski adres + angielska nazwa trasy to standard (`Route::get('/produkt/{product}', …)->name('products.show')`).
+   - W testach i linkach odwołujemy się do tras przez `route('nazwa')`, nie sztywne ścieżki.
 
 ---
 
