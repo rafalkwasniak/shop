@@ -45,4 +45,9 @@
             </button>
         </form>
     </div>
+
+    <p class="mt-6 text-center text-sm text-stone-500">
+        Nie masz jeszcze sklepu?
+        <a href="{{ route('register') }}" class="font-semibold text-amber-700 hover:text-amber-800">Załóż za darmo</a>
+    </p>
 </x-layouts.guest>
