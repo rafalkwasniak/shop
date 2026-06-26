@@ -7,3 +7,98 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+/*
+ * Powiększenie natywnych checkboxów i radio (brak @tailwindcss/forms).
+ * Domyślne ~13px wyglądały jak kropka od wypunktowania — dajemy czytelny
+ * rozmiar i markowy kolor amber. Dotyczy całej aplikacji.
+ */
+@layer base {
+    input[type='checkbox'],
+    input[type='radio'] {
+        width: 1.5rem;
+        height: 1.5rem;
+        accent-color: var(--color-amber-600);
+        cursor: pointer;
+        vertical-align: middle;
+    }
+}
+
+/*
+ * Typografia treści prawnej (Regulamin, Polityka) trzymanej w bazie jako HTML.
+ * Tailwind nie skanuje treści z bazy, a preflight zeruje marginesy — więc
+ * stylujemy semantyczny HTML tu, scoped do .legal-content. Boutique: ciepłe
+ * szarości, czytelne odstępy, akcent amber na linkach.
+ */
+.legal-content {
+    color: var(--color-stone-600);
+    line-height: 1.7;
+    font-size: 0.95rem;
+}
+
+.legal-content > section + section {
+    margin-top: 2rem;
+}
+
+.legal-content h2 {
+    margin-top: 2rem;
+    margin-bottom: 0.75rem;
+    font-size: 1.125rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--color-stone-900);
+}
+
+.legal-content h3 {
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-stone-800);
+}
+
+.legal-content :is(h2, h3):first-child {
+    margin-top: 0;
+}
+
+.legal-content p {
+    margin-bottom: 1rem;
+}
+
+.legal-content ul,
+.legal-content ol {
+    margin-bottom: 1rem;
+    padding-left: 1.5rem;
+}
+
+.legal-content ul {
+    list-style: disc;
+}
+
+.legal-content ol {
+    list-style: decimal;
+}
+
+.legal-content li {
+    margin-bottom: 0.4rem;
+    padding-left: 0.25rem;
+}
+
+.legal-content li::marker {
+    color: var(--color-amber-500);
+}
+
+.legal-content strong {
+    font-weight: 600;
+    color: var(--color-stone-800);
+}
+
+.legal-content a {
+    color: var(--color-amber-700);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.legal-content a:hover {
+    color: var(--color-amber-800);
+}

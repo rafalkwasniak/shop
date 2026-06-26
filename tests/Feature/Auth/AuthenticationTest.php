@@ -12,14 +12,14 @@ class AuthenticationTest extends TestCase
 
     public function test_login_screen_can_be_rendered(): void
     {
-        $this->get('/login')->assertOk();
+        $this->get(route('login'))->assertOk();
     }
 
     public function test_admin_is_authenticated_and_redirected_to_admin_dashboard(): void
     {
         $admin = User::factory()->admin()->create();
 
-        $response = $this->post('/login', [
+        $response = $this->post(route('login.attempt'), [
             'email' => $admin->email,
             'password' => 'password',
         ]);
@@ -32,7 +32,7 @@ class AuthenticationTest extends TestCase
     {
         $seller = User::factory()->create();
 
-        $response = $this->post('/login', [
+        $response = $this->post(route('login.attempt'), [
             'email' => $seller->email,
             'password' => 'password',
         ]);
@@ -45,7 +45,7 @@ class AuthenticationTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $this->post('/login', [
+        $this->post(route('login.attempt'), [
             'email' => $user->email,
             'password' => 'wrong-password',
         ])->assertSessionHasErrors('email');
@@ -58,7 +58,7 @@ class AuthenticationTest extends TestCase
         $admin = User::factory()->admin()->create();
 
         $this->actingAs($admin)
-            ->get('/login')
+            ->get(route('login'))
             ->assertRedirect(route('administrator.dashboard'));
     }
 
@@ -67,7 +67,7 @@ class AuthenticationTest extends TestCase
         $user = User::factory()->create();
 
         $this->actingAs($user)
-            ->post('/logout')
+            ->post(route('logout'))
             ->assertRedirect(route('login'));
 
         $this->assertGuest();
@@ -79,14 +79,14 @@ class AuthenticationTest extends TestCase
 
         // 5 nieudanych prób — dozwolone, ale zliczane.
         foreach (range(1, 5) as $ignored) {
-            $this->post('/login', [
+            $this->post(route('login.attempt'), [
                 'email' => $user->email,
                 'password' => 'wrong-password',
             ])->assertSessionHasErrors('email');
         }
 
         // 6. próba jest zablokowana — nawet z POPRAWNYM hasłem.
-        $this->post('/login', [
+        $this->post(route('login.attempt'), [
             'email' => $user->email,
             'password' => 'password',
         ])->assertSessionHasErrors([

@@ -3,7 +3,6 @@
 namespace App\Http\Requests\Auth;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rules\Password;
 
 class RegisterRequest extends FormRequest
 {
@@ -21,7 +20,9 @@ class RegisterRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'surname' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'confirmed', Password::defaults()],
+            // Hasło ustawiane jest później, w formularzu aktywacji (ActivationController).
+            'terms' => ['accepted'],
+            'privacy' => ['accepted'],
         ];
     }
 
@@ -34,7 +35,17 @@ class RegisterRequest extends FormRequest
             'name' => 'imię',
             'surname' => 'nazwisko',
             'email' => 'adres e-mail',
-            'password' => 'hasło',
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'terms.accepted' => 'Musisz zaakceptować Regulamin.',
+            'privacy.accepted' => 'Musisz zaakceptować Politykę Prywatności.',
         ];
     }
 }

@@ -8,6 +8,8 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="h-full bg-stone-100 text-stone-800 antialiased">
+    <x-toasts />
+
     <div class="relative min-h-full overflow-hidden">
         {{-- miękkie kształty marki --}}
         <div class="pointer-events-none absolute -left-32 -top-20 h-96 w-96 rounded-full bg-amber-300 opacity-40 blur-3xl"></div>

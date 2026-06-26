@@ -8,6 +8,8 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="h-full bg-stone-100 text-stone-800 antialiased">
+    <x-toasts />
+
     @php
         $user = auth()->user();
         $isAdmin = $user?->isAdmin();

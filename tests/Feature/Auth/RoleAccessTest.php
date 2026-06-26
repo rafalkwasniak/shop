@@ -25,7 +25,7 @@ class RoleAccessTest extends TestCase
 
     public function test_seller_can_access_seller_dashboard(): void
     {
-        $seller = User::factory()->create();
+        $seller = User::factory()->consented()->create();
 
         $this->actingAs($seller)->get(route('seller.dashboard'))->assertOk();
     }

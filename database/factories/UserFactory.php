@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\UserRole;
+use App\Models\LegalDocument;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
@@ -55,5 +56,27 @@ class UserFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'role' => UserRole::Admin,
         ]);
+    }
+
+    /**
+     * Akceptacja aktualnych wersji wszystkich wymaganych dokumentów prawnych —
+     * sprzedawca, który przeszedł rejestrację i nie jest blokowany bramą zgód.
+     */
+    public function consented(): static
+    {
+        return $this->afterCreating(function (User $user): void {
+            foreach (config('legal.required_types') as $type) {
+                $document = LegalDocument::current($type);
+
+                if ($document === null) {
+                    continue;
+                }
+
+                $user->consents()->create([
+                    'legal_document_id' => $document->getKey(),
+                    'accepted_at' => now(),
+                ]);
+            }
+        });
     }
 }

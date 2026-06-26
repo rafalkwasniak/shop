@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureConsentsAreCurrent;
 use App\Http\Middleware\EnsureUserHasRole;
 use App\Services\DiscordErrorReporter;
 use Illuminate\Foundation\Application;
@@ -16,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'role' => EnsureUserHasRole::class,
+            'ensure.consents' => EnsureConsentsAreCurrent::class,
         ]);
 
         // Niezalogowani trafiają na ekran logowania.

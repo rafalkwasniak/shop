@@ -1,8 +1,14 @@
 <?php
 
+use App\Enums\LegalDocumentType;
 use App\Http\Controllers\Administrator\DashboardController as AdministratorDashboard;
+use App\Http\Controllers\Administrator\MailPreviewController;
+use App\Http\Controllers\Auth\ActivationController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Auth\ResendActivationController;
+use App\Http\Controllers\Consent\ConsentController;
+use App\Http\Controllers\LegalController;
 use App\Http\Controllers\Seller\DashboardController as SellerDashboard;
 use Illuminate\Support\Facades\Route;
 
@@ -32,13 +38,36 @@ Route::get('/', function () {
 | Jedno wejście logowania; po zalogowaniu przekierowanie zależne od roli
 | (UserRole::homeRoute()).
 */
-Route::get('/login', [AuthController::class, 'create'])->name('login');
-Route::post('/login', [AuthController::class, 'store'])->name('login.attempt');
-Route::post('/logout', [AuthController::class, 'destroy'])->middleware('auth')->name('logout');
+Route::get('/logowanie', [AuthController::class, 'create'])->name('login');
+Route::post('/logowanie', [AuthController::class, 'store'])->name('login.attempt');
+Route::post('/wyloguj', [AuthController::class, 'destroy'])->middleware('auth')->name('logout');
 
-// Rejestracja sprzedawcy (nowe konta otrzymują rolę 'seller').
-Route::get('/register', [RegisterController::class, 'create'])->name('register');
-Route::post('/register', [RegisterController::class, 'store'])->name('register.store');
+// Rejestracja sprzedawcy (nowe konta otrzymują rolę 'seller'). Konto powstaje
+// bez hasła — sprzedawca dostaje mailem link do jego ustawienia.
+Route::get('/rejestracja', [RegisterController::class, 'create'])->name('register');
+Route::post('/rejestracja', [RegisterController::class, 'store'])->name('register.store');
+Route::view('/rejestracja/potwierdzenie', 'auth.registered')->name('register.confirmation');
+Route::post('/rejestracja/wyslij-ponownie', [ResendActivationController::class, 'store'])
+    ->middleware('throttle:5,1')
+    ->name('register.resend');
+
+// Aktywacja konta (ustawienie pierwszego hasła + danych) — token brokera 'activation', 24 h.
+Route::get('/aktywacja/{token}', [ActivationController::class, 'create'])->name('activation.show');
+Route::post('/aktywacja', [ActivationController::class, 'store'])->name('activation.store');
+
+/*
+|--------------------------------------------------------------------------
+| Dokumenty prawne (publiczne, bez logowania)
+|--------------------------------------------------------------------------
+| URL po polsku, nazwa trasy po angielsku. Typ wstrzykiwany przez domyślny
+| parametr trasy (implicit enum binding).
+*/
+Route::get('/'.LegalDocumentType::Terms->slug(), [LegalController::class, 'show'])
+    ->defaults('type', LegalDocumentType::Terms->value)
+    ->name(LegalDocumentType::Terms->routeName());
+Route::get('/'.LegalDocumentType::Privacy->slug(), [LegalController::class, 'show'])
+    ->defaults('type', LegalDocumentType::Privacy->value)
+    ->name(LegalDocumentType::Privacy->routeName());
 
 /*
 |--------------------------------------------------------------------------
@@ -50,6 +79,9 @@ Route::middleware(['auth', 'role:admin'])
     ->name('administrator.')
     ->group(function () {
         Route::get('/dashboard', AdministratorDashboard::class)->name('dashboard');
+
+        // Podgląd szablonów maili (na froncie, dla nas) — np. /administrator/podglad-maila/aktywacja
+        Route::get('/podglad-maila/{template}', [MailPreviewController::class, 'show'])->name('mail.preview');
     });
 
 /*
@@ -57,12 +89,24 @@ Route::middleware(['auth', 'role:admin'])
 | Panel sprzedawcy (rola: seller)
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth', 'role:seller'])
+Route::middleware(['auth', 'role:seller', 'ensure.consents'])
     ->prefix('sprzedawca')          // URL po polsku; nazwa trasy 'seller.' (kod) po angielsku
     ->name('seller.')
     ->group(function () {
         Route::get('/dashboard', SellerDashboard::class)->name('dashboard');
     });
+
+/*
+|--------------------------------------------------------------------------
+| Ponowna akceptacja dokumentów prawnych (po zmianie ich wersji)
+|--------------------------------------------------------------------------
+| Dostępne dla zalogowanego użytkownika; brama spod której nie wpuszczamy do
+| panelu, dopóki zaległe zgody nie zostaną złożone (EnsureConsentsAreCurrent).
+*/
+Route::middleware('auth')->group(function () {
+    Route::get('/zgody', [ConsentController::class, 'show'])->name('consents.show');
+    Route::post('/zgody', [ConsentController::class, 'store'])->name('consents.store');
+});
 
 /*
 |==============================================================================
