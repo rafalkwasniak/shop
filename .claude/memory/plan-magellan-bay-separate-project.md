@@ -156,3 +156,30 @@ Artifact „Sklep Magellan Bay": https://claude.ai/code/artifact/73d418cc-af26-4
 Zawiera: uzasadnienie osobnego sklepu + 9 grup rzeczy gotowych + 12 pozycji do zbudowania, językiem nietechnicznym. **Aktualizować pod tym samym URL-em**, nie tworzyć drugiego.
 
 Powiązane: [[priorities-launch-first]], [[migration-to-kramio]], [[shared-hosting-constraints]], [[legal-consumer-returns-withdrawal]].
+
+---
+
+## ODCIĘCIE WYKONANE 2026-09-05 — dalsze prace w repozytorium Magellana
+
+**Kroki 1–3 (tryb dedykowany) są w Kramio na `main`** — to baza wielokrotnego użytku, nie robota pod jednego klienta: pakiet `dedicated`, przełącznik `SHOP_MODE`, sklep na domenie głównej. Suita 1728 zielona, produkcja Kramio zweryfikowana po scaleniu (centrala + 5 realnych storefrontów).
+
+**Kramio jest posprzątane z rzeczy Magellana** — `docs_mod/` przeniesione, `.gitignore` przywrócone, `grep -i magellan` po kodzie nie zwraca nic.
+
+### Gdzie teraz mieszka ta praca
+
+| | |
+|---|---|
+| Katalog | `/home/host473413/domains/magellan.kwasniak.org` |
+| Adres roboczy | https://magellan.kwasniak.org |
+| Repo | `git@github.com-magellanbay:rafalkwasniak/magellanbay.git` (klucz `id_ed25519_magellanbay`) |
+| Baza | `host473413_magellan` — bez dostępu do bazy Kramio |
+| Właściciel | `magellan@kwasniak.org`, logowanie pod `/sprzedawca/logowanie` |
+| **Pamięć** | odtworzona pod kluczem `-home-host473413-domains-magellan-kwasniak-org` (164 pliki) |
+
+**Rafał pracuje nad Magellanem z sesji otwartej W TAMTYM KATALOGU.** Dokument wejściowy: `docs_mod/00-STAN-I-CO-DALEJ.md`. Do zrobienia tam: branding, seeder wdrożeniowy i funkcje z Etapu 2 oferty.
+
+**W Kramio nie ma już nic do zrobienia dla Magellana.** Gdyby padło pytanie o ten projekt z sesji Kramio — odesłać do tamtego katalogu.
+
+### Demo do testów
+
+`lemoniady.kramio.pl` to demo Rafała — dobry punkt odniesienia przy sprawdzaniu storefrontu. `ilikemybike` z dawnych notatek **już nie istnieje**, 404 pod tym adresem jest poprawną odpowiedzią.
