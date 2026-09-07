@@ -15,7 +15,8 @@ metadata:
 - **Krok 3 ZROBIONY**: middleware `section:`, filtr menu, bramy w 9 komponentach Livewire, `role:seller,employee`, rzeczy właścicielskie za zagnieżdżonym `role:seller`.
 - **Krok 4 ZROBIONY**: ekran „Pracownicy" — lista z trzema stanami, zaproszenie, edycja działów w miejscu, odebranie i przywrócenie dostępu. Prawa kolumna („Jak to działa") POZA bramą pakietu — wzorzec z Kodów rabatowych, wskazany przez Rafała.
 - **Krok 5 ZROBIONY**: broker `invitation` (7 dni), mail w brandingu SKLEPU, ekran ustawienia hasła, „wyślij ponownie", unieważnianie zaproszenia przy odebraniu dostępu. **Etykieta w cenniku i kafelek na landingu ODKOMENTOWANE — funkcja działa.** Brzmienie etykiety: „Do 5 kont pracowników z dostępem do wybranych działów sklepu" (Rafał: liczba na początku, jak w „Do 600 produktów").
-- **KROK 6 ZOSTAŁ**: (a) `user_id` w `OrderStatusEvent` — dziennik nie zapisuje AUTORA zmiany, a z pracownikami to cała jego wartość; (b) zdanie w regulaminie o dopuszczaniu osób trzecich do danych klientów.
+- **Krok 6a ZROBIONY**: `user_id` w `OrderStatusEvent` (nullable = „Automatycznie" dla webhooka i crona; `nullOnDelete`, bo kaskada wycinałaby zdarzenia ze środka osi czasu). Podpis w panelu sprzedawcy i admina; **klient autora NIE widzi** — to sprawa wewnętrzna sklepu.
+- **Krok 6b W TOKU**: regulamin v4 + polityka v4. Rafał zatwierdził brzmienie 07.09, **bez prawnika**. Zakres: definicja „Konto Pracownicze" w §2, nowy ustęp w §6, ustęp w §18 („Obowiązki Sprzedawcy"), zdanie w Części II polityki. Publikacja MIGRACJĄ (treść w bazie, brak ekranu admina do edycji dokumentów) → ekran ponownej akceptacji u wszystkich sprzedawców.
 
 ### Gotchy wyłapane przy kroku 3 (nie z planu)
 
