@@ -9,6 +9,7 @@ use App\Models\ReservedSlug;
 use App\Models\Shop;
 use App\Models\User;
 use App\Support\Vocative;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -77,11 +78,19 @@ class ShopEraser
     public function erase(Shop $shop): void
     {
         $owner = $shop->owner;
+        // Konta pracowników zbieramy PRZED transakcją: `shop_employees` znika
+        // razem ze sklepem (kaskada FK), więc po usunięciu nie ma już czym
+        // ustalić, kto tu pracował.
+        $employees = $this->employeesToErase($shop);
         $directories = $this->directories($shop, $owner);
+
+        foreach ($employees as $employee) {
+            $directories[] = 'users/'.$employee->getKey();   // awatar
+        }
         $slug = $shop->slug;
         $name = $shop->name;
 
-        DB::transaction(function () use ($shop, $owner): void {
+        DB::transaction(function () use ($shop, $owner, $employees): void {
             // Pożegnanie z `shop_id = null` — z identyfikatorem sklepu wpadłoby
             // w czystkę `email_messages` kilka linii niżej i nigdy by nie wyszło.
             $this->mailErased($shop, $owner);
@@ -102,6 +111,18 @@ class ShopEraser
 
             DB::table('sessions')->where('user_id', $owner->id)->delete();
             DB::table('password_reset_tokens')->where('email', $owner->email)->delete();
+
+            // Konta pracowników kasujemy TAK SAMO jak konto właściciela. Kaskada
+            // FK zdejmuje tylko członkostwo, a samo konto zostawało: imię,
+            // nazwisko i adres e-mail obcej osoby, trzymane po sklepie, którego
+            // już nie ma — razem z działającym logowaniem. Sprzedawcy mówimy, że
+            // usuwamy wszystko, więc to „wszystko" musi obejmować także ludzi,
+            // których on tu wpuścił.
+            foreach ($employees as $employee) {
+                DB::table('sessions')->where('user_id', $employee->getKey())->delete();
+                DB::table('password_reset_tokens')->where('email', $employee->email)->delete();
+                $employee->delete();
+            }
 
             $owner->delete();
         });
@@ -137,6 +158,24 @@ class ShopEraser
         }
 
         return $directories;
+    }
+
+    /**
+     * Konta pracowników, które znikają razem z tym sklepem.
+     *
+     * WYŁĄCZNIE ci, dla których to jedyne miejsce pracy. Osoba zatrudniona
+     * także gdzie indziej (tabela członkostw na to pozwala — księgowa, wirtualna
+     * asystentka) traci tylko to jedno członkostwo; skasowanie jej konta
+     * odcięłoby ją od cudzego sklepu, który z tą decyzją nie ma nic wspólnego.
+     *
+     * @return Collection<int, User>
+     */
+    private function employeesToErase(Shop $shop): Collection
+    {
+        return User::query()
+            ->whereHas('employments', fn ($query) => $query->where('shop_id', $shop->getKey()))
+            ->whereDoesntHave('employments', fn ($query) => $query->where('shop_id', '!=', $shop->getKey()))
+            ->get();
     }
 
     /**

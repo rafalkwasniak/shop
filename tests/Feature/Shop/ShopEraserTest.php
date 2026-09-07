@@ -10,6 +10,7 @@ use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\ReservedSlug;
 use App\Models\Shop;
+use App\Models\ShopEmployee;
 use App\Services\ShopEraser;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -234,5 +235,52 @@ class ShopEraserTest extends TestCase
         $this->assertDatabaseHas('users', ['id' => $neighbour->owner_id]);
         $this->assertDatabaseHas('products', ['id' => $neighbourProduct->id]);
         $this->assertDatabaseHas('email_messages', ['shop_id' => $neighbour->id]);
+    }
+
+    /**
+     * LUKA WYŁAPANA 07.09, po uznaniu modułu pracowników za skończony. Kaskada
+     * FK zdejmowała członkostwo, ale KONTO pracownika zostawało: imię, nazwisko
+     * i adres e-mail obcej osoby, trzymane po sklepie, którego już nie ma —
+     * razem z działającym logowaniem. Sprzedawcy mówimy, że usuwamy wszystko.
+     */
+    public function test_erasing_a_shop_removes_its_employees_accounts(): void
+    {
+        $shop = Shop::factory()->create();
+        $employment = ShopEmployee::factory()->create(['shop_id' => $shop->getKey()]);
+        $employee = $employment->user;
+
+        app(ShopEraser::class)->erase($shop->fresh());
+
+        $this->assertDatabaseMissing('users', ['id' => $employee->getKey()]);
+        $this->assertDatabaseMissing('shop_employees', ['id' => $employment->getKey()]);
+    }
+
+    /**
+     * Osoba pracująca TAKŻE gdzie indziej traci wyłącznie to jedno członkostwo.
+     * Skasowanie jej konta odcięłoby ją od cudzego sklepu, który z tą decyzją
+     * nie ma nic wspólnego.
+     */
+    public function test_employee_working_elsewhere_keeps_their_account(): void
+    {
+        $closing = Shop::factory()->create();
+        // Drugi sklep na Pawilonie: bez pakietu dającego konta pracownicze
+        // `currentShop()` i tak zwróciłby null — i test badałby co innego,
+        // niż zamierza (patrz ShopEmployee::isEffective()).
+        $other = Shop::factory()->create();
+        $other->assignPackage('pavilion');
+        $other->save();
+        $other = $other->fresh();
+
+        $employment = ShopEmployee::factory()->create(['shop_id' => $closing->getKey()]);
+        $employee = $employment->user;
+
+        $second = new ShopEmployee(['permissions' => ['orders'], 'invited_at' => now(), 'accepted_at' => now()]);
+        $second->user_id = $employee->getKey();
+        $other->employees()->save($second);
+
+        app(ShopEraser::class)->erase($closing->fresh());
+
+        $this->assertDatabaseHas('users', ['id' => $employee->getKey()]);
+        $this->assertTrue($other->is($employee->fresh()->currentShop()));
     }
 }
