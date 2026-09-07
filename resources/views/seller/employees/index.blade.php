@@ -83,6 +83,19 @@
                                     </form>
                                 @endunless
 
+                                @if (! $revoked && $employee->accepted_at === null)
+                                    {{-- Link zyje 7 dni, a maile bywaja przeoczone. Przycisk
+                                         pokazujemy WYLACZNIE przy zaproszeniu czekajacym:
+                                         osobie, ktora juz ustawila haslo, nowy link byloby
+                                         droga do przejecia konta z jej skrzynki. --}}
+                                    <form method="POST" action="{{ route('seller.employees.resend', $employee) }}" class="mt-3">
+                                        @csrf
+                                        <button type="submit" class="text-sm font-medium text-stone-600 underline decoration-stone-300 underline-offset-2 transition hover:text-stone-800">
+                                            Wyślij zaproszenie ponownie
+                                        </button>
+                                    </form>
+                                @endif
+
                                 <form method="POST"
                                     action="{{ $revoked ? route('seller.employees.restore', $employee) : route('seller.employees.revoke', $employee) }}"
                                     class="mt-3">

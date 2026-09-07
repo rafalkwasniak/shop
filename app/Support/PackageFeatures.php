@@ -259,6 +259,15 @@ class PackageFeatures
                 'description' => 'Popraw ilość, dołóż pozycję albo skoryguj adres już po złożeniu zamówienia.',
                 'requires' => 'order_editing',
             ],
+            [
+                // Dopisane razem z wdrożeniem funkcji, nie „kiedyś potem".
+                // Audyt 08.08 pokazał, że landing milczy o rzeczach gotowych —
+                // a kafelek, którego nie ma, nie sprzedaje niczego.
+                'icon' => '👤',
+                'title' => 'Konta dla pracowników',
+                'description' => 'Wpuść zaufaną osobę do wybranych działów panelu — produktów, zamówień czy wysyłki. Każdy ma własne hasło, a dostęp odbierasz jednym kliknięciem, bez zmiany swojego.',
+                'requires' => 'max_employees',
+            ],
         ];
     }
 
@@ -323,20 +332,20 @@ class PackageFeatures
             'order_editing' => $entitlements['order_editing'] ? 'Edycja zamówień' : null,
             'discount_codes' => $entitlements['discount_codes'] ? 'Kody rabatowe w koszyku' : null,
             'bulk_mail' => $entitlements['bulk_mail'] ? 'Wiadomości do klientów' : null,
-            // KONTA PRACOWNIKÓW — etykieta czeka na działającą funkcję.
+            // Liczba miejsc jest w etykiecie z tego samego powodu co przy puli
+            // AI: „Konta pracowników" bez liczby nie mówi kupującemu, czy
+            // starczy dla jego trzech osób. LICZBA NA POCZĄTKU, jak w „Do 600
+            // produktów" — w nawiasie na końcu chowała się przed okiem, choć
+            // jest jedyną rzeczą, która w tym wierszu różni pakiety.
             //
-            // Uprawnienie `max_employees` jest już w configu, bo bez niego nie
-            // ma na czym budować, ale cennik ma opisywać to, co kupujący
-            // dostanie DZIŚ. Ten katalog jest produkcją, więc dopisanie tu
-            // zdania natychmiast obiecuje ze strony głównej funkcję, której
-            // jeszcze nie ma — dokładnie odwrotny rozjazd niż audyt 08.08,
-            // gdzie landing milczał o rzeczach gotowych.
-            //
-            // Wraca jednym odkomentowaniem w kroku, który wypuszcza ekran
-            // „Pracownicy":
-            // 'employees' => ($entitlements['max_employees'] ?? 0) > 0
-            //     ? 'Konta pracowników z dostępem do wybranych działów (do '.$entitlements['max_employees'].')'
-            //     : null,
+            // Zdanie wisiało tu zakomentowane od chwili, gdy `max_employees`
+            // trafiło do configu, aż do dnia, w którym zaproszenie realnie
+            // działało. Cennik ma opisywać to, co kupujący dostanie DZIŚ —
+            // a ten katalog jest produkcją, więc każde zdanie dopisane „na
+            // zapas" jest obietnicą złożoną ze strony głównej.
+            'employees' => ($entitlements['max_employees'] ?? 0) > 0
+                ? 'Do '.$entitlements['max_employees'].' kont pracowników z dostępem do wybranych działów sklepu'
+                : null,
         ]);
     }
 }

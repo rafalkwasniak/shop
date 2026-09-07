@@ -9,6 +9,7 @@ use App\Http\Requests\Seller\EmployeeInviteRequest;
 use App\Http\Requests\Seller\EmployeeSectionsRequest;
 use App\Models\ShopEmployee;
 use App\Models\User;
+use App\Services\EmployeeInvitationMailer;
 use Illuminate\Contracts\Support\Renderable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -42,7 +43,7 @@ class EmployeeController extends Controller
         ]);
     }
 
-    public function store(EmployeeInviteRequest $request): RedirectResponse
+    public function store(EmployeeInviteRequest $request, EmployeeInvitationMailer $mailer): RedirectResponse
     {
         $shop = $request->user()->currentShop();
 
@@ -85,7 +86,10 @@ class EmployeeController extends Controller
 
         $shop->employees()->save($membership);
 
-        return back()->with('status', 'Dodano pracownika: '.$employee->name.' '.$employee->surname.'.');
+        // Mail ląduje w outboxie, wysyła go cron — jak każdy inny w Kramio.
+        $mailer->send($membership);
+
+        return back()->with('status', 'Zaproszenie dla '.$employee->name.' poszło na adres '.$employee->email.'.');
     }
 
     public function update(EmployeeSectionsRequest $request, ShopEmployee $employee): RedirectResponse
@@ -95,6 +99,26 @@ class EmployeeController extends Controller
         $employee->update(['permissions' => $request->validated('permissions')]);
 
         return back()->with('status', 'Zapisano działy pracownika.');
+    }
+
+    /**
+     * Ponowne wysłanie zaproszenia — link żyje 7 dni, a maile bywają przeoczone.
+     *
+     * Tylko dla zaproszeń CZEKAJĄCYCH. Osobie, która już ustawiła hasło, nowy
+     * link do jego ustawienia byłby drogą do przejęcia konta przez kogoś, kto
+     * ma dostęp do jej skrzynki — a do zmiany hasła służy odzyskiwanie hasła.
+     */
+    public function resend(Request $request, ShopEmployee $employee, EmployeeInvitationMailer $mailer): RedirectResponse
+    {
+        $this->authorizeEmployee($request, $employee);
+
+        if ($employee->accepted_at !== null || $employee->revoked_at !== null) {
+            return back()->with('error', 'To zaproszenie nie czeka już na odpowiedź.');
+        }
+
+        $mailer->send($employee);
+
+        return back()->with('status', 'Zaproszenie wysłane ponownie na '.$employee->user->email.'.');
     }
 
     /**

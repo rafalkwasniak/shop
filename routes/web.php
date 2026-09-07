@@ -13,6 +13,7 @@ use App\Http\Controllers\Administrator\SettingsController as AdministratorSettin
 use App\Http\Controllers\Administrator\ShopController as AdministratorShopController;
 use App\Http\Controllers\AiController;
 use App\Http\Controllers\Auth\ActivationController;
+use App\Http\Controllers\Auth\EmployeeInvitationController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
@@ -164,6 +165,15 @@ Route::get('/aktywacja/{token}', [ActivationController::class, 'create'])->name(
 Route::post('/aktywacja', [ActivationController::class, 'store'])
     ->middleware('throttle:activation')
     ->name('activation.store');
+
+// Przyjecie zaproszenia pracownika — token brokera 'invitation', 7 dni.
+// Osobno od aktywacji sprzedawcy: tamten formularz zbiera dane firmowe i zgody
+// prawne, ktorych pracownik nie ma prawa skladac (strona umowy z Kramio jest
+// jego pracodawca).
+Route::get('/zaproszenie/{token}', [EmployeeInvitationController::class, 'create'])->name('employee.invitation.show');
+Route::post('/zaproszenie', [EmployeeInvitationController::class, 'store'])
+    ->middleware('throttle:activation')
+    ->name('employee.invitation.store');
 
 // Webhook Paynow: powiadomienie o zmianie statusu płatności (źródło prawdy o
 // zapłacie). Publiczny — Paynow nie ma sesji ani CSRF; broni go podpis (patrz
@@ -339,6 +349,8 @@ Route::middleware(['auth', 'role:seller,employee', 'ensure.consents'])
             Route::post('/{employee}', [EmployeeController::class, 'update'])->name('update');
             Route::post('/{employee}/odbierz', [EmployeeController::class, 'revoke'])->name('revoke');
             Route::post('/{employee}/przywroc', [EmployeeController::class, 'restore'])->name('restore');
+            Route::post('/{employee}/wyslij-ponownie', [EmployeeController::class, 'resend'])
+                ->middleware('throttle:activation')->name('resend');
         });
 
         /*

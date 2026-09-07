@@ -120,6 +120,18 @@ return [
             'expire' => 1440, // 24 h
             'throttle' => 60,
         ],
+
+        // Zaproszenie pracownika do sklepu. SIEDEM DNI, nie 24 h jak aktywacja:
+        // rejestrację sprzedawca zaczyna sam i siedzi wtedy przy skrzynce, a o
+        // zaproszeniu pracownik nie wie, dopóki nie przyjdzie. Adres bywa
+        // służbowy, czytany raz dziennie, a wysyłający jest inną osobą niż
+        // odbierający — 24 h zamieniłoby to w rutynowe wysyłanie po raz drugi.
+        'invitation' => [
+            'provider' => 'users',
+            'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
+            'expire' => 10080, // 7 dni
+            'throttle' => 60,
+        ],
     ],
 
     /*
