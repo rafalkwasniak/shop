@@ -21,6 +21,7 @@
 - [Wzory dokumentów dla sprzedawców](plan-seller-legal-templates.md) — regulamin ZROBIONY, zostaje POLITYKA. NIP nie może być twardym warunkiem.
 
 ## Otwarte / do decyzji
+- [PLAN: pracownicy sklepu](plan-shop-employees.md) — przyjęty 07.09, ZERO kodu. Nazwa `employee`. Kramio pierwsze, potem cherry-pick.
 - [Magellan Bay — osobny projekt](plan-magellan-bay-separate-project.md) — **oferta 6 000 zł wysłana 01.09, czekamy.** NIE część roadmapy Kramio.
 - [OTWARTE: limit 250 procesów](open-hosting-process-limit.md) — **w trakcie pracy testy FILTROWANE**, pełna suita raz przed commitem.
 - [KIERUNEK: NOWY SERWER](plan-dev-environment.md) — przeprowadzka planowana, termin nieustalony.
