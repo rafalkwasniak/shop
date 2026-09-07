@@ -262,4 +262,68 @@ class EmployeeManagementTest extends TestCase
             ->assertSee('Aktywny')
             ->assertSee('nie ustawił hasła');
     }
+
+    /**
+     * Konwencja panelu: dodawanie na OSOBNEJ STRONIE, tak jak wiadomości, kody
+     * rabatowe i produkty. Lista prowadzi do formularza przyciskiem, a nie ma
+     * go wciśniętego w boczną kolumnę.
+     */
+    public function test_list_links_to_a_separate_form_page(): void
+    {
+        [$owner] = $this->ownerOn();
+
+        $this->actingAs($owner)->get(route('seller.employees.index'))
+            ->assertOk()
+            ->assertSee(route('seller.employees.create'), false);
+
+        $this->actingAs($owner)->get(route('seller.employees.create'))
+            ->assertOk()
+            ->assertSee('Nowy pracownik')
+            ->assertSee('Adres e-mail');
+    }
+
+    public function test_edit_page_shows_current_sections(): void
+    {
+        [$owner, $shop] = $this->ownerOn();
+        $employment = ShopEmployee::factory()
+            ->withSections([PanelSection::Orders])
+            ->create(['shop_id' => $shop->getKey()]);
+
+        $this->actingAs($owner)->get(route('seller.employees.edit', $employment))
+            ->assertOk()
+            ->assertSee($employment->user->email)
+            // Tożsamości na tym ekranie się NIE edytuje — pól nie ma.
+            ->assertDontSee('name="email"', false)
+            ->assertSee('value="orders"', false);
+    }
+
+    public function test_edit_page_refuses_another_shops_employee(): void
+    {
+        [$owner] = $this->ownerOn();
+
+        $this->actingAs($owner)
+            ->get(route('seller.employees.edit', ShopEmployee::factory()->create()))
+            ->assertNotFound();
+    }
+
+    public function test_form_page_is_closed_without_the_package(): void
+    {
+        [$owner] = $this->ownerOn('stall');
+
+        $this->actingAs($owner)->get(route('seller.employees.create'))->assertForbidden();
+    }
+
+    /**
+     * Formularz bez wolnych miejsc odsyłamy na listę, zamiast pokazywać ekran,
+     * który przy zapisie i tak odmówi.
+     */
+    public function test_form_page_redirects_when_there_are_no_seats(): void
+    {
+        [$owner, $shop] = $this->ownerOn();
+        ShopEmployee::factory()->count(5)->create(['shop_id' => $shop->getKey()]);
+
+        $this->actingAs($owner)->get(route('seller.employees.create'))
+            ->assertRedirect(route('seller.employees.index'))
+            ->assertSessionHas('error');
+    }
 }

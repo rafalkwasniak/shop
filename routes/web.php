@@ -345,7 +345,9 @@ Route::middleware(['auth', 'role:seller,employee', 'ensure.consents'])
          */
         Route::middleware('role:seller')->prefix('pracownicy')->name('employees.')->group(function () {
             Route::get('/', [EmployeeController::class, 'index'])->name('index');
+            Route::get('/nowy', [EmployeeController::class, 'create'])->name('create');
             Route::post('/', [EmployeeController::class, 'store'])->name('store');
+            Route::get('/{employee}/edycja', [EmployeeController::class, 'edit'])->name('edit');
             Route::post('/{employee}', [EmployeeController::class, 'update'])->name('update');
             Route::post('/{employee}/odbierz', [EmployeeController::class, 'revoke'])->name('revoke');
             Route::post('/{employee}/przywroc', [EmployeeController::class, 'restore'])->name('restore');

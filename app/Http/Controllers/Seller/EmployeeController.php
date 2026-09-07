@@ -7,6 +7,7 @@ use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Seller\EmployeeInviteRequest;
 use App\Http\Requests\Seller\EmployeeSectionsRequest;
+use App\Models\Shop;
 use App\Models\ShopEmployee;
 use App\Models\User;
 use App\Services\EmployeeInvitationMailer;
@@ -44,6 +45,43 @@ class EmployeeController extends Controller
                 : collect(),
             'slotsLeft' => $allowed ? $shop->employeeSlotsLeft() : 0,
             'slots' => $allowed ? (int) $shop->entitlement('max_employees') : 0,
+        ]);
+    }
+
+    /**
+     * Formularz zaproszenia — OSOBNA STRONA, jak przy wiadomościach, kodach
+     * rabatowych i produktach. Dodawanie z bocznej kolumny listy było jedynym
+     * takim miejscem w panelu; spójność wygrywa z jednym kliknięciem mniej.
+     */
+    public function create(Request $request): Renderable|RedirectResponse
+    {
+        $shop = $this->shopWithEmployees($request);
+
+        // Brak miejsc odsyłamy NA LISTĘ, a nie pokazujemy formularza, który przy
+        // zapisie i tak odmówi. Lista mówi wtedy wprost, ile miejsc jest zajętych
+        // i co z tym zrobić.
+        if ($shop->employeeSlotsLeft() < 1) {
+            return redirect()->route('seller.employees.index')
+                ->with('error', 'Nie masz wolnych miejsc na pracowników w tym pakiecie.');
+        }
+
+        return view('seller.employees.form', [
+            'shop' => $shop,
+            'employee' => null,
+            'sections' => PanelSection::cases(),
+            'slotsLeft' => $shop->employeeSlotsLeft(),
+        ]);
+    }
+
+    public function edit(Request $request, ShopEmployee $employee): Renderable
+    {
+        $this->authorizeEmployee($request, $employee);
+
+        return view('seller.employees.form', [
+            'shop' => $request->user()->currentShop(),
+            'employee' => $employee->load('user'),
+            'sections' => PanelSection::cases(),
+            'slotsLeft' => $request->user()->currentShop()->employeeSlotsLeft(),
         ]);
     }
 
@@ -93,7 +131,8 @@ class EmployeeController extends Controller
         // Mail ląduje w outboxie, wysyła go cron — jak każdy inny w Kramio.
         $mailer->send($membership);
 
-        return back()->with('status', 'Zaproszenie dla '.$employee->name.' poszło na adres '.$employee->email.'.');
+        return redirect()->route('seller.employees.index')
+            ->with('status', 'Zaproszenie dla '.$employee->name.' poszło na adres '.$employee->email.'.');
     }
 
     public function update(EmployeeSectionsRequest $request, ShopEmployee $employee): RedirectResponse
@@ -102,7 +141,8 @@ class EmployeeController extends Controller
 
         $employee->update(['permissions' => $request->validated('permissions')]);
 
-        return back()->with('status', 'Zapisano działy pracownika.');
+        return redirect()->route('seller.employees.index')
+            ->with('status', 'Zapisano działy pracownika.');
     }
 
     /**
@@ -153,6 +193,22 @@ class EmployeeController extends Controller
         $employee->update(['revoked_at' => null]);
 
         return back()->with('status', 'Przywrócono dostęp.');
+    }
+
+    /**
+     * Sklep właściciela z potwierdzonym prawem do kont pracowniczych.
+     *
+     * 403, a nie zachęta do zakupu: na ekran formularza wchodzi się z listy, a
+     * tam przy braku uprawnienia nie ma przycisku. Kto tu trafił mimo to, wpisał
+     * adres z ręki.
+     */
+    private function shopWithEmployees(Request $request): Shop
+    {
+        $shop = $request->user()->currentShop();
+
+        abort_unless((bool) $shop?->allowsEmployees(), 403);
+
+        return $shop;
     }
 
     /**
