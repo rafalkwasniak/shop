@@ -52,6 +52,17 @@ class UserFactory extends Factory
     }
 
     /**
+     * Pracownik cudzego sklepu. Sam w sobie nie daje dostępu do niczego —
+     * dostęp niesie członkostwo (ShopEmployeeFactory), nie rola.
+     */
+    public function employee(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => UserRole::Employee,
+        ]);
+    }
+
+    /**
      * Akceptacja aktualnych wersji wszystkich wymaganych dokumentów prawnych —
      * sprzedawca, który przeszedł rejestrację i nie jest blokowany bramą zgód.
      */

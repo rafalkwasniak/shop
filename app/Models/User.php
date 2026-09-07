@@ -49,6 +49,17 @@ class User extends Authenticatable
     }
 
     /**
+     * Pracownik cudzego sklepu. NIE jest sprzedawcą: nie ma sklepu, nie ma
+     * pakietu, nie jest stroną umowy z Kramio. `isSeller()` musi go odrzucać,
+     * bo w wielu miejscach oznacza „właściciel" i cichy awans pracownika do tej
+     * odpowiedzi obszedłby całą bramę uprawnień.
+     */
+    public function isEmployee(): bool
+    {
+        return $this->role === UserRole::Employee;
+    }
+
+    /**
      * @return HasMany<UserConsent, $this>
      */
     public function consents(): HasMany
@@ -161,7 +172,38 @@ class User extends Authenticatable
      */
     public function currentShop(): ?Shop
     {
+        if ($this->isEmployee()) {
+            return $this->activeEmployment()?->shop;
+        }
+
         return $this->shop;
+    }
+
+    /**
+     * Zatrudnienia tego użytkownika — także odebrane i nieprzyjęte, bo lista
+     * ma pokazywać historię, a nie tylko stan na dziś.
+     *
+     * @return HasMany<ShopEmployee, $this>
+     */
+    public function employments(): HasMany
+    {
+        return $this->hasMany(ShopEmployee::class);
+    }
+
+    /**
+     * Czynne zatrudnienie — dziś najwyżej jedno, więc `first()`.
+     *
+     * Tabela dopuszcza kilka (osoba pracująca w dwóch sklepach to realny
+     * przypadek: księgowa, wirtualna asystentka). Gdy się pojawi, TU dochodzi
+     * przełącznik sklepu czytający wybór z sesji — bez migracji danych i bez
+     * ruszania kilkudziesięciu wywołań `currentShop()` w panelu. To jest cała
+     * korzyść z osobnej tabeli zamiast kolumny `shop_id` na `users`.
+     */
+    public function activeEmployment(): ?ShopEmployee
+    {
+        return $this->employments->first(
+            static fn (ShopEmployee $employment): bool => $employment->isActive()
+        );
     }
 
     /**

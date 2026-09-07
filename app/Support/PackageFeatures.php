@@ -61,7 +61,7 @@ class PackageFeatures
         $found = null;
 
         foreach (self::purchasable() as $key => $package) {
-            if (($package['entitlements'][$entitlement] ?? false) !== true) {
+            if (! self::grants($package['entitlements'][$entitlement] ?? false)) {
                 continue;
             }
 
@@ -75,6 +75,28 @@ class PackageFeatures
         }
 
         return $found;
+    }
+
+    /**
+     * Czy taka wartość uprawnienia znaczy „pakiet to daje".
+     *
+     * Uprawnienia mają dwa kształty: przełącznik (`invoices => true`) i limit
+     * (`max_employees => 5`). Do 2026-09 wszystkie bramkowane funkcje były
+     * przełącznikami, więc `cheapestWith()` porównywało wprost z `true` —
+     * i przy limicie odpowiadałoby „nie ma tego w żadnym pakiecie", a ekran
+     * zachęty pokazałby pustkę zamiast nazwy i ceny pakietu.
+     *
+     * Dla przełączników zachowanie jest identyczne jak dawniej: `false`
+     * odpada, `true` przechodzi. Limit przechodzi, gdy jest dodatni — zero
+     * miejsc to brak funkcji, nie funkcja o rozmiarze zero.
+     */
+    private static function grants(mixed $value): bool
+    {
+        if (is_int($value)) {
+            return $value > 0;
+        }
+
+        return $value === true;
     }
 
     /**
@@ -301,6 +323,20 @@ class PackageFeatures
             'order_editing' => $entitlements['order_editing'] ? 'Edycja zamówień' : null,
             'discount_codes' => $entitlements['discount_codes'] ? 'Kody rabatowe w koszyku' : null,
             'bulk_mail' => $entitlements['bulk_mail'] ? 'Wiadomości do klientów' : null,
+            // KONTA PRACOWNIKÓW — etykieta czeka na działającą funkcję.
+            //
+            // Uprawnienie `max_employees` jest już w configu, bo bez niego nie
+            // ma na czym budować, ale cennik ma opisywać to, co kupujący
+            // dostanie DZIŚ. Ten katalog jest produkcją, więc dopisanie tu
+            // zdania natychmiast obiecuje ze strony głównej funkcję, której
+            // jeszcze nie ma — dokładnie odwrotny rozjazd niż audyt 08.08,
+            // gdzie landing milczał o rzeczach gotowych.
+            //
+            // Wraca jednym odkomentowaniem w kroku, który wypuszcza ekran
+            // „Pracownicy":
+            // 'employees' => ($entitlements['max_employees'] ?? 0) > 0
+            //     ? 'Konta pracowników z dostępem do wybranych działów (do '.$entitlements['max_employees'].')'
+            //     : null,
         ]);
     }
 }

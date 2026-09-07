@@ -134,6 +134,42 @@ class Shop extends Model
     }
 
     /**
+     * Pracownicy sklepu — wszystkie członkostwa, także odebrane i nieprzyjęte.
+     * Ekran „Pracownicy" pokazuje jedno i drugie: zaproszenie, na które nikt
+     * nie odpowiedział, jest informacją, a nie brakiem wiersza.
+     *
+     * @return HasMany<ShopEmployee, $this>
+     */
+    public function employees(): HasMany
+    {
+        return $this->hasMany(ShopEmployee::class);
+    }
+
+    /**
+     * Ilu pracowników mieści jeszcze pakiet. Liczą się WSZYSTKIE zajęte
+     * miejsca — także zaproszenia bez odpowiedzi, bo inaczej limit dałoby się
+     * obejść, zapraszając dwadzieścia osób i czekając, aż któraś kliknie.
+     *
+     * Odebrane członkostwa miejsca nie zajmują: wiersz zostaje dla śladu, ale
+     * ta osoba już nie pracuje.
+     */
+    public function employeeSlotsLeft(): int
+    {
+        $used = $this->employees()->whereNull('revoked_at')->count();
+
+        return max(0, (int) $this->entitlement('max_employees') - $used);
+    }
+
+    /**
+     * Czy pakiet w ogóle daje konta pracowników. Zero miejsc = funkcji nie ma,
+     * więc ekran ma pokazać zachętę zamiast narzędzia.
+     */
+    public function allowsEmployees(): bool
+    {
+        return (int) $this->entitlement('max_employees') > 0;
+    }
+
+    /**
      * Wiersz integracji danego typu (lub null). Czyta z załadowanej relacji,
      * żeby nie odpytywać bazy przy każdym wywołaniu w obrębie jednego requestu.
      */
