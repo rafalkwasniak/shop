@@ -60,6 +60,7 @@
             ['label' => 'Analityka', 'route' => 'seller.analytics.index', 'icon' => '📊', 'section' => 'analytics'],
             ['label' => 'Informacje', 'route' => 'seller.pages.index', 'active' => 'seller.pages.*', 'icon' => '📄', 'section' => 'content'],
             ['label' => 'Wygląd', 'route' => 'seller.appearance.edit', 'icon' => '🎨', 'section' => 'content'],
+            ['label' => 'Pracownicy', 'route' => 'seller.employees.index', 'icon' => '👤', 'owner' => true],
             ['label' => 'Ustawienia', 'route' => 'seller.settings.edit', 'icon' => '⚙️', 'owner' => true],
             ['label' => 'Integracje', 'route' => 'seller.integrations.edit', 'icon' => '🔌', 'owner' => true],
         ];
