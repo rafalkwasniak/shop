@@ -8,7 +8,9 @@ metadata:
   modified: 2026-09-07T17:21:53.377Z
 ---
 
-**Stan 2026-09-07: KROKI 1–2 WDROŻONE w Kramio, w toku krok 3.** Suita 1728 → 1748.
+**Stan 2026-09-07: FUNKCJA KOMPLETNA w Kramio — kroki 1–6 zrobione.** Suita 1728 → 1786.
+
+**ZOSTAŁO JEDNO: `cherry-pick` do Magellana.** Handlowo poza zakresem oferty (patrz sekcja na dole) — decyzja Rafała. Im dłużej się zwleka, tym więcej konfliktów.
 
 - **Krok 1 ZROBIONY** (commit `168b7ec`): `User::currentShop()`, 77 wywołań w 40 plikach. **Do przeniesienia do Magellana `cherry-pick`iem — jeszcze NIE zrobione.**
 - **Krok 2 ZROBIONY**: `PanelSection`, `shop_employees` (migracja PRZESZŁA na produkcji), `ShopEmployee`, `UserRole::Employee`, `max_employees` (Pawilon 5).
@@ -16,7 +18,11 @@ metadata:
 - **Krok 4 ZROBIONY**: ekran „Pracownicy" — lista z trzema stanami, zaproszenie, edycja działów w miejscu, odebranie i przywrócenie dostępu. Prawa kolumna („Jak to działa") POZA bramą pakietu — wzorzec z Kodów rabatowych, wskazany przez Rafała.
 - **Krok 5 ZROBIONY**: broker `invitation` (7 dni), mail w brandingu SKLEPU, ekran ustawienia hasła, „wyślij ponownie", unieważnianie zaproszenia przy odebraniu dostępu. **Etykieta w cenniku i kafelek na landingu ODKOMENTOWANE — funkcja działa.** Brzmienie etykiety: „Do 5 kont pracowników z dostępem do wybranych działów sklepu" (Rafał: liczba na początku, jak w „Do 600 produktów").
 - **Krok 6a ZROBIONY**: `user_id` w `OrderStatusEvent` (nullable = „Automatycznie" dla webhooka i crona; `nullOnDelete`, bo kaskada wycinałaby zdarzenia ze środka osi czasu). Podpis w panelu sprzedawcy i admina; **klient autora NIE widzi** — to sprawa wewnętrzna sklepu.
-- **Krok 6b W TOKU**: regulamin v4 + polityka v4. Rafał zatwierdził brzmienie 07.09, **bez prawnika**. Zakres: definicja „Konto Pracownicze" w §2, nowy ustęp w §6, ustęp w §18 („Obowiązki Sprzedawcy"), zdanie w Części II polityki. Publikacja MIGRACJĄ (treść w bazie, brak ekranu admina do edycji dokumentów) → ekran ponownej akceptacji u wszystkich sprzedawców.
+- **Krok 6b ZROBIONY**: regulamin v4 + polityka v4 OPUBLIKOWANE na produkcji migracją `2026_09_07_160000`. Brama zgód uzbrojona — wszystkich 8 sprzedawców ma do akceptacji `terms v4, privacy v4`.
+
+**GOTCHA na przyszłość: dokumenty prawne publikuje się MIGRACJĄ.** Treść żyje w bazie, ekranu admina do edycji NIE MA. Migracja bierze aktualną wersję, wstawia fragmenty w KOTWICE i rzuca wyjątkiem, gdy kotwicy nie znajdzie — cicha publikacja wersji bez nowych zapisów byłaby najgorszym wynikiem (wszyscy akceptują „nowe", które niczym się nie różni). Na świeżej instalacji (treść `null`, baza testowa) migracja po prostu odpuszcza.
+
+Poprzedni zakres 6b: Rafał zatwierdził brzmienie 07.09, **bez prawnika**. Zakres: definicja „Konto Pracownicze" w §2, nowy ustęp w §6, ustęp w §18 („Obowiązki Sprzedawcy"), zdanie w Części II polityki. Publikacja MIGRACJĄ (treść w bazie, brak ekranu admina do edycji dokumentów) → ekran ponownej akceptacji u wszystkich sprzedawców.
 
 ### Gotchy wyłapane przy kroku 3 (nie z planu)
 
