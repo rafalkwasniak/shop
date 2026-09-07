@@ -12,7 +12,16 @@ metadata:
 
 - **Krok 1 ZROBIONY** (commit `168b7ec`): `User::currentShop()`, 77 wywołań w 40 plikach. **Do przeniesienia do Magellana `cherry-pick`iem — jeszcze NIE zrobione.**
 - **Krok 2 ZROBIONY**: `PanelSection`, `shop_employees` (migracja PRZESZŁA na produkcji), `ShopEmployee`, `UserRole::Employee`, `max_employees` (Pawilon 5).
-- **Krok 3 W TOKU**: middleware `section:`, filtr menu, `role:seller,employee`, powrót zakupu pakietu i kasowania sklepu do wyłącznej gestii właściciela.
+- **Krok 3 ZROBIONY**: middleware `section:`, filtr menu, bramy w 9 komponentach Livewire, `role:seller,employee`, rzeczy właścicielskie za zagnieżdżonym `role:seller`.
+- **Krok 4 W TOKU**: ekran „Pracownicy" (lista, zaproszenie, edycja działów, cofnięcie).
+- **Krok 5 CZEKA**: mail z zaproszeniem + aktywacja. **Etykieta w cenniku (`PackageFeatures::labels()`) jest ZAKOMENTOWANA — odkomentować dopiero, gdy zaproszenie zadziała.**
+
+### Gotchy wyłapane przy kroku 3 (nie z planu)
+
+- **Livewire omija bramę trasy.** Żądanie do `livewire/update` NIE przechodzi przez middleware trasy, na której komponent się renderował. Każdy komponent panelu musi sprawdzać dział sam. W komponentach bez modelu w sygnaturze (`CourierPickup`, `DiscountCodeForm`) sprawdzenie idzie w `booted()` — `mount()` wykonuje się tylko przy pierwszym renderze.
+- **Brama zgód zapętliłaby pracownika.** `outstandingConsents()` zwraca dla niego pustkę: stroną umowy z Kramio jest sprzedawca, pracownik nie ma prawa akceptować regulaminu w cudzym imieniu.
+- **Pulpit to w dużej części ekran WŁAŚCICIELA.** Lista kroków uruchomienia prowadzi do danych firmy i wyglądu, sekcja pakietu i kafle przychodu też są jego. Ukryte przed pracownikiem; kafle sprzedaży za działem `orders`.
+- **Pint 2× wszedł na zastany kod** w plikach, które ruszałem (`OrderController`, `ProductController`, 5 komponentów Livewire) i przestawił importy. Za każdym razem cofane — inaczej `cherry-pick` do Magellana rodzi konflikty na niczym. **Pint TYLKO na plikach pisanych od zera.**
 
 ## Po co to jest
 
