@@ -17,4 +17,14 @@ Test `test_saving_preserves_every_numeric_entitlement` chodzi po tej samej liśc
 
 **Zasada ogólna, którą to potwierdza:** uprawnienie jest nadawalne GESTEM, poza pakietem. Sklep z Krama może dostać konta pracownicze albo wysyłkę kurierską i zostać Kramem — to nadanie, nie awans. Każda funkcja bramkowana pakietem musi się w ten sposób dać nadać ręcznie.
 
+## Preset „Sklep dedykowany" NIE JEST pakietem Kramio
+
+Opisuje wdrożenie na **serwerze klienta**, wykupione raz, z uprawnieniami bez limitów i ceną zero. Sklep na platformie nigdy nim nie jest — a jedno kliknięcie dawało mu wszystko za darmo i bezterminowo. **Rafał wyłapał to 07.09** patrząc na `/administrator/sklepy/{id}`: *„to mi się nie klei z całością"*.
+
+Rozstrzygnięcie: **`ShopManager::assignablePackages()` wiąże listę presetów z TRYBEM** (`Mode::dedicated()`), a nie usuwa jej z cennika — w instalacji dedykowanej to jedyny preset, który się tam nadaje. Pakiet, który sklep już ma, zostaje na liście zawsze, inaczej walidacja `in:` odrzuca zapis bez zmiany pakietu. Brama stoi też w `applyPreset()`, bo żądanie Livewire omija widok.
+
+Wszędzie indziej w panelu („z czego pozwalamy wybierać": rejestrator wpłat, filtry) obowiązuje **`PackageFeatures::purchasable()`**. Rejestrator był groźny nie jako dziwny wpis, tylko dlatego, że **zapis wpłaty PRZYPISUJE pakiet** — czyli ten sam skutek co przycisk presetu, bocznymi drzwiami.
+
+**Sufit walidacji uprawnień liczbowych to 10 mln, nie 100 tys.** Preset dedykowany ma milion produktów; przy dawnym sufcie sklepu na tym presecie **nie dało się zapisać w konsoli** — walidacja odrzucała jego własny poprawny stan. W Kramio nikt tego nie widział, w instalacji dedykowanej dotyczy każdego sklepu.
+
 Powiązane: [[plan-packages]], [[plan-per-shop-custom-pricing]], [[gotcha-entitlements-are-sticky-raise-needs-command]], [[gotcha-package-gated-feature-must-expire]].
