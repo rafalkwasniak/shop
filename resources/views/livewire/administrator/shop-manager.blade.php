@@ -21,7 +21,10 @@
         <h3 class="font-semibold text-stone-900">Nadaj pakiet</h3>
         <p class="mt-1 text-sm text-stone-500">Wypełnia pola wartościami pakietu. Możesz potem nadpisać pojedyncze opcje, a zapis zatwierdza całość.</p>
         <div class="mt-4 flex flex-wrap gap-3">
-            @foreach (config('shop.packages') as $slug => $pkg)
+            {{-- `assignablePackages()`, nie caly cennik: „Sklep dedykowany" to
+                 wdrozenie na serwerze klienta, wiec w Kramio nie jest pakietem do
+                 nadania — jedno klikniecie dawalo sklepowi wszystko za 0 zl. --}}
+            @foreach ($this->assignablePackages() as $slug => $pkg)
                 <button type="button" wire:click="applyPreset('{{ $slug }}')"
                     @class([
                         'rounded-2xl border px-5 py-3 text-left transition',

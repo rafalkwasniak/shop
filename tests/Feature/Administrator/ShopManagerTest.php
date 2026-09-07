@@ -174,4 +174,51 @@ class ShopManagerTest extends TestCase
             ->call('applyPreset', 'stall')
             ->assertSet('max_employees', 0);
     }
+
+    /**
+     * „Sklep dedykowany" to wdrożenie na SERWERZE KLIENTA, nie pakiet do nadania
+     * sklepowi na platformie. W Kramio przycisk nie ma sensu, ale miał skutek:
+     * jedno kliknięcie dawało dowolnemu sklepowi wszystko za 0 zł, bezterminowo.
+     */
+    public function test_dedicated_preset_is_hidden_in_kramio(): void
+    {
+        $shop = Shop::factory()->package('stall')->create();
+
+        $component = Livewire::actingAs(User::factory()->admin()->create())
+            ->test(ShopManager::class, ['shop' => $shop]);
+
+        $this->assertArrayNotHasKey('dedicated', $component->instance()->assignablePackages());
+        $component->assertSee('Pawilon')->assertDontSee('Sklep dedykowany');
+    }
+
+    /**
+     * Brama musi stać też po stronie serwera — żądanie Livewire idzie wprost do
+     * metody, z pominięciem tego, co widać na ekranie.
+     */
+    public function test_dedicated_preset_cannot_be_applied_through_the_request(): void
+    {
+        $shop = Shop::factory()->package('stall')->create();
+
+        Livewire::actingAs(User::factory()->admin()->create())
+            ->test(ShopManager::class, ['shop' => $shop])
+            ->call('applyPreset', 'dedicated')
+            ->assertSet('package', 'stall')
+            ->assertSet('max_products', (int) config('shop.packages.stall.entitlements.max_products'));
+    }
+
+    /**
+     * Sklep, który JUŻ jest na presecie spoza oferty, musi widzieć swój stan
+     * faktyczny — inaczej formularz kłamie, a walidacja `in:` odrzuca zapis,
+     * w którym pakietu w ogóle nie ruszano.
+     */
+    public function test_shop_already_on_dedicated_still_sees_its_own_package(): void
+    {
+        $shop = Shop::factory()->package('dedicated')->create();
+
+        $component = Livewire::actingAs(User::factory()->admin()->create())
+            ->test(ShopManager::class, ['shop' => $shop]);
+
+        $this->assertArrayHasKey('dedicated', $component->instance()->assignablePackages());
+        $component->call('save')->assertHasNoErrors();
+    }
 }

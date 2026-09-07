@@ -5,6 +5,7 @@ namespace App\Livewire\Administrator;
 use App\Models\PackageChange;
 use App\Models\Shop;
 use App\Services\ProductLimitLock;
+use App\Support\Mode;
 use Illuminate\Support\Carbon;
 use Livewire\Component;
 
@@ -56,6 +57,37 @@ class ShopManager extends Component
     public string $subscription_ends_at = '';
 
     public bool $comped = false;
+
+    /**
+     * Presety pakietu, które wolno nadać W TYM WDROŻENIU.
+     *
+     * „Sklep dedykowany" opisuje instalację na SERWERZE KLIENTA, wykupioną raz i
+     * z uprawnieniami bez limitów. Sklep na platformie nigdy nim nie jest, więc
+     * w Kramio ten przycisk nie ma znaczenia — ma za to skutek: jedno kliknięcie
+     * dawało dowolnemu sklepowi wszystko za 0 zł, bezterminowo. W instalacji
+     * dedykowanej jest odwrotnie: to jedyny preset, który się tam nadaje.
+     *
+     * Pakiet, który sklep JUŻ MA, zostaje na liście niezależnie od trybu —
+     * inaczej formularz nie miałby jak pokazać stanu faktycznego, a walidacja
+     * `in:` odrzuciłaby zapis bez zmiany pakietu.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    public function assignablePackages(): array
+    {
+        $packages = config('shop.packages');
+
+        if (Mode::dedicated()) {
+            return $packages;
+        }
+
+        return array_filter(
+            $packages,
+            fn (array $package, string $slug): bool => ($package['available'] ?? true) !== false
+                || $slug === $this->package,
+            ARRAY_FILTER_USE_BOTH,
+        );
+    }
 
     /**
      * Kanoniczne klucze uprawnień LICZBOWYCH + etykiety PL (do UI).
@@ -125,7 +157,9 @@ class ShopManager extends Component
     {
         $package = config("shop.packages.{$slug}");
 
-        if ($package === null) {
+        // Brama także tutaj, nie tylko w widoku: preset spoza tego wdrożenia nie
+        // może wejść bocznymi drzwiami przez żądanie Livewire.
+        if ($package === null || ! array_key_exists($slug, $this->assignablePackages())) {
             return;
         }
 
@@ -147,12 +181,18 @@ class ShopManager extends Component
     protected function rules(): array
     {
         return [
-            'package' => ['required', 'string', 'in:'.implode(',', array_keys(config('shop.packages')))],
+            'package' => ['required', 'string', 'in:'.implode(',', array_keys($this->assignablePackages()))],
             'price_yearly' => ['required', 'numeric', 'min:0', 'max:1000000'],
             'subscription_ends_at' => ['nullable', 'date'],
             'comped' => ['boolean'],
+            // Sufit MUSI mieścić preset „Sklep dedykowany" (milion produktów,
+            // sto tysięcy zadań AI). Te liczby znaczą tam „bez limitu" i są
+            // celowo duże, a nie `null`: `(int) null` daje zero, a przy zerze
+            // ProductLimitLock zablokowałby sklep na pierwszym produkcie.
+            // Przy dawnym sufcie 100 000 sklepu na tym presecie NIE DAŁO SIĘ
+            // zapisać w konsoli — walidacja odrzucała jego własny stan.
             ...collect(array_keys($this->numericEntitlements()))
-                ->mapWithKeys(fn (string $key) => [$key => ['required', 'integer', 'min:0', 'max:100000']])
+                ->mapWithKeys(fn (string $key) => [$key => ['required', 'integer', 'min:0', 'max:10000000']])
                 ->all(),
         ];
     }
