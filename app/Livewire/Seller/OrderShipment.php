@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Seller;
 
+use App\Enums\PanelSection;
 use App\Enums\ParcelSize;
 use App\Enums\SendingMethod;
 use App\Models\Order;
@@ -228,7 +229,17 @@ class OrderShipment extends Component
 
     private function authorizeOwnership(): void
     {
-        abort_unless($this->order->shop_id === auth()->user()?->currentShop()?->id, 403);
+        $user = auth()->user();
+
+        // Sklep MUSI się zgadzać, ale sam sklep nie wystarczy: żądanie do
+        // `livewire/update` nie przechodzi przez `section:` z trasy, na której
+        // ten komponent się renderował. Bez drugiego warunku pracownik bez
+        // tego działu obchodziłby bramę, wołając komponent wprost.
+        abort_unless(
+            $this->order->shop_id === $user?->currentShop()?->id
+                && $user->canAccess(PanelSection::Orders),
+            403,
+        );
     }
 
     public function render()

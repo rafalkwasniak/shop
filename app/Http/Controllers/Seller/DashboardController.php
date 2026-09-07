@@ -33,7 +33,7 @@ class DashboardController extends Controller
         // do pokazania sklepu klientom; ostatni (widoczny produkt) publikuje sklep —
         // dlatego liczymy AKTYWNE produkty, nie wszystkie (ukryty produkt nie publikuje).
         // Każdy krok prowadzi do konkretnej sekcji (kotwica). Liczone z danych.
-        $steps = $shop ? [
+        $steps = $shop && ! $request->user()->isEmployee() ? [
             ['label' => 'Dane sklepu', 'desc' => 'Adres prowadzenia działalności.', 'done' => $shop->addressComplete(), 'route' => 'seller.shop.edit', 'anchor' => '#adres'],
             ['label' => 'Dane kontaktowe', 'desc' => 'E-mail i telefon dla klientów.', 'done' => $shop->contactComplete(), 'route' => 'seller.shop.edit', 'anchor' => '#dane-kontaktowe'],
             ['label' => 'Dane firmowe', 'desc' => 'Nazwa firmy i NIP.', 'done' => filled($shop->nip), 'route' => 'seller.shop.edit', 'anchor' => '#dane-firmowe'],
@@ -44,6 +44,11 @@ class DashboardController extends Controller
 
         return view('seller.dashboard', [
             'shop' => $shop,
+            // Pulpit jest w dużej części ekranem WŁAŚCICIELA: lista kroków
+            // uruchomienia, pakiet, przychód. Widok chowa te części, zamiast
+            // pokazywać pracownikowi odnośniki kończące się 403.
+            'isEmployee' => $request->user()->isEmployee(),
+            'canSeeOrders' => $request->user()->canAccess(\App\Enums\PanelSection::Orders),
             // Wykorzystanie AI — ten sam licznik co na „Mój pakiet", żeby oba
             // ekrany mówiły to samo. Tygodniowa pula zadań, nie wywołań modelu.
             'aiUsed' => $shop ? app(AiQuota::class)->used($shop) : 0,

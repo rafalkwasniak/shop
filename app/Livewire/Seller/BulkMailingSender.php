@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Seller;
 
+use App\Enums\PanelSection;
 use App\Exceptions\BulkMailException;
 use App\Models\BulkMailing;
 use App\Services\BulkMailService;
@@ -94,7 +95,17 @@ class BulkMailingSender extends Component
 
     private function authorizeOwnership(): void
     {
-        abort_unless($this->mailing->shop_id === auth()->user()?->currentShop()?->id, 403);
+        $user = auth()->user();
+
+        // Sklep MUSI sie zgadzac, ale sam sklep nie wystarczy: zadanie do
+        // `livewire/update` nie przechodzi przez `section:` z trasy, na ktorej
+        // ten komponent sie renderowal. Bez drugiego warunku pracownik bez
+        // tego dzialu obchodzilby brame, wolajac komponent wprost.
+        abort_unless(
+            $this->mailing->shop_id === $user?->currentShop()?->id
+                && $user->canAccess(PanelSection::Marketing),
+            403,
+        );
     }
 
     /**

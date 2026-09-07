@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Seller;
 
+use App\Enums\PanelSection;
 use App\Models\Order;
 use App\Services\OrderMailer;
 use Livewire\Component;
@@ -81,7 +82,17 @@ class OrderMessenger extends Component
 
     private function authorizeOwnership(): void
     {
-        abort_unless($this->order->shop_id === auth()->user()?->currentShop()?->id, 403);
+        $user = auth()->user();
+
+        // Sklep MUSI sie zgadzac, ale sam sklep nie wystarczy: zadanie do
+        // `livewire/update` nie przechodzi przez `section:` z trasy, na ktorej
+        // ten komponent sie renderowal. Bez drugiego warunku pracownik bez
+        // tego dzialu obchodzilby brame, wolajac komponent wprost.
+        abort_unless(
+            $this->order->shop_id === $user?->currentShop()?->id
+                && $user->canAccess(PanelSection::Orders),
+            403,
+        );
     }
 
     public function render()

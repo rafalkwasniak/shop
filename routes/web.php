@@ -310,18 +310,45 @@ Route::middleware(['saas', 'auth', 'role:admin'])
 | Panel sprzedawcy (rola: seller)
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth', 'role:seller', 'ensure.consents'])
+// `role:seller,employee` — panel jest wspolny dla wlasciciela i jego pracownikow.
+// O tym, KTO co w nim widzi, rozstrzyga `section:` przy poszczegolnych trasach,
+// a rzeczy zastrzezone dla wlasciciela chowaja sie za zagniezdzonym
+// `role:seller` (pracownik ma role `employee`, wiec sam sie o nia obija).
+Route::middleware(['auth', 'role:seller,employee', 'ensure.consents'])
     ->prefix('sprzedawca')          // URL po polsku; nazwa trasy 'seller.' (kod) po angielsku
     ->name('seller.')
     ->group(function () {
         Route::get('/panel', SellerDashboard::class)->name('dashboard');
 
         // Analityka (Poziom 1: z danych, które już mamy; dla wszystkich pakietów).
-        Route::get('/analityka', [AnalyticsController::class, 'index'])->name('analytics.index');
+        Route::get('/analityka', [AnalyticsController::class, 'index'])
+            ->middleware('section:analytics')->name('analytics.index');
 
-        // Profil sklepu (nazwa, opis, adres). Edycja przez POST (FOUNDATION sek. 5).
-        Route::get('/sklep', [ShopProfileController::class, 'edit'])->name('shop.edit');
-        Route::post('/sklep', [ShopProfileController::class, 'update'])->name('shop.update');
+        /*
+         * TYLKO WLASCICIEL. Dane firmy, ustawienia sprzedazy i klucze integracji
+         * to rzeczy, ktorych sprzedawca nie oddaje razem z dzialem panelu:
+         * zmiana NIP-u wychodzi na fakturach, a klucze Paynow i Fakturowni to
+         * cudze pieniadze i realne dokumenty. Nie ma dla nich checkboxa —
+         * `role:seller` odbija pracownika niezaleznie od nadanych mu dzialow.
+         */
+        Route::middleware('role:seller')->group(function () {
+            // Profil sklepu (nazwa, opis, adres). Edycja przez POST (FOUNDATION sek. 5).
+            Route::get('/sklep', [ShopProfileController::class, 'edit'])->name('shop.edit');
+            Route::post('/sklep', [ShopProfileController::class, 'update'])->name('shop.update');
+
+            // Ustawienia sklepu (sprzedaz/VAT, dostawa, platnosci, wlaczniki integracji).
+            Route::get('/ustawienia', [ShopSettingsController::class, 'edit'])->name('settings.edit');
+            Route::post('/ustawienia', [ShopSettingsController::class, 'update'])->name('settings.update');
+
+            // Integracje (klucze uslug: Paynow, Fakturownia, Google Analytics).
+            Route::get('/integracje', [IntegrationController::class, 'edit'])->name('integrations.edit');
+            Route::post('/integracje', [IntegrationController::class, 'update'])->name('integrations.update');
+
+            // Auto-uzupelnienie danych firmy po NIP (Biala lista MF). Zwraca JSON.
+            Route::post('/firma/z-nip', CompanyLookupController::class)
+                ->middleware('throttle:20,1')
+                ->name('company.lookup');
+        });
 
         // Usunięcie własnego sklepu (RODO). Osobny ekran z rachunkiem strat;
         // zlecenie ustawia karencję i gasi storefront, kasuje `shops:purge`.
@@ -331,42 +358,31 @@ Route::middleware(['auth', 'role:seller', 'ensure.consents'])
         // kasuje sklep, kasując pliki i bazę — a zostawienie tego ekranu daje
         // przycisk, który po siedmiu dniach uruchamia `shops:purge` i usuwa
         // sklep razem z całą historią sprzedaży.
-        Route::middleware('saas')->group(function () {
+        Route::middleware(['saas', 'role:seller'])->group(function () {
             Route::get('/usun-sklep', [ShopDeletionController::class, 'show'])->name('deletion.show');
             Route::post('/usun-sklep', [ShopDeletionController::class, 'store'])->name('deletion.store');
             Route::post('/usun-sklep/cofnij', [ShopDeletionController::class, 'cancel'])->name('deletion.cancel');
         });
 
         // Wygląd sklepu (logo, kolor przewodni, szablon motywu). Edycja przez POST.
-        Route::get('/wyglad', [AppearanceController::class, 'edit'])->name('appearance.edit');
-        Route::post('/wyglad', [AppearanceController::class, 'update'])->name('appearance.update');
-
-        // Ustawienia sklepu (sprzedaż/VAT, dostawa, płatności, włączniki
-        // integracji). Edycja przez POST.
-        Route::get('/ustawienia', [ShopSettingsController::class, 'edit'])->name('settings.edit');
-        Route::post('/ustawienia', [ShopSettingsController::class, 'update'])->name('settings.update');
-
-        // Integracje (klucze usług: Paynow, Fakturownia, Google Analytics).
-        // Edycja przez POST.
-        Route::get('/integracje', [IntegrationController::class, 'edit'])->name('integrations.edit');
-        Route::post('/integracje', [IntegrationController::class, 'update'])->name('integrations.update');
-
-        // Auto-uzupełnienie danych firmy po NIP (Biała lista MF). Zwraca JSON.
-        Route::post('/firma/z-nip', CompanyLookupController::class)
-            ->middleware('throttle:20,1')
-            ->name('company.lookup');
+        Route::middleware('section:content')->group(function () {
+            Route::get('/wyglad', [AppearanceController::class, 'edit'])->name('appearance.edit');
+            Route::post('/wyglad', [AppearanceController::class, 'update'])->name('appearance.update');
+        });
 
         // Zamówienia (podgląd + zmiana statusu). Lista i szczegół; zmiana statusu przez POST.
-        Route::get('/zamowienia', [OrderController::class, 'index'])->name('orders.index');
-        Route::get('/zamowienia/{order}', [OrderController::class, 'show'])->name('orders.show');
-        // Etykieta przesyłki: pobieramy ją z InPostu przez NASZ serwer, bo token
-        // ShipX nie ma prawa opuścić backendu. GET, bo to czyste pobranie pliku.
-        Route::get('/zamowienia/{order}/etykieta', [OrderController::class, 'label'])->name('orders.label');
+        Route::middleware('section:orders')->group(function () {
+            Route::get('/zamowienia', [OrderController::class, 'index'])->name('orders.index');
+            Route::get('/zamowienia/{order}', [OrderController::class, 'show'])->name('orders.show');
+            // Etykieta przesyłki: pobieramy ją z InPostu przez NASZ serwer, bo token
+            // ShipX nie ma prawa opuścić backendu. GET, bo to czyste pobranie pliku.
+            Route::get('/zamowienia/{order}/etykieta', [OrderController::class, 'label'])->name('orders.label');
 
-        // Odbiór kuriera: JEDNO zlecenie na wiele paczek (dopłata jest za
-        // przyjazd, nie za paczkę). Osobny ekran, bo to operacja na zbiorze
-        // przesyłek, a nie na pojedynczym zamówieniu.
-        Route::get('/odbior-kuriera', [ShipmentPickupController::class, 'index'])->name('shipments.pickup');
+            // Odbiór kuriera: JEDNO zlecenie na wiele paczek (dopłata jest za
+            // przyjazd, nie za paczkę). Osobny ekran, bo to operacja na zbiorze
+            // przesyłek, a nie na pojedynczym zamówieniu.
+            Route::get('/odbior-kuriera', [ShipmentPickupController::class, 'index'])->name('shipments.pickup');
+        });
 
         // „Mój pakiet" — co sprzedawca ma wykupione i do kiedy, plus ZAKUP ONLINE
         // przez Paynow z konta platformy (klucze produkcyjne w `.env`, webhook
@@ -376,66 +392,76 @@ Route::middleware(['auth', 'role:seller', 'ensure.consents'])
         //
         // `saas`: sklep dedykowany jest opłacony jednorazowo i nie ma pakietu
         // do oglądania, kupowania ani przedłużania.
+        // `role:seller`: pracownik nie kupuje cudzego abonamentu ani nie oglada
+        // rozliczen sklepu, w ktorym pracuje. To sprawa wlasciciela i tylko jego.
         Route::get('/pakiet', [PackageController::class, 'show'])
-            ->middleware('saas')->name('package.show');
+            ->middleware(['saas', 'role:seller'])->name('package.show');
         Route::post('/pakiet/kup/{package}', [PackageController::class, 'purchase'])
-            ->middleware(['saas', 'throttle:10,1'])->name('package.purchase');
+            ->middleware(['saas', 'role:seller', 'throttle:10,1'])->name('package.purchase');
 
         // Kartoteka klientów — we wszystkich pakietach. Identyfikatorem jest
         // ADRES E-MAIL, bo klient bez konta (gość) nie ma `id`; `where` na
         // wzorcu przepuszcza kropki i małpę w segmencie ścieżki.
-        Route::get('/klienci', [CustomerController::class, 'index'])->name('customers.index');
-        Route::get('/klienci/{email}', [CustomerController::class, 'show'])
-            ->where('email', '.*')->name('customers.show');
+        Route::middleware('section:customers')->group(function () {
+            Route::get('/klienci', [CustomerController::class, 'index'])->name('customers.index');
+            Route::get('/klienci/{email}', [CustomerController::class, 'show'])
+                ->where('email', '.*')->name('customers.show');
+        });
 
         // Kody rabatowe (funkcja płatna — uprawnienie `discount_codes`, Pawilon).
         // Bez uprawnienia strona pokazuje zachętę zamiast narzędzia.
-        Route::get('/kody-rabatowe', [DiscountCodeController::class, 'index'])->name('discounts.index');
-        Route::get('/kody-rabatowe/nowy', [DiscountCodeController::class, 'create'])->name('discounts.create');
-        Route::get('/kody-rabatowe/{discountCode}/edycja', [DiscountCodeController::class, 'edit'])->name('discounts.edit');
-        Route::post('/kody-rabatowe/{discountCode}/przelacz', [DiscountCodeController::class, 'toggle'])->name('discounts.toggle');
-        Route::post('/kody-rabatowe/{discountCode}/usun', [DiscountCodeController::class, 'destroy'])->name('discounts.destroy');
+        Route::middleware('section:marketing')->group(function () {
+            Route::get('/kody-rabatowe', [DiscountCodeController::class, 'index'])->name('discounts.index');
+            Route::get('/kody-rabatowe/nowy', [DiscountCodeController::class, 'create'])->name('discounts.create');
+            Route::get('/kody-rabatowe/{discountCode}/edycja', [DiscountCodeController::class, 'edit'])->name('discounts.edit');
+            Route::post('/kody-rabatowe/{discountCode}/przelacz', [DiscountCodeController::class, 'toggle'])->name('discounts.toggle');
+            Route::post('/kody-rabatowe/{discountCode}/usun', [DiscountCodeController::class, 'destroy'])->name('discounts.destroy');
 
-        // Wiadomości do klientów (korespondencja seryjna — uprawnienie `bulk_mail`,
-        // Pawilon). Kontroler prowadzi wyłącznie szkic; wysyłkę (próbka do siebie
-        // i wysyłka do klientów) obsługuje komponent Livewire na stronie edycji.
-        Route::get('/wiadomosci', [BulkMailingController::class, 'index'])->name('mailings.index');
-        Route::get('/wiadomosci/nowa', [BulkMailingController::class, 'create'])->name('mailings.create');
-        Route::post('/wiadomosci', [BulkMailingController::class, 'store'])->name('mailings.store');
-        Route::get('/wiadomosci/{bulkMailing}/edycja', [BulkMailingController::class, 'edit'])->name('mailings.edit');
-        Route::post('/wiadomosci/{bulkMailing}', [BulkMailingController::class, 'update'])->name('mailings.update');
-        Route::post('/wiadomosci/{bulkMailing}/usun', [BulkMailingController::class, 'destroy'])->name('mailings.destroy');
+            // Wiadomości do klientów (korespondencja seryjna — uprawnienie `bulk_mail`,
+            // Pawilon). Kontroler prowadzi wyłącznie szkic; wysyłkę (próbka do siebie
+            // i wysyłka do klientów) obsługuje komponent Livewire na stronie edycji.
+            Route::get('/wiadomosci', [BulkMailingController::class, 'index'])->name('mailings.index');
+            Route::get('/wiadomosci/nowa', [BulkMailingController::class, 'create'])->name('mailings.create');
+            Route::post('/wiadomosci', [BulkMailingController::class, 'store'])->name('mailings.store');
+            Route::get('/wiadomosci/{bulkMailing}/edycja', [BulkMailingController::class, 'edit'])->name('mailings.edit');
+            Route::post('/wiadomosci/{bulkMailing}', [BulkMailingController::class, 'update'])->name('mailings.update');
+            Route::post('/wiadomosci/{bulkMailing}/usun', [BulkMailingController::class, 'destroy'])->name('mailings.destroy');
+        });
 
         // Informacje (strony tekstowe storefrontu). Edycja/usuwanie przez POST;
         // kolejność (drag & drop) zapisywana AJAX-em przez POST.
-        Route::get('/informacje', [PageController::class, 'index'])->name('pages.index');
-        Route::get('/informacje/nowa', [PageController::class, 'create'])->name('pages.create');
-        Route::post('/informacje', [PageController::class, 'store'])->name('pages.store');
-        Route::post('/informacje/kolejnosc', [PageController::class, 'reorder'])->name('pages.reorder');
-        Route::get('/informacje/{page}/edycja', [PageController::class, 'edit'])->name('pages.edit');
-        Route::post('/informacje/{page}', [PageController::class, 'update'])->name('pages.update');
-        Route::post('/informacje/{page}/usun', [PageController::class, 'destroy'])->name('pages.destroy');
+        Route::middleware('section:content')->group(function () {
+            Route::get('/informacje', [PageController::class, 'index'])->name('pages.index');
+            Route::get('/informacje/nowa', [PageController::class, 'create'])->name('pages.create');
+            Route::post('/informacje', [PageController::class, 'store'])->name('pages.store');
+            Route::post('/informacje/kolejnosc', [PageController::class, 'reorder'])->name('pages.reorder');
+            Route::get('/informacje/{page}/edycja', [PageController::class, 'edit'])->name('pages.edit');
+            Route::post('/informacje/{page}', [PageController::class, 'update'])->name('pages.update');
+            Route::post('/informacje/{page}/usun', [PageController::class, 'destroy'])->name('pages.destroy');
 
-        // Wzór regulaminu sklepu. `wzor` otwiera kreator (pola wypełnione
-        // podpowiedziami z profilu), `wzor/wstaw` wkleja gotowy dokument do
-        // EDYTORA — bez zapisu treści. Publikuje dopiero „Zapisz" sprzedawcy,
-        // bo podstrona systemowa jest zawsze opublikowana i zapis oznaczałby
-        // publikację w jego imieniu.
-        Route::post('/informacje/{page}/wzor', [PageController::class, 'termsWizard'])->name('pages.terms');
-        Route::post('/informacje/{page}/wzor/wstaw', [PageController::class, 'insertTerms'])->name('pages.terms.insert');
+            // Wzór regulaminu sklepu. `wzor` otwiera kreator (pola wypełnione
+            // podpowiedziami z profilu), `wzor/wstaw` wkleja gotowy dokument do
+            // EDYTORA — bez zapisu treści. Publikuje dopiero „Zapisz" sprzedawcy,
+            // bo podstrona systemowa jest zawsze opublikowana i zapis oznaczałby
+            // publikację w jego imieniu.
+            Route::post('/informacje/{page}/wzor', [PageController::class, 'termsWizard'])->name('pages.terms');
+            Route::post('/informacje/{page}/wzor/wstaw', [PageController::class, 'insertTerms'])->name('pages.terms.insert');
+        });
 
         // Produkty (edycja/usuwanie przez POST — FOUNDATION sek. 5).
-        Route::get('/produkty', [ProductController::class, 'index'])->name('products.index');
-        Route::get('/produkty/nowy', [ProductController::class, 'create'])->name('products.create');
-        Route::post('/produkty', [ProductController::class, 'store'])->name('products.store');
-        Route::get('/produkty/{product}/edycja', [ProductController::class, 'edit'])->name('products.edit');
-        Route::post('/produkty/{product}', [ProductController::class, 'update'])->name('products.update');
-        Route::post('/produkty/{product}/usun', [ProductController::class, 'destroy'])->name('products.destroy');
+        Route::middleware('section:products')->group(function () {
+            Route::get('/produkty', [ProductController::class, 'index'])->name('products.index');
+            Route::get('/produkty/nowy', [ProductController::class, 'create'])->name('products.create');
+            Route::post('/produkty', [ProductController::class, 'store'])->name('products.store');
+            Route::get('/produkty/{product}/edycja', [ProductController::class, 'edit'])->name('products.edit');
+            Route::post('/produkty/{product}', [ProductController::class, 'update'])->name('products.update');
+            Route::post('/produkty/{product}/usun', [ProductController::class, 'destroy'])->name('products.destroy');
 
-        // Zdjęcia produktu.
-        Route::post('/produkty/{product}/zdjecia', [ProductImageController::class, 'store'])->name('products.images.store');
-        Route::post('/produkty/{product}/zdjecia/kolejnosc', [ProductImageController::class, 'reorder'])->name('products.images.reorder');
-        Route::post('/produkty/{product}/zdjecia/{image}/usun', [ProductImageController::class, 'destroy'])->name('products.images.destroy');
+            // Zdjęcia produktu.
+            Route::post('/produkty/{product}/zdjecia', [ProductImageController::class, 'store'])->name('products.images.store');
+            Route::post('/produkty/{product}/zdjecia/kolejnosc', [ProductImageController::class, 'reorder'])->name('products.images.reorder');
+            Route::post('/produkty/{product}/zdjecia/{image}/usun', [ProductImageController::class, 'destroy'])->name('products.images.destroy');
+        });
     });
 
 /*

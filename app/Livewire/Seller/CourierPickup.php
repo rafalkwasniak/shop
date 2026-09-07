@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Seller;
 
+use App\Enums\PanelSection;
 use App\Models\DispatchOrder;
 use App\Services\Shipping\CourierPickup as CourierPickupService;
 use Livewire\Component;
@@ -26,6 +27,18 @@ class CourierPickup extends Component
     public string $comment = '';
 
     public bool $confirming = false;
+
+    /**
+     * Brama działu przy KAŻDYM żądaniu, nie tylko przy pierwszym renderze.
+     *
+     * `booted()` jest tu jedynym poprawnym miejscem: `mount()` wykonuje się raz,
+     * a kolejne akcje przychodzą do `livewire/update` i nie przechodzą przez
+     * `section:` z trasy, na której komponent się renderował.
+     */
+    public function booted(): void
+    {
+        abort_unless((bool) auth()->user()?->canAccess(PanelSection::Orders), 403);
+    }
 
     public function mount(): void
     {

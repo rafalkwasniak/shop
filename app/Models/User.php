@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Enums\ConsentChannel;
+use App\Enums\PanelSection;
 use App\Enums\LegalDocumentType;
 use App\Enums\UserRole;
 use Closure;
@@ -207,6 +208,27 @@ class User extends Authenticatable
     }
 
     /**
+     * Czy ten użytkownik ma dostęp do działu panelu.
+     *
+     * JEDNO ŹRÓDŁO PRAWDY dla trzech miejsc, które muszą odpowiadać identycznie:
+     * bramy tras (`section:`), filtra nawigacji i komponentów Livewire. Rozjazd
+     * między nimi nie jest usterką kosmetyczną — menu pokazujące pozycję, która
+     * kończy się 403, wygląda jak awaria, a komponent Livewire bez sprawdzenia
+     * jest po prostu obejściem bramy: żądania do `livewire/update` nie
+     * przechodzą przez middleware trasy, na której komponent się renderował.
+     *
+     * Właściciel przechodzi zawsze — dział jest pojęciem wyłącznie pracowniczym.
+     */
+    public function canAccess(PanelSection $section): bool
+    {
+        if ($this->isEmployee()) {
+            return (bool) $this->activeEmployment()?->allows($section);
+        }
+
+        return true;
+    }
+
+    /**
      * Czy konto przeszło aktywację, czyli czy sprzedawca ustawił własne hasło.
      *
      * UWAGA na pułapkę: rejestracja NIE zostawia pustego hasła — wstawia losowy
@@ -247,6 +269,15 @@ class User extends Authenticatable
      */
     public function outstandingConsents(): Collection
     {
+        if ($this->isEmployee()) {
+            // Pracownik nie jest stroną umowy z Kramio — regulamin i politykę
+            // akceptuje SPRZEDAWCA, który go zaprosił, i to on odpowiada za
+            // dopuszczone przez siebie osoby. Gdyby brama zgód dotyczyła też
+            // pracownika, pierwsze logowanie kończyłoby się pętlą na ekranie
+            // dokumentów, których nie ma prawa zaakceptować w cudzym imieniu.
+            return collect();
+        }
+
         $acceptedIds = $this->consents()->pluck('legal_document_id')->all();
 
         return collect(config('legal.required_types'))

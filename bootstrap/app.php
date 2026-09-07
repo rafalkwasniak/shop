@@ -4,6 +4,7 @@ use App\Http\Middleware\AuthenticateCustomer;
 use App\Http\Middleware\EnsureConsentsAreCurrent;
 use App\Http\Middleware\EnsureRegistrationIsOpen;
 use App\Http\Middleware\EnsureSaasMode;
+use App\Http\Middleware\EnsureSectionAccess;
 use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\RecordStorefrontTraffic;
 use App\Http\Middleware\ResolveShop;
@@ -25,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => EnsureUserHasRole::class,
             'ensure.consents' => EnsureConsentsAreCurrent::class,
+            'section' => EnsureSectionAccess::class,
             'tenant' => ResolveShop::class,
             'record.traffic' => RecordStorefrontTraffic::class,
             'auth.customer' => AuthenticateCustomer::class,

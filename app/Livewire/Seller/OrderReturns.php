@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Seller;
 
+use App\Enums\PanelSection;
 use App\Models\Order;
 use App\Models\OrderReturn;
 use Livewire\Component;
@@ -33,7 +34,17 @@ class OrderReturns extends Component
      */
     public function markRefunded(int $returnId): void
     {
-        abort_unless($this->order->shop_id === auth()->user()?->currentShop()?->id, 403);
+        $user = auth()->user();
+
+        // Sklep MUSI sie zgadzac, ale sam sklep nie wystarczy: zadanie do
+        // `livewire/update` nie przechodzi przez `section:` z trasy, na ktorej
+        // ten komponent sie renderowal. Bez drugiego warunku pracownik bez
+        // tego dzialu obchodzilby brame, wolajac komponent wprost.
+        abort_unless(
+            $this->order->shop_id === $user?->currentShop()?->id
+                && $user->canAccess(PanelSection::Orders),
+            403,
+        );
 
         // Zwrot bierzemy PRZEZ relację zamówienia — identyfikator z formularza
         // nie może sięgnąć zgłoszenia z cudzego zamówienia.

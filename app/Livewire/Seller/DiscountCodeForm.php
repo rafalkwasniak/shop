@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Seller;
 
+use App\Enums\PanelSection;
 use App\Enums\DiscountScope;
 use App\Enums\DiscountType;
 use App\Models\DiscountCode;
@@ -67,6 +68,18 @@ class DiscountCodeForm extends Component
      *                                         klienta" ze szczegółów zamówienia)
      * @param  array<string, string|int>  $listQuery  kontekst listy do powrotu
      */
+    /**
+     * Brama działu przy KAŻDYM żądaniu, nie tylko przy pierwszym renderze.
+     *
+     * `booted()` jest tu jedynym poprawnym miejscem: `mount()` wykonuje się raz,
+     * a kolejne akcje przychodzą do `livewire/update` i nie przechodzą przez
+     * `section:` z trasy, na której komponent się renderował.
+     */
+    public function booted(): void
+    {
+        abort_unless((bool) auth()->user()?->canAccess(PanelSection::Marketing), 403);
+    }
+
     public function mount(Shop $shop, ?DiscountCode $code = null, array $prefill = [], array $listQuery = []): void
     {
         $this->shop = $shop;

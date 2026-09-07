@@ -1,6 +1,10 @@
 <x-layouts.panel title="Pulpit sprzedawcy">
     <div class="grid gap-6 lg:grid-cols-3">
-        {{-- Postęp konfiguracji — liczony z realnych danych sklepu --}}
+        {{-- Postęp konfiguracji — liczony z realnych danych sklepu.
+             Tylko dla właściciela: każdy krok tej listy prowadzi na ekran
+             właścicielski (dane firmy, wygląd, pakiet), więc pracownikowi
+             pokazywałaby zadania, których nie ma prawa wykonać. --}}
+        @unless ($isEmployee)
         <div class="rounded-3xl border border-white/60 bg-white/70 p-6 backdrop-blur lg:col-span-2">
             @php($pct = $total > 0 ? (int) round($done / $total * 100) : 0)
             <div class="flex items-center justify-between">
@@ -53,6 +57,7 @@
                 </p>
             </div>
         </div>
+        @endunless
 
         {{-- Twój sklep --}}
         <div class="rounded-3xl border border-white/60 bg-white/70 p-6 backdrop-blur">
@@ -105,7 +110,7 @@
                          produktów), więc pasek postępu pokazywałby zawsze zero i
                          sugerował ograniczenie, którego nie ma. Nazwa pakietu i
                          termin abonamentu też nie mają tam adresata. --}}
-                    @if (\App\Support\Mode::saas())
+                    @if (\App\Support\Mode::saas() && ! $isEmployee)
                     <div class="mt-6 w-full text-left">
                         {{-- HR oddzielający sekcję pakietu od danych sklepu --}}
                         <div class="mx-auto w-4/5 border-t border-rose-200"></div>
@@ -154,6 +159,7 @@
                     @endif
 
                     <div class="mt-5 flex flex-wrap items-center justify-center gap-2">
+                        @unless ($isEmployee)
                         <a href="{{ route('seller.shop.edit') }}"
                             class="inline-flex rounded-2xl border border-stone-200 bg-white/70 px-5 py-2.5 text-sm font-semibold text-stone-700 transition hover:bg-white">
                             Edytuj sklep
@@ -164,6 +170,7 @@
                                 Mój pakiet
                             </a>
                         @endif
+                        @endunless
                     </div>
                 </div>
             @else
@@ -176,7 +183,11 @@
         </div>
     </div>
 
-    {{-- Sprzedaż — ruszy po dodaniu produktów i publikacji --}}
+    {{-- Sprzedaż — ruszy po dodaniu produktów i publikacji.
+         Za działem „Zamówienia": kafle prowadzą na listę zamówień i pokazują
+         przychód sklepu. Pracownik od samych produktów nie ma po co ich
+         oglądać, a odnośnik kończący się 403 wygląda jak usterka. --}}
+    @if ($canSeeOrders)
     <div class="mt-8">
         <h2 class="text-sm font-medium text-stone-500">Twoja sprzedaż</h2>
         <div class="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -211,4 +222,5 @@
             @endforeach
         </div>
     </div>
+    @endif
 </x-layouts.panel>
