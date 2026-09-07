@@ -6,6 +6,7 @@ use App\Models\PackagePayment;
 use App\Models\Shop;
 use App\Services\PackagePaymentService;
 use App\Support\Money;
+use App\Support\PackageFeatures;
 use App\Support\PackageUpgrade;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -177,7 +178,12 @@ class PackagePaymentRecorder extends Component
     {
         return [
             'shop_id' => ['required', 'exists:shops,id'],
-            'target_package' => ['required', 'string', 'in:'.implode(',', array_keys(config('shop.packages')))],
+            // `purchasable()`, nie caly cennik: wplate mozna zarejestrowac
+            // wylacznie za pakiet, ktory jest w OFERCIE. „Sklep dedykowany" ma
+            // cene zero i nie jest sprzedawany przez platforme, wiec wplata za
+            // niego nie istnieje — a wybor z listy przypisywalby sklepowi preset
+            // z uprawnieniami bez limitow.
+            'target_package' => ['required', 'string', 'in:'.implode(',', array_keys(PackageFeatures::purchasable()))],
             'amount' => ['required', 'numeric', 'min:0.01', 'max:1000000'],
             // Wpłata z przyszłości to zawsze pomyłka w dacie.
             'paid_at' => ['required', 'date', 'before_or_equal:today'],
@@ -236,7 +242,7 @@ class PackagePaymentRecorder extends Component
     {
         return view('livewire.administrator.package-payment-recorder', [
             'shops' => $this->shops(),
-            'packages' => config('shop.packages'),
+            'packages' => PackageFeatures::purchasable(),
             'methods' => PackagePayment::manualMethods(),
             'summary' => $this->changeSummary(),
         ]);

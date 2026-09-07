@@ -343,4 +343,23 @@ class PackagePaymentRegisterTest extends TestCase
             ->get(route('administrator.packages.payments.create'))
             ->assertForbidden();
     }
+
+    /**
+     * Wpłatę rejestruje się wyłącznie za pakiet Z OFERTY. „Sklep dedykowany" ma
+     * cenę zero i nie jest sprzedawany przez platformę — wpłata za niego nie
+     * istnieje, a wybór z listy przypisałby sklepowi preset z uprawnieniami bez
+     * limitów, bezterminowo.
+     */
+    public function test_dedicated_preset_cannot_be_paid_for(): void
+    {
+        $shop = Shop::factory()->package('stall')->create();
+
+        Livewire::actingAs(User::factory()->admin()->create())
+            ->test(PackagePaymentRecorder::class, ['shop' => $shop])
+            ->set('target_package', 'dedicated')
+            ->call('save')
+            ->assertHasErrors('target_package');
+
+        $this->assertSame('stall', $shop->fresh()->package);
+    }
 }

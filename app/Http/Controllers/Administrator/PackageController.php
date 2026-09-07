@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Administrator;
 use App\Http\Controllers\Controller;
 use App\Models\PackagePayment;
 use App\Support\PackageAttention;
+use App\Support\PackageFeatures;
 use App\Support\PackageRevenue;
 use Illuminate\Contracts\Support\Renderable;
 use Illuminate\Http\Request;
@@ -78,7 +79,9 @@ class PackageController extends Controller
                 ->withQueryString(),
             'filters' => $filters,
             'sum' => $sum,
-            'packages' => config('shop.packages'),
+            // Filtr listy wplat pokazuje pakiety Z OFERTY — za preset spoza niej
+            // nikt nie zaplacil i zaplacic nie moze (patrz PackagePaymentRecorder).
+            'packages' => PackageFeatures::purchasable(),
         ]);
     }
 
