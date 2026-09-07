@@ -8,6 +8,18 @@ metadata:
   modified: 2026-09-07T17:21:53.377Z
 ---
 
+## ZAMKNIĘTE 2026-09-07 — moduł kompletny w OBU produktach (Kramio 1803, Magellan 2072)
+
+**Dwa razy uznałem moduł za skończony i dwa razy pytanie Rafała („czy na pewno?") wyłapało realną lukę, której nie złapał żaden test:**
+1. zejście z pakietu nie gasiło kont pracowniczych,
+2. usunięcie sklepu zostawiało konta pracowników — imię, nazwisko, e-mail obcej osoby i działające logowanie po sklepie, którego już nie ma.
+
+**Wniosek na przyszłość: przy funkcji dotykającej DRUGIEGO użytkownika przejść cały cykl życia obu stron** — nadanie, wygaszenie, odebranie, usunięcie konta właściciela, usunięcie sklepu — zanim padnie słowo „skończone". Testy sprawdzały to, co wymyśliłem; luki były w miejscach, o których nie pomyślałem.
+
+Sprawdzone i CZYSTE: mailing platformy i lista sprzedawców w panelu admina filtrują `role = seller`, więc pracownik nie trafia ani do adresatów ofert, ani na listę sprzedawców.
+
+**Świadomie POZA zakresem** (nie są zaległościami): powiadomienia o nowych zamówieniach dla pracownika, rozbicie działu `orders` na poziomy, przełącznik sklepu przy kilku zatrudnieniach.
+
 **Stan 2026-09-07: FUNKCJA KOMPLETNA w Kramio — kroki 1–6 plus domknięcie zejścia z pakietu.** Suita 1728 → 1789.
 
 **LUKA znaleziona PO uznaniu funkcji za skończoną:** sklep po zejściu z pakietu zachowywał działające konta pracownicze. Naprawione (`ShopEmployee::isEffective()`), opisane w [[gotcha-package-gated-feature-must-expire]].
