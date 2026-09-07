@@ -14,7 +14,8 @@ metadata:
 - **Krok 2 ZROBIONY**: `PanelSection`, `shop_employees` (migracja PRZESZŁA na produkcji), `ShopEmployee`, `UserRole::Employee`, `max_employees` (Pawilon 5).
 - **Krok 3 ZROBIONY**: middleware `section:`, filtr menu, bramy w 9 komponentach Livewire, `role:seller,employee`, rzeczy właścicielskie za zagnieżdżonym `role:seller`.
 - **Krok 4 ZROBIONY**: ekran „Pracownicy" — lista z trzema stanami, zaproszenie, edycja działów w miejscu, odebranie i przywrócenie dostępu. Prawa kolumna („Jak to działa") POZA bramą pakietu — wzorzec z Kodów rabatowych, wskazany przez Rafała.
-- **Krok 5 CZEKA**: mail z zaproszeniem + aktywacja. **Etykieta w cenniku (`PackageFeatures::labels()`) jest ZAKOMENTOWANA — odkomentować dopiero, gdy zaproszenie zadziała.**
+- **Krok 5 ZROBIONY**: broker `invitation` (7 dni), mail w brandingu SKLEPU, ekran ustawienia hasła, „wyślij ponownie", unieważnianie zaproszenia przy odebraniu dostępu. **Etykieta w cenniku i kafelek na landingu ODKOMENTOWANE — funkcja działa.** Brzmienie etykiety: „Do 5 kont pracowników z dostępem do wybranych działów sklepu" (Rafał: liczba na początku, jak w „Do 600 produktów").
+- **KROK 6 ZOSTAŁ**: (a) `user_id` w `OrderStatusEvent` — dziennik nie zapisuje AUTORA zmiany, a z pracownikami to cała jego wartość; (b) zdanie w regulaminie o dopuszczaniu osób trzecich do danych klientów.
 
 ### Gotchy wyłapane przy kroku 3 (nie z planu)
 
