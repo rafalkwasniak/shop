@@ -21,7 +21,7 @@
 - [Wzory dokumentów dla sprzedawców](plan-seller-legal-templates.md) — regulamin ZROBIONY, zostaje POLITYKA. NIP nie może być twardym warunkiem.
 
 ## Otwarte / do decyzji
-- [PLAN: pracownicy sklepu](plan-shop-employees.md) — przyjęty 07.09, ZERO kodu. Nazwa `employee`. Kramio pierwsze, potem cherry-pick.
+- [Pracownicy sklepu: kroki 1-2 WDROŻONE](plan-shop-employees.md) — krok 3 w toku. **Cherry-pick do Magellana jeszcze NIE zrobiony.**
 - [Magellan Bay — osobny projekt](plan-magellan-bay-separate-project.md) — **oferta 6 000 zł wysłana 01.09, czekamy.** NIE część roadmapy Kramio.
 - [OTWARTE: limit 250 procesów](open-hosting-process-limit.md) — **w trakcie pracy testy FILTROWANE**, pełna suita raz przed commitem.
 - [KIERUNEK: NOWY SERWER](plan-dev-environment.md) — przeprowadzka planowana, termin nieustalony.
@@ -33,6 +33,8 @@
 - [Panel admina — KOMPLETNY](plan-admin-panel-and-landing.md) · [Wiadomości do sprzedawców](plan-platform-mailing.md) — adresaci TYLKO przez `User::activeMarketingConsent()`.
 
 ## Pakiety / biznes
+- [Limity 60/300/600 a gęstość stron](plan-product-page-density.md) — **limit i sufit drabinki zmieniać PARAMI.**
+- [Uprawnienia są LEPKIE](gotcha-entitlements-are-sticky-raise-needs-command.md) — po zmianie cennika `packages:sync-entitlements --apply`.
 - [Cennik pakietów](pricing-packages.md) — Kram 0 / Stragan 750 / Pawilon 1500 zł/rok BRUTTO; drabinka 2,0×.
 - [Przekreślona cena — ZAMKNIĘTE](open-monthly-plan-vs-struck-price.md) — **nie podnosić ponownie.**
 - [Wygaśnięcie pakietu](plan-subscription-expiry.md) — karencja 7 dni, maile 14/7/1.
