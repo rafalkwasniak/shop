@@ -53,22 +53,20 @@
                     </label>
                 @endforeach
 
-                <div class="flex items-center justify-between gap-4 rounded-2xl border border-stone-200 bg-white/60 px-4 py-3">
-                    <label for="max_products" class="text-sm font-medium text-stone-800">Limit produktów</label>
-                    <input type="number" id="max_products" wire:model="max_products" min="0" style="width: 7rem"
-                        class="rounded-xl border border-stone-200 bg-white px-3 py-2 text-right text-sm shadow-sm focus:border-amber-500 focus:outline-none focus:ring-4 focus:ring-amber-500/15">
-                </div>
-                @error('max_products') <p class="text-sm text-rose-600">{{ $message }}</p> @enderror
-
-                {{-- Tygodniowa pula zadań AI. Musi być w tym formularzu, bo zapis
-                     pisze CAŁY snapshot — bez tego pola każde „Zapisz" kasowało
-                     ręcznie nadany limit. --}}
-                <div class="flex items-center justify-between gap-4 rounded-2xl border border-stone-200 bg-white/60 px-4 py-3">
-                    <label for="ai_weekly_limit" class="text-sm font-medium text-stone-800">Zadania AI / tydzień</label>
-                    <input type="number" id="ai_weekly_limit" wire:model="ai_weekly_limit" min="0" style="width: 7rem"
-                        class="rounded-xl border border-stone-200 bg-white px-3 py-2 text-right text-sm shadow-sm focus:border-amber-500 focus:outline-none focus:ring-4 focus:ring-amber-500/15">
-                </div>
-                @error('ai_weekly_limit') <p class="text-sm text-rose-600">{{ $message }}</p> @enderror
+                {{-- Uprawnienia LICZBOWE lecą z jednej listy (`numericEntitlements()`),
+                     tak jak przełączniki obok. Wypisane z ręki gubiły się przy
+                     dokładaniu nowego: zapis pisze CAŁY snapshot, więc klucz bez
+                     pola w formularzu znikał przy każdym „Zapisz" i kasował ręczne
+                     nadanie. Zdarzyło się to przy puli AI, a potem przy kontach
+                     pracowniczych. --}}
+                @foreach ($this->numericEntitlements() as $key => $label)
+                    <div class="flex items-center justify-between gap-4 rounded-2xl border border-stone-200 bg-white/60 px-4 py-3">
+                        <label for="{{ $key }}" class="text-sm font-medium text-stone-800">{{ $label }}</label>
+                        <input type="number" id="{{ $key }}" wire:model="{{ $key }}" min="0" style="width: 7rem"
+                            class="rounded-xl border border-stone-200 bg-white px-3 py-2 text-right text-sm shadow-sm focus:border-amber-500 focus:outline-none focus:ring-4 focus:ring-amber-500/15">
+                    </div>
+                    @error($key) <p class="text-sm text-rose-600">{{ $message }}</p> @enderror
+                @endforeach
             </div>
         </div>
 

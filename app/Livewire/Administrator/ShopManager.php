@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Administrator;
 
+use App\Models\PackageChange;
 use App\Models\Shop;
 use App\Services\ProductLimitLock;
 use Illuminate\Support\Carbon;
@@ -31,6 +32,9 @@ class ShopManager extends Component
     /** Tygodniowa pula zadań AI — uprawnienie liczbowe, jak limit produktów. */
     public int $ai_weekly_limit = 0;
 
+    /** Ile kont pracowniczych mieści sklep. Zero = funkcji nie ma. */
+    public int $max_employees = 0;
+
     public bool $online_payments = false;
 
     public bool $courier_shipping = false;
@@ -52,6 +56,27 @@ class ShopManager extends Component
     public string $subscription_ends_at = '';
 
     public bool $comped = false;
+
+    /**
+     * Kanoniczne klucze uprawnień LICZBOWYCH + etykiety PL (do UI).
+     *
+     * Lista, a nie trzy wypisane z ręki miejsca — bo pominięcie uprawnienia w
+     * KTÓRYMKOLWIEK z nich kończy się tak samo: zapis odbudowuje cały snapshot,
+     * więc klucz spoza formularza po prostu z niego znika i ręczne nadanie
+     * przepada. Zdarzyło się to raz przy puli AI i drugi raz przy kontach
+     * pracowniczych, zanim w ogóle trafiły do konsoli. Nowe uprawnienie liczbowe
+     * dopisuje się TU i w widoku — mount, preset, walidacja i zapis czytają stąd.
+     *
+     * @return array<string, string>
+     */
+    public function numericEntitlements(): array
+    {
+        return [
+            'max_products' => 'Limit produktów',
+            'ai_weekly_limit' => 'Zadania AI / tydzień',
+            'max_employees' => 'Konta pracowników',
+        ];
+    }
 
     /**
      * Kanoniczne klucze uprawnień boolowskich + etykiety PL (do UI).
@@ -79,8 +104,9 @@ class ShopManager extends Component
         // Po wygaśnięciu abonamentu odczyt efektywny dałby uprawnienia Kramu, a
         // zapis takiego formularza wykasowałby snapshot — i po opłacie nie byłoby
         // czego przywrócić.
-        $this->max_products = (int) $shop->rawEntitlement('max_products');
-        $this->ai_weekly_limit = (int) $shop->rawEntitlement('ai_weekly_limit');
+        foreach (array_keys($this->numericEntitlements()) as $key) {
+            $this->{$key} = (int) $shop->rawEntitlement($key);
+        }
 
         foreach (array_keys($this->booleanEntitlements()) as $key) {
             $this->{$key} = (bool) $shop->rawEntitlement($key);
@@ -104,8 +130,9 @@ class ShopManager extends Component
         }
 
         $this->package = $slug;
-        $this->max_products = (int) ($package['entitlements']['max_products'] ?? 0);
-        $this->ai_weekly_limit = (int) ($package['entitlements']['ai_weekly_limit'] ?? 0);
+        foreach (array_keys($this->numericEntitlements()) as $key) {
+            $this->{$key} = (int) ($package['entitlements'][$key] ?? 0);
+        }
 
         foreach (array_keys($this->booleanEntitlements()) as $key) {
             $this->{$key} = (bool) ($package['entitlements'][$key] ?? false);
@@ -121,11 +148,12 @@ class ShopManager extends Component
     {
         return [
             'package' => ['required', 'string', 'in:'.implode(',', array_keys(config('shop.packages')))],
-            'max_products' => ['required', 'integer', 'min:0', 'max:100000'],
-            'ai_weekly_limit' => ['required', 'integer', 'min:0', 'max:100000'],
             'price_yearly' => ['required', 'numeric', 'min:0', 'max:1000000'],
             'subscription_ends_at' => ['nullable', 'date'],
             'comped' => ['boolean'],
+            ...collect(array_keys($this->numericEntitlements()))
+                ->mapWithKeys(fn (string $key) => [$key => ['required', 'integer', 'min:0', 'max:100000']])
+                ->all(),
         ];
     }
 
@@ -133,12 +161,14 @@ class ShopManager extends Component
     {
         $this->validate();
 
-        // Snapshot musi nieść WSZYSTKIE uprawnienia, także liczbowe — pominięcie
-        // `ai_weekly_limit` kasowało ręczne nadanie limitu AI przy każdym zapisie.
-        $entitlements = [
-            'max_products' => $this->max_products,
-            'ai_weekly_limit' => $this->ai_weekly_limit,
-        ];
+        // Snapshot musi nieść WSZYSTKIE uprawnienia, także liczbowe — klucz
+        // pominięty tutaj znika ze snapshotu przy każdym „Zapisz". Stąd pętla
+        // po zadeklarowanej liście zamiast wypisywania kluczy z ręki.
+        $entitlements = [];
+
+        foreach (array_keys($this->numericEntitlements()) as $key) {
+            $entitlements[$key] = (int) $this->{$key};
+        }
 
         foreach (array_keys($this->booleanEntitlements()) as $key) {
             $entitlements[$key] = (bool) $this->{$key};
@@ -157,7 +187,7 @@ class ShopManager extends Component
         // Historia pakietu: ręczne nadanie musi być widoczne dla sprzedawcy,
         // inaczej pakiet w panelu wygląda, jakby wziął się z powietrza.
         // Metoda sama pomija wpis, gdy zmieniły się tylko uprawnienia.
-        $this->shop->refresh()->recordPackageChange(\App\Models\PackageChange::SOURCE_ADMIN);
+        $this->shop->refresh()->recordPackageChange(PackageChange::SOURCE_ADMIN);
 
         // Zamek limitu w obie strony: przedłużenie terminu z ręki przywraca
         // schowane produkty, obniżenie limitu chowa nadwyżkę. Bez tego ręczna

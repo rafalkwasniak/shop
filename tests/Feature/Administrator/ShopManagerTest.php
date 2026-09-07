@@ -110,4 +110,68 @@ class ShopManagerTest extends TestCase
         $this->assertTrue($fresh->comped);
         $this->assertSame(50.0, $fresh->priceYearly());
     }
+
+    /**
+     * SEDNO KONSOLI: uprawnienie nadaje się GESTEM, poza pakietem. Kram nie ma
+     * kont pracowniczych w cenniku, ale admin musi móc je dać konkretnemu
+     * sklepowi — dokładnie tak, jak daje wysyłkę kurierską.
+     */
+    public function test_admin_grants_employee_seats_outside_the_package(): void
+    {
+        $shop = Shop::factory()->package('stall')->create();
+        $this->assertFalse($shop->allowsEmployees());
+
+        Livewire::actingAs(User::factory()->admin()->create())
+            ->test(ShopManager::class, ['shop' => $shop])
+            ->set('max_employees', 3)
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $fresh = $shop->fresh();
+        $this->assertTrue($fresh->allowsEmployees());
+        $this->assertSame(3, $fresh->entitlement('max_employees'));
+        $this->assertSame(3, $fresh->employeeSlotsLeft());
+        // Pakiet zostaje Kramem — to nadanie, nie awans.
+        $this->assertSame('stall', $fresh->package);
+    }
+
+    /**
+     * REGRESJA NA PUŁAPKĘ, KTÓRA ZADZIAŁAŁA JUŻ DWA RAZY. Zapis odbudowuje cały
+     * snapshot, więc uprawnienie liczbowe bez pola w formularzu znikało przy
+     * każdym „Zapisz" — najpierw pula AI, potem konta pracownicze. Ten test
+     * pilnuje KAŻDEGO klucza z listy naraz, więc złapie też następny dołożony.
+     */
+    public function test_saving_preserves_every_numeric_entitlement(): void
+    {
+        $shop = Shop::factory()->package('pavilion')->create();
+        $shop->forceFill(['entitlements' => array_merge($shop->entitlements, [
+            'max_products' => 999,
+            'ai_weekly_limit' => 777,
+            'max_employees' => 9,
+        ])])->save();
+
+        Livewire::actingAs(User::factory()->admin()->create())
+            ->test(ShopManager::class, ['shop' => $shop->fresh()])
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $snapshot = $shop->fresh()->entitlements;
+
+        foreach (['max_products' => 999, 'ai_weekly_limit' => 777, 'max_employees' => 9] as $key => $value) {
+            $this->assertArrayHasKey($key, $snapshot, "Zapis konsoli zgubil uprawnienie {$key}.");
+            $this->assertSame($value, $snapshot[$key]);
+        }
+    }
+
+    public function test_preset_fills_employee_seats_from_the_package(): void
+    {
+        $shop = Shop::factory()->package('stall')->create();
+
+        Livewire::actingAs(User::factory()->admin()->create())
+            ->test(ShopManager::class, ['shop' => $shop])
+            ->call('applyPreset', 'pavilion')
+            ->assertSet('max_employees', (int) config('shop.packages.pavilion.entitlements.max_employees'))
+            ->call('applyPreset', 'stall')
+            ->assertSet('max_employees', 0);
+    }
 }
