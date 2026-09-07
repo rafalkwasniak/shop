@@ -34,6 +34,7 @@
 
 ## Pakiety / biznes
 - [Limity 60/300/600 a gęstość stron](plan-product-page-density.md) — **limit i sufit drabinki zmieniać PARAMI.**
+- [Funkcja za pakietem musi GASNĄĆ](gotcha-package-gated-feature-must-expire.md) — sprawdzić bramę I widok; wygaszać, nie kasować.
 - [Uprawnienia są LEPKIE](gotcha-entitlements-are-sticky-raise-needs-command.md) — po zmianie cennika `packages:sync-entitlements --apply`.
 - [Cennik pakietów](pricing-packages.md) — Kram 0 / Stragan 750 / Pawilon 1500 zł/rok BRUTTO; drabinka 2,0×.
 - [Przekreślona cena — ZAMKNIĘTE](open-monthly-plan-vs-struck-price.md) — **nie podnosić ponownie.**

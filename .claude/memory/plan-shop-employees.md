@@ -8,7 +8,9 @@ metadata:
   modified: 2026-09-07T17:21:53.377Z
 ---
 
-**Stan 2026-09-07: FUNKCJA KOMPLETNA w Kramio — kroki 1–6 zrobione.** Suita 1728 → 1786.
+**Stan 2026-09-07: FUNKCJA KOMPLETNA w Kramio — kroki 1–6 plus domknięcie zejścia z pakietu.** Suita 1728 → 1789.
+
+**LUKA znaleziona PO uznaniu funkcji za skończoną:** sklep po zejściu z pakietu zachowywał działające konta pracownicze. Naprawione (`ShopEmployee::isEffective()`), opisane w [[gotcha-package-gated-feature-must-expire]].
 
 **ZOSTAŁO JEDNO: `cherry-pick` do Magellana.** Handlowo poza zakresem oferty (patrz sekcja na dole) — decyzja Rafała. Im dłużej się zwleka, tym więcej konfliktów.
 
