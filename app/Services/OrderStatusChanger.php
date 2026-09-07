@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\OrderStatus;
 use App\Models\Order;
+use App\Models\User;
 use App\Models\Product;
 use Illuminate\Support\Facades\DB;
 
@@ -49,14 +50,14 @@ class OrderStatusChanger
      * (albo odwrotnie). Mail wychodzi dopiero po commicie — outbox nie może
      * obiecać czegoś, co za chwilę zostanie wycofane.
      */
-    public function change(Order $order, OrderStatus $to, ?string $note = null): bool
+    public function change(Order $order, OrderStatus $to, ?string $note = null, ?User $actor = null): bool
     {
         if (! $this->allows($order, $to)) {
             return false;
         }
 
-        $event = DB::transaction(function () use ($order, $to, $note) {
-            $event = $order->changeStatus($to, $note);
+        $event = DB::transaction(function () use ($order, $to, $note, $actor) {
+            $event = $order->changeStatus($to, $note, $actor);
 
             if ($event !== null && $to === OrderStatus::Cancelled) {
                 $this->returnStock($order);

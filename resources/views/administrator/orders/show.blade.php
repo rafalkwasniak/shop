@@ -122,6 +122,7 @@
                                 @if ($event->from_status)
                                     <span class="text-xs text-stone-400">z „{{ $event->from_status->label() }}"</span>
                                 @endif
+                                <span class="text-xs text-stone-400">· {{ $event->authorLabel() }}</span>
                                 @if (filled($event->note))
                                     <span class="w-full text-xs text-stone-500">{{ $event->note }}</span>
                                 @endif

@@ -98,7 +98,7 @@ class OrderController extends Controller
             'order' => $order->load([
                 'items',
                 'shop.owner',
-                'statusEvents' => fn ($query) => $query->oldest('created_at'),
+                'statusEvents' => fn ($query) => $query->with('author')->oldest('created_at'),
             ]),
         ]);
     }

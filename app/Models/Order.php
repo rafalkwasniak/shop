@@ -154,7 +154,7 @@ class Order extends Model
      * wołaj `OrderStatusChanger`, który dokłada te trzy rzeczy. Bezpośrednio
      * tylko tam, gdzie świadomie chcesz sam zapis (np. migracje danych).
      */
-    public function changeStatus(OrderStatus $to, ?string $note = null): ?OrderStatusEvent
+    public function changeStatus(OrderStatus $to, ?string $note = null, ?User $actor = null): ?OrderStatusEvent
     {
         if ($to === $this->status) {
             return null;
@@ -164,11 +164,22 @@ class Order extends Model
         $this->status = $to;
         $this->save();
 
-        return $this->statusEvents()->create([
+        $event = new OrderStatusEvent([
             'from_status' => $from,
             'to_status' => $to,
             'note' => $note,
         ]);
+
+        // Autor PRZEKAZYWANY, nie odczytywany z `auth()` w środku modelu.
+        // Sięganie po zalogowanego użytkownika z modelu podpisywałoby zdarzenia
+        // w miejscach, w których nikt świadomie o tym nie decyduje — a null
+        // („Automatycznie") jest tu poprawną odpowiedzią dla webhooka i crona,
+        // nie awarią do obejścia.
+        $event->user_id = $actor?->getKey();
+
+        $this->statusEvents()->save($event);
+
+        return $event;
     }
 
     /**

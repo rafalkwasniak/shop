@@ -23,7 +23,10 @@
             <li class="relative">
                 <span class="absolute -left-[21px] top-1.5 h-2 w-2 rounded-full bg-amber-400"></span>
                 <p class="text-sm font-medium text-stone-700">{{ $event->to_status->label() }}</p>
-                <p class="text-xs text-stone-400">{{ $event->created_at->format('d.m.Y, H:i') }}</p>
+                {{-- Podpis: „kto to zrobil" to pierwsze pytanie, gdy w panelu
+                     pracuje wiecej niz jedna osoba. `Automatycznie` znaczy
+                     webhook platnosci albo cron — nie brak danych. --}}
+                <p class="text-xs text-stone-400">{{ $event->created_at->format('d.m.Y, H:i') }} · {{ $event->authorLabel() }}</p>
                 @if (filled($event->note))
                     <p class="mt-0.5 text-xs italic text-stone-500">„{{ $event->note }}"</p>
                 @endif

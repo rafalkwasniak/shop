@@ -86,7 +86,10 @@ class OrderStatusManager extends Component
 
         // Reguły ścieżki i mail do kupującego — w serwisie, żeby nie dało się
         // ich ominąć innym punktem wejścia.
-        $changer->change($this->order, $target, $this->note !== '' ? trim($this->note) : null);
+        // Autor podpisany TU, bo tu wiadomo, kto klika. Webhook Paynow i cron
+        // wołają ten sam serwis bez użytkownika i ich wpisy zostają
+        // „Automatycznie" — to poprawna odpowiedź, nie luka w danych.
+        $changer->change($this->order, $target, $this->note !== '' ? trim($this->note) : null, auth()->user());
         $this->note = '';
         $this->pendingStatus = null;
 
@@ -119,6 +122,7 @@ class OrderStatusManager extends Component
             $this->order,
             OrderStatus::Cancelled,
             $this->cancelReason !== '' ? trim($this->cancelReason) : null,
+            auth()->user(),
         );
 
         $this->dismissCancel();
@@ -153,7 +157,9 @@ class OrderStatusManager extends Component
     public function render()
     {
         $flow = $this->order->flow();
-        $events = $this->order->statusEvents;
+        // `author` doladowany tu, a nie w widoku: bez tego kazde zdarzenie na
+        // osi czasu to osobne zapytanie (N+1 rosnacy z historia zamowienia).
+        $events = $this->order->statusEvents()->with('author')->oldest('id')->get();
 
         return view('livewire.seller.order-status-manager', [
             'statuses' => $flow->statuses(),

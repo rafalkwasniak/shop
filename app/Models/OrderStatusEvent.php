@@ -35,4 +35,32 @@ class OrderStatusEvent extends Model
     {
         return $this->belongsTo(Order::class);
     }
+
+    /**
+     * Kto dokonał zmiany. `null` znaczy „nie człowiek" i jest normalnym stanem,
+     * nie brakiem danych: potwierdzenie płatności przychodzi webhookiem, część
+     * przejść robi cron.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function author(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
+     * Podpis pod wpisem osi czasu. Jedno miejsce dla wszystkich trzech widoków
+     * (panel sprzedawcy, panel admina, konto klienta), żeby nie rozjechały się
+     * w nazywaniu tego samego zdarzenia.
+     */
+    public function authorLabel(): string
+    {
+        $author = $this->author;
+
+        if ($author === null) {
+            return 'Automatycznie';
+        }
+
+        return trim($author->name.' '.$author->surname);
+    }
 }
