@@ -34,6 +34,7 @@
 
 ## Pakiety / biznes
 - [Limity 60/300/600 a gęstość stron](plan-product-page-density.md) — **limit i sufit drabinki zmieniać PARAMI.**
+- [ShopManager kasuje uprawnienia spoza formularza](gotcha-shopmanager-rebuilds-whole-snapshot.md) — nowy klucz w configu = wpis w `numericEntitlements()`. **Trafione 2×.**
 - [Funkcja za pakietem musi GASNĄĆ](gotcha-package-gated-feature-must-expire.md) — sprawdzić bramę I widok; wygaszać, nie kasować.
 - [Uprawnienia są LEPKIE](gotcha-entitlements-are-sticky-raise-needs-command.md) — po zmianie cennika `packages:sync-entitlements --apply`.
 - [Cennik pakietów](pricing-packages.md) — Kram 0 / Stragan 750 / Pawilon 1500 zł/rok BRUTTO; drabinka 2,0×.
