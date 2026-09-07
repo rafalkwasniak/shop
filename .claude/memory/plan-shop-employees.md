@@ -12,7 +12,11 @@ metadata:
 
 **LUKA znaleziona PO uznaniu funkcji za skończoną:** sklep po zejściu z pakietu zachowywał działające konta pracownicze. Naprawione (`ShopEmployee::isEffective()`), opisane w [[gotcha-package-gated-feature-must-expire]].
 
-**ZOSTAŁO JEDNO: `cherry-pick` do Magellana.** Handlowo poza zakresem oferty (patrz sekcja na dole) — decyzja Rafała. Im dłużej się zwleka, tym więcej konfliktów.
+**PRZENIESIONE DO MAGELLANA 07.09** — Rafał: *„sklep nie jest jeszcze oddany, chcę dbać o klienta, dać mu coś, co i tak będę miał zrobione"*. Siedem commitów kodu (kroki 1–6a + wygaszanie), suita Magellana 1998 → 2054. **Pominięte świadomie:** commity pamięci, limity produktów 60/300/600 (decyzja cenowa Kramio) i regulamin v4 (dokumenty są per podmiot — **klient Magellana potrzebuje własnej klauzuli o kontach pracowniczych**).
+
+**GOTCHA Z TEGO PRZENIESIENIA: `max_employees` wpadło w Kramio do commita o LIMITACH PRODUKTÓW**, czyli do zmiany czysto cenowej, której do Magellana nie przenosimy. Uprawnienie należy do funkcji, nie do cennika — bez niego cały moduł odpowiadał 403 i wyszło to dopiero na suicie Magellana. **Commit mieszający funkcję z decyzją biznesową psuje przenoszenie.**
+
+Poza cherry-pickiem Magellan wymagał trzech rzeczy własnych: `currentShop()` w 32 wywołaniach na ekranach dodanych po odcięciu (katalog, opcje, licencjodawcy, rozliczenia, zgłoszenia), bramy działów na tych ekranach (Personalizacja/Katalog/Partnerzy → `products`; Rozliczenia i Zgłoszenia → **tylko właściciel**) oraz wplecenie ich w filtr menu.
 
 - **Krok 1 ZROBIONY** (commit `168b7ec`): `User::currentShop()`, 77 wywołań w 40 plikach. **Do przeniesienia do Magellana `cherry-pick`iem — jeszcze NIE zrobione.**
 - **Krok 2 ZROBIONY**: `PanelSection`, `shop_employees` (migracja PRZESZŁA na produkcji), `ShopEmployee`, `UserRole::Employee`, `max_employees` (Pawilon 5).
