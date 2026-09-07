@@ -53,7 +53,7 @@
                 ? [['label' => 'Mój pakiet', 'route' => 'seller.package.show', 'icon' => '✨']]
                 : []),
             ['label' => 'Produkty', 'route' => 'seller.products.index', 'active' => 'seller.products.*', 'icon' => '🏷️'],
-            ['label' => 'Zamówienia', 'route' => 'seller.orders.index', 'active' => 'seller.orders.*', 'icon' => '📦', 'badge' => (int) ($user->shop?->unseen_orders_count ?? 0)],
+            ['label' => 'Zamówienia', 'route' => 'seller.orders.index', 'active' => 'seller.orders.*', 'icon' => '📦', 'badge' => (int) ($user->currentShop()?->unseen_orders_count ?? 0)],
             ['label' => 'Klienci', 'route' => 'seller.customers.index', 'active' => 'seller.customers.*', 'icon' => '👥'],
             ['label' => 'Kody rabatowe', 'route' => 'seller.discounts.index', 'active' => 'seller.discounts.*', 'icon' => '🎟️'],
             ['label' => 'Wiadomości', 'route' => 'seller.mailings.index', 'active' => 'seller.mailings.*', 'icon' => '📣'],
@@ -149,7 +149,7 @@
                          nawet wtedy, gdy przyszedł tu po coś innego, a po
                          wygaśnięciu — dowiedzieć się, dlaczego funkcje zniknęły.
                          Cicha karencja byłaby nieodróżnialna od „wszystko OK". --}}
-                    @php($panelShop = $user->shop)
+                    @php($panelShop = $user->currentShop())
 
                     {{-- Zlecone usunięcie bije wszystko inne: sklep jest już
                          niewidoczny dla klientów, a za kilka dni zniknie razem

@@ -36,7 +36,7 @@ class DiscountCodeController extends Controller
 
     public function index(Request $request): Renderable
     {
-        $shop = $request->user()->shop;
+        $shop = $request->user()->currentShop();
         $allowed = (bool) $shop?->entitlement('discount_codes');
 
         $filter = $request->query('stan');
@@ -234,7 +234,7 @@ class DiscountCodeController extends Controller
      */
     private function allowedShop(Request $request): Shop
     {
-        $shop = $request->user()->shop;
+        $shop = $request->user()->currentShop();
 
         abort_if($shop === null, 404);
         abort_unless((bool) $shop->entitlement('discount_codes'), 403);

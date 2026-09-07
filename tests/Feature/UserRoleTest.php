@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\UserRole;
+use App\Models\Shop;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -47,5 +48,34 @@ class UserRoleTest extends TestCase
             'surname' => 'Kowalska',
             'phone' => '+48111222333',
         ]);
+    }
+
+    public function test_current_shop_is_the_owned_shop(): void
+    {
+        $user = User::factory()->create();
+        $shop = Shop::factory()->for($user, 'owner')->create();
+
+        $this->assertTrue($shop->is($user->currentShop()));
+    }
+
+    public function test_current_shop_is_null_without_a_shop(): void
+    {
+        $this->assertNull(User::factory()->create()->currentShop());
+    }
+
+    /**
+     * Panel sprzedawcy pyta o miejsce pracy (`currentShop()`), a nie o własność
+     * (`shop()`). Dziś odpowiedź jest ta sama, więc podmiana z powrotem na
+     * `shop()` przeszłaby przez całą suitę bez jednego czerwonego testu — i
+     * cofnęłaby przygotowanie pod pracowników, którzy pracują w cudzym sklepie.
+     *
+     * Ten test pilnuje samego rozróżnienia, nie zachowania: dopóki obie metody
+     * istnieją, wiadomo, o co pytać. Miejsca własnościowe (zakładanie sklepu w
+     * rejestracji, lista sprzedawców u admina) zostają przy `shop()`.
+     */
+    public function test_ownership_and_workplace_are_separate_questions(): void
+    {
+        $this->assertTrue(method_exists(User::class, 'shop'));
+        $this->assertTrue(method_exists(User::class, 'currentShop'));
     }
 }

@@ -17,7 +17,7 @@ class ShopProfileController extends Controller
 {
     public function edit(Request $request): Renderable|RedirectResponse
     {
-        $shop = $request->user()->shop;
+        $shop = $request->user()->currentShop();
 
         if ($shop === null) {
             return redirect()->route('seller.dashboard');
@@ -28,7 +28,7 @@ class ShopProfileController extends Controller
 
     public function update(ShopProfileRequest $request): RedirectResponse
     {
-        $shop = $request->user()->shop;
+        $shop = $request->user()->currentShop();
 
         $shop->fill($request->validated());
 

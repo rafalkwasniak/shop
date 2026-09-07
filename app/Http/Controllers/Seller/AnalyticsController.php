@@ -19,7 +19,7 @@ class AnalyticsController extends Controller
 {
     public function index(Request $request, ShopAnalytics $analytics): Renderable|RedirectResponse
     {
-        $shop = $request->user()->shop;
+        $shop = $request->user()->currentShop();
 
         if ($shop === null) {
             return redirect()->route('seller.dashboard');

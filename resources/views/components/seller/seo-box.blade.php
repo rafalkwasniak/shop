@@ -84,7 +84,7 @@
             {{-- Przycisk domyka lukę, którą tworzy reguła „ręczna edycja wygrywa":
                  kto raz napisał opis sam, bez tego przycisku nie mógłby już poprosić
                  automatu o nową wersję. --}}
-            @php($quotaLeft = auth()->user()?->shop ? app(\App\Services\AiQuota::class)->remaining(auth()->user()->shop) : null)
+            @php($quotaLeft = auth()->user()?->currentShop() ? app(\App\Services\AiQuota::class)->remaining(auth()->user()->currentShop()) : null)
             {{-- Blok AI wyrównany DO PRAWEJ — tak samo jak przy edytorze tekstu,
                  żeby przyciski AI w całym panelu trzymały jedną krawędź. --}}
             <div class="mt-3 text-right">

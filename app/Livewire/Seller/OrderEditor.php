@@ -231,7 +231,7 @@ class OrderEditor extends Component
 
     private function authorizeOwnership(): void
     {
-        abort_unless($this->order->shop_id === auth()->user()?->shop?->id, 403);
+        abort_unless($this->order->shop_id === auth()->user()?->currentShop()?->id, 403);
     }
 
     /**

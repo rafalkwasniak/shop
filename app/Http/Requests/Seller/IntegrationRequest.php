@@ -27,7 +27,7 @@ class IntegrationRequest extends FormRequest
 
     public function authorize(): bool
     {
-        return $this->user()?->shop !== null;
+        return $this->user()?->currentShop() !== null;
     }
 
     /**
@@ -110,7 +110,7 @@ class IntegrationRequest extends FormRequest
         $validator->after(function (Validator $validator): void {
             $url = $this->input('fakturownia_url');
             $token = $this->input('fakturownia_token');
-            $storedToken = $this->user()?->shop?->integration(IntegrationType::Invoicing)?->config['api_token'] ?? null;
+            $storedToken = $this->user()?->currentShop()?->integration(IntegrationType::Invoicing)?->config['api_token'] ?? null;
 
             if (filled($url) && blank($token) && blank($storedToken)) {
                 $validator->errors()->add('fakturownia_token', 'Podaj token API Fakturowni, aby połączyć konto.');
@@ -121,7 +121,7 @@ class IntegrationRequest extends FormRequest
             // Przy pierwszej konfiguracji obu kluczy nie da się rozdzielić.
             $paynowApiKey = $this->input('paynow_api_key');
             $paynowSignatureKey = $this->input('paynow_signature_key');
-            $storedSignature = $this->user()?->shop?->integration(IntegrationType::Payments)?->config['signature_key'] ?? null;
+            $storedSignature = $this->user()?->currentShop()?->integration(IntegrationType::Payments)?->config['signature_key'] ?? null;
 
             if (filled($paynowApiKey) && blank($paynowSignatureKey) && blank($storedSignature)) {
                 $validator->errors()->add('paynow_signature_key', 'Podaj klucz obliczania podpisu Paynow, aby połączyć konto.');
@@ -134,7 +134,7 @@ class IntegrationRequest extends FormRequest
             // pokazuje go wprost, więc puste znaczy naprawdę puste.
             $shipxToken = $this->input('shipx_token');
             $shipxOrganizationId = $this->input('shipx_organization_id');
-            $storedShipxToken = $this->user()?->shop?->integration(IntegrationType::Shipping)?->config['token'] ?? null;
+            $storedShipxToken = $this->user()?->currentShop()?->integration(IntegrationType::Shipping)?->config['token'] ?? null;
 
             if (filled($shipxToken) && blank($shipxOrganizationId)) {
                 $validator->errors()->add('shipx_organization_id', 'Podaj Organization ID z panelu InPost.');

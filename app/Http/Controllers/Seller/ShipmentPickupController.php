@@ -14,7 +14,7 @@ class ShipmentPickupController extends Controller
 {
     public function index(): Renderable|RedirectResponse
     {
-        $shop = auth()->user()?->shop;
+        $shop = auth()->user()?->currentShop();
 
         // Ekran jest bez sensu bez nadawania przez InPost — bez integracji nie
         // ma czego odbierać, a bramka pakietu jest ta sama co dla etykiet.

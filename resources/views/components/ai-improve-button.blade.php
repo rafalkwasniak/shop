@@ -8,7 +8,7 @@
     // Tygodniowy limit sklepu (inny niż limit „na pole", którego pilnuje JS):
     // po wyczerpaniu przycisk jest wyłączony, żeby kliknięcie nie kończyło się
     // komunikatem o błędzie za każdym razem.
-    $shop = auth()->user()?->shop;
+    $shop = auth()->user()?->currentShop();
     $quotaLeft = $shop ? app(\App\Services\AiQuota::class)->remaining($shop) : null;
 @endphp
 

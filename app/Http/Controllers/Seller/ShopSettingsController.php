@@ -21,7 +21,7 @@ class ShopSettingsController extends Controller
 {
     public function edit(Request $request): Renderable|RedirectResponse
     {
-        $shop = $request->user()->shop;
+        $shop = $request->user()->currentShop();
 
         if ($shop === null) {
             return redirect()->route('seller.dashboard');
@@ -46,7 +46,7 @@ class ShopSettingsController extends Controller
 
     public function update(ShopSettingsRequest $request): RedirectResponse
     {
-        $shop = $request->user()->shop;
+        $shop = $request->user()->currentShop();
 
         // Pola typowane sklepu (VAT, przelew) — bez włączników integracji ani flagi
         // auto-FV, które żyją na wierszach shop_integrations, nie na kolumnach shops.

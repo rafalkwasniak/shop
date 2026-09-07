@@ -32,7 +32,7 @@ class ProductController extends Controller
 
     public function index(Request $request): Renderable
     {
-        $shop = $request->user()->shop;
+        $shop = $request->user()->currentShop();
 
         $filters = $this->filters($request);
         $sortKey = $this->resolveSort($request->query('sortowanie'));
@@ -87,7 +87,7 @@ class ProductController extends Controller
             return redirect()->route('seller.products.index')->with('error', $this->limitMessage($request));
         }
 
-        $product = $request->user()->shop->products()->create($this->data($request));
+        $product = $request->user()->currentShop()->products()->create($this->data($request));
         $this->syncTags($product, $request);
 
         // Zdjęcia wybrane przy tworzeniu — zapis w kolejności dodania (0,1,2,…).
@@ -199,7 +199,7 @@ class ProductController extends Controller
      */
     private function tagSuggestions(Request $request): array
     {
-        return $request->user()->shop
+        return $request->user()->currentShop()
             ?->tags()
             ->has('products')
             ->withCount('products')
@@ -214,7 +214,7 @@ class ProductController extends Controller
      */
     private function defaultVat(Request $request): string
     {
-        return $request->user()->shop?->default_vat_rate?->value ?? '23';
+        return $request->user()->currentShop()?->default_vat_rate?->value ?? '23';
     }
 
     /**
@@ -222,12 +222,12 @@ class ProductController extends Controller
      */
     private function defaultSaleUnit(Request $request): string
     {
-        return $request->user()->shop?->default_sale_unit?->value ?? 'piece';
+        return $request->user()->currentShop()?->default_sale_unit?->value ?? 'piece';
     }
 
     private function authorizeProduct(Request $request, Product $product): void
     {
-        abort_unless($product->shop_id === $request->user()->shop?->id, 403);
+        abort_unless($product->shop_id === $request->user()->currentShop()?->id, 403);
     }
 
     /**
@@ -238,7 +238,7 @@ class ProductController extends Controller
      */
     private function homepageInfo(Request $request): array
     {
-        $shop = $request->user()->shop;
+        $shop = $request->user()->currentShop();
 
         return [
             'count' => $shop ? $shop->products()->where('show_on_homepage', true)->count() : 0,
@@ -248,14 +248,14 @@ class ProductController extends Controller
 
     private function limitReached(Request $request): bool
     {
-        $shop = $request->user()->shop;
+        $shop = $request->user()->currentShop();
 
         return $shop !== null && $shop->products()->count() >= (int) $shop->entitlement('max_products');
     }
 
     private function limitMessage(Request $request): string
     {
-        $shop = $request->user()->shop;
+        $shop = $request->user()->currentShop();
 
         return 'Pakiet '.$shop->effectivePackageName().' pozwala na maksymalnie '.(int) $shop->entitlement('max_products').' produktów.';
     }

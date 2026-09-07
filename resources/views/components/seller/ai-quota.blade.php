@@ -3,7 +3,7 @@
 @php
     // Licznik dotyczy sklepu zalogowanego sprzedawcy. Bez sklepu (świeże konto
     // przed aktywacją) nie ma czego pokazywać.
-    $shop = auth()->user()?->shop;
+    $shop = auth()->user()?->currentShop();
     $quota = $shop ? app(\App\Services\AiQuota::class) : null;
     $remaining = $quota?->remaining($shop);
     $limit = $shop ? \App\Services\AiQuota::limitFor($shop) : 0;

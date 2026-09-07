@@ -39,7 +39,7 @@ class CourierPickup extends Component
      */
     public function awaiting()
     {
-        $shop = auth()->user()?->shop;
+        $shop = auth()->user()?->currentShop();
 
         return $shop === null
             ? new \Illuminate\Database\Eloquent\Collection
@@ -62,7 +62,7 @@ class CourierPickup extends Component
 
     public function request(CourierPickupService $pickup): void
     {
-        $shop = auth()->user()?->shop;
+        $shop = auth()->user()?->currentShop();
         abort_if($shop === null, 403);
 
         $this->confirming = false;
@@ -83,7 +83,7 @@ class CourierPickup extends Component
 
     public function render()
     {
-        $shop = auth()->user()?->shop;
+        $shop = auth()->user()?->currentShop();
         $awaiting = $this->awaiting();
 
         return view('livewire.seller.courier-pickup', [

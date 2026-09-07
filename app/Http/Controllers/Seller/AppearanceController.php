@@ -19,7 +19,7 @@ class AppearanceController extends Controller
 {
     public function edit(Request $request): Renderable|RedirectResponse
     {
-        $shop = $request->user()->shop;
+        $shop = $request->user()->currentShop();
 
         if ($shop === null) {
             return redirect()->route('seller.dashboard');
@@ -44,7 +44,7 @@ class AppearanceController extends Controller
 
     public function update(AppearanceRequest $request): RedirectResponse
     {
-        $shop = $request->user()->shop;
+        $shop = $request->user()->currentShop();
 
         if ($request->boolean('remove_logo') && $shop->logo_path !== null) {
             Storage::disk('public')->delete($shop->logo_path);

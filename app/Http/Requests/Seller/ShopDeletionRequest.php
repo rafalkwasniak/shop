@@ -19,7 +19,7 @@ class ShopDeletionRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->shop !== null;
+        return $this->user()?->currentShop() !== null;
     }
 
     protected function prepareForValidation(): void
@@ -34,7 +34,7 @@ class ShopDeletionRequest extends FormRequest
      */
     public function rules(): array
     {
-        $shop = $this->user()->shop;
+        $shop = $this->user()->currentShop();
 
         return [
             'confirm_name' => [

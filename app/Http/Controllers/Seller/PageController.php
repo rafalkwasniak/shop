@@ -24,7 +24,7 @@ class PageController extends Controller
 {
     public function index(Request $request): Renderable
     {
-        $shop = $request->user()->shop;
+        $shop = $request->user()->currentShop();
 
         return view('seller.pages.index', [
             'shop' => $shop,
@@ -34,7 +34,7 @@ class PageController extends Controller
 
     public function create(Request $request): Renderable|RedirectResponse
     {
-        if ($request->user()->shop === null) {
+        if ($request->user()->currentShop() === null) {
             return redirect()->route('seller.dashboard');
         }
 
@@ -46,7 +46,7 @@ class PageController extends Controller
 
     public function store(PageRequest $request): RedirectResponse
     {
-        $shop = $request->user()->shop;
+        $shop = $request->user()->currentShop();
 
         // Nowa strona ląduje na końcu listy (najwyższa pozycja + 1).
         $position = (int) $shop->pages()->max('position') + 1;
@@ -104,7 +104,7 @@ class PageController extends Controller
      */
     public function reorder(Request $request): JsonResponse
     {
-        $shop = $request->user()->shop;
+        $shop = $request->user()->currentShop();
         abort_if($shop === null, 403);
 
         $ids = collect($request->input('order', []))
@@ -137,7 +137,7 @@ class PageController extends Controller
      */
     private function homepageInfo(Request $request): array
     {
-        $shop = $request->user()->shop;
+        $shop = $request->user()->currentShop();
 
         return [
             'count' => $shop ? $shop->pages()->where('show_on_homepage', true)->count() : 0,
@@ -158,7 +158,7 @@ class PageController extends Controller
 
         return redirect()
             ->route('seller.pages.edit', $page)
-            ->with('terms_wizard', SellerTerms::defaults($request->user()->shop, $page));
+            ->with('terms_wizard', SellerTerms::defaults($request->user()->currentShop(), $page));
     }
 
     /**
@@ -186,7 +186,7 @@ class PageController extends Controller
         return redirect()
             ->route('seller.pages.edit', $page)
             ->withInput([
-                'content' => SellerTerms::render($request->user()->shop, $dane),
+                'content' => SellerTerms::render($request->user()->currentShop(), $dane),
                 'terms_template_version' => SellerTerms::VERSION,
             ])
             ->with('success', 'Wzór wstawiony do edytora. Przeczytaj go i zapisz — dopiero zapis publikuje regulamin w Twoim sklepie.');
@@ -198,6 +198,6 @@ class PageController extends Controller
      */
     private function authorizePage(Request $request, Page $page): void
     {
-        abort_if($page->shop_id !== $request->user()->shop?->id, 404);
+        abort_if($page->shop_id !== $request->user()->currentShop()?->id, 404);
     }
 }

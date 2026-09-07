@@ -141,6 +141,30 @@ class User extends Authenticatable
     }
 
     /**
+     * Sklep, którym ten użytkownik ZARZĄDZA w panelu — jedyne miejsce, przez
+     * które panel sprzedawcy ma pytać „czyj to sklep".
+     *
+     * Dziś odpowiedź jest ta sama co `shop()`, więc metoda wygląda na zbędną
+     * owijkę. Nie jest: `shop()` odpowiada na pytanie o WŁASNOŚĆ (kto jest
+     * `owner_id`), a ta metoda na pytanie o MIEJSCE PRACY. Rozjadą się przy
+     * pracownikach sklepu, gdzie zalogowany użytkownik pracuje w cudzym sklepie,
+     * nie mając do niego żadnych praw właścicielskich.
+     *
+     * Dlatego rozróżnienie powstaje ZAWCZASU i osobno: podmiana kilkudziesięciu
+     * wywołań w panelu to zmiana mechaniczna i bezpieczna, dopóki obie
+     * odpowiedzi są identyczne. Wykonana razem z wprowadzeniem pracowników
+     * byłaby nie do odróżnienia od zmian, które faktycznie zmieniają zachowanie.
+     *
+     * Miejsca pytające o WŁASNOŚĆ zostają przy `shop()` i mają tak zostać:
+     * zakładanie sklepu przy rejestracji, lista sprzedawców w panelu admina,
+     * rozliczenia pakietu. Pracownik nie jest tam odpowiedzią na żadne pytanie.
+     */
+    public function currentShop(): ?Shop
+    {
+        return $this->shop;
+    }
+
+    /**
      * Czy konto przeszło aktywację, czyli czy sprzedawca ustawił własne hasło.
      *
      * UWAGA na pułapkę: rejestracja NIE zostawia pustego hasła — wstawia losowy

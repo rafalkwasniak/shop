@@ -25,7 +25,7 @@ class BulkMailingController extends Controller
 {
     public function index(Request $request, BulkMailService $mail): Renderable
     {
-        $shop = $request->user()->shop;
+        $shop = $request->user()->currentShop();
         $allowed = (bool) $shop?->entitlement('bulk_mail');
 
         return view('seller.mailings.index', [
@@ -132,7 +132,7 @@ class BulkMailingController extends Controller
      */
     private function allowedShop(Request $request): Shop
     {
-        $shop = $request->user()->shop;
+        $shop = $request->user()->currentShop();
 
         abort_unless($shop?->entitlement('bulk_mail') === true, 403);
 

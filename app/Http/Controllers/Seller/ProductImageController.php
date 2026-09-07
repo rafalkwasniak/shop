@@ -91,7 +91,7 @@ class ProductImageController extends Controller
 
     private function authorizeProduct(Request $request, Product $product): void
     {
-        abort_unless($product->shop_id === $request->user()->shop?->id, 403);
+        abort_unless($product->shop_id === $request->user()->currentShop()?->id, 403);
     }
 
     private function authorizeImage(Request $request, Product $product, ProductImage $image): void

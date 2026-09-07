@@ -11,7 +11,7 @@ class DashboardController extends Controller
 {
     public function __invoke(Request $request): Renderable
     {
-        $shop = $request->user()->shop;
+        $shop = $request->user()->currentShop();
         $productCount = $shop ? $shop->products()->count() : 0;
         $activeProductCount = $shop ? $shop->products()->where('is_active', true)->count() : 0;
 

@@ -19,7 +19,7 @@ class ShopProfileRequest extends FormRequest
     public function authorize(): bool
     {
         // Sprzedawca edytuje wyłącznie własny sklep (ładowany z relacji usera).
-        return $this->user()?->shop !== null;
+        return $this->user()?->currentShop() !== null;
     }
 
     /**

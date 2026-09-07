@@ -36,7 +36,7 @@ class CustomerController extends Controller
 
     public function index(Request $request, CustomerDirectory $directory): Renderable
     {
-        $shop = $request->user()->shop;
+        $shop = $request->user()->currentShop();
 
         $sort = $request->query('sortuj');
         $sort = is_string($sort) && array_key_exists($sort, self::SORTS) ? $sort : 'ostatnie';
@@ -73,7 +73,7 @@ class CustomerController extends Controller
 
     public function show(Request $request, string $email, CustomerDirectory $directory): Renderable
     {
-        $shop = $request->user()->shop;
+        $shop = $request->user()->currentShop();
         $profile = $shop !== null ? $directory->profile($shop, $email) : null;
 
         // Brak profilu = ten adres nic w tym sklepie nie kupił. 404 zamiast

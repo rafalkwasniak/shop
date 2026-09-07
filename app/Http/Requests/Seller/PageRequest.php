@@ -17,7 +17,7 @@ class PageRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->shop !== null;
+        return $this->user()?->currentShop() !== null;
     }
 
     /**
@@ -87,7 +87,7 @@ class PageRequest extends FormRequest
                 return;
             }
 
-            $shop = $this->user()?->shop;
+            $shop = $this->user()?->currentShop();
             if ($shop === null) {
                 return;
             }

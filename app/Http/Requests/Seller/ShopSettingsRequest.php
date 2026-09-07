@@ -17,7 +17,7 @@ class ShopSettingsRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->shop !== null;
+        return $this->user()?->currentShop() !== null;
     }
 
     /**
@@ -61,7 +61,7 @@ class ShopSettingsRequest extends FormRequest
             'courier_parcel_weight_kg' => $this->normalizeAmount($this->input('courier_parcel_weight_kg')),
             // Nowe pole — gdy formularz go nie przyśle (starszy submit), zostawiamy
             // bieżącą jednostkę sklepu, żeby częściowy zapis jej nie wyzerował.
-            'default_sale_unit' => $this->input('default_sale_unit', $this->user()?->shop?->default_sale_unit?->value ?? 'piece'),
+            'default_sale_unit' => $this->input('default_sale_unit', $this->user()?->currentShop()?->default_sale_unit?->value ?? 'piece'),
         ]);
     }
 

@@ -29,7 +29,7 @@ class BulkMailingRequest extends FormRequest
             // wypromowałby cudzy towar (i wysłał klientów do konkurencji).
             'product_id' => [
                 'nullable',
-                Rule::exists('products', 'id')->where('shop_id', $this->user()->shop?->id),
+                Rule::exists('products', 'id')->where('shop_id', $this->user()->currentShop()?->id),
             ],
         ];
     }

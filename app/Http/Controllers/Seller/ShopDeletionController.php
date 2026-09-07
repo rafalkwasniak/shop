@@ -23,7 +23,7 @@ class ShopDeletionController extends Controller
 {
     public function show(Request $request): Renderable|RedirectResponse
     {
-        $shop = $request->user()->shop;
+        $shop = $request->user()->currentShop();
 
         if ($shop === null) {
             return redirect()->route('seller.dashboard');
@@ -36,7 +36,7 @@ class ShopDeletionController extends Controller
 
     public function store(ShopDeletionRequest $request, ShopEraser $eraser): RedirectResponse
     {
-        $due = $eraser->schedule($request->user()->shop);
+        $due = $eraser->schedule($request->user()->currentShop());
 
         return redirect()
             ->route('seller.deletion.show')
@@ -45,7 +45,7 @@ class ShopDeletionController extends Controller
 
     public function cancel(Request $request, ShopEraser $eraser): RedirectResponse
     {
-        $eraser->cancel($request->user()->shop);
+        $eraser->cancel($request->user()->currentShop());
 
         return redirect()
             ->route('seller.shop.edit')

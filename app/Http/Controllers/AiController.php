@@ -48,7 +48,7 @@ class AiController extends Controller
         // Limit AI jest przypisany do SKLEPU, więc bez sklepu nie ma z czego go
         // pobrać. W praktyce nie zdarza się (sklep powstaje przy aktywacji konta),
         // ale lepiej powiedzieć to wprost niż udawać awarię usługi.
-        $shop = $request->user()->shop;
+        $shop = $request->user()->currentShop();
 
         if ($shop === null) {
             return response()->json(['message' => 'Najpierw dokończ zakładanie sklepu.'], 403);
@@ -167,7 +167,7 @@ class AiController extends Controller
             'name' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $shop = $request->user()->shop;
+        $shop = $request->user()->currentShop();
 
         if ($shop === null) {
             return response()->json(['message' => 'Najpierw dokończ zakładanie sklepu.'], 403);

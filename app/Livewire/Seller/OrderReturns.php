@@ -33,7 +33,7 @@ class OrderReturns extends Component
      */
     public function markRefunded(int $returnId): void
     {
-        abort_unless($this->order->shop_id === auth()->user()?->shop?->id, 403);
+        abort_unless($this->order->shop_id === auth()->user()?->currentShop()?->id, 403);
 
         // Zwrot bierzemy PRZEZ relację zamówienia — identyfikator z formularza
         // nie może sięgnąć zgłoszenia z cudzego zamówienia.

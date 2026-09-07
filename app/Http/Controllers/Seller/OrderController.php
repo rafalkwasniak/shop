@@ -32,7 +32,7 @@ class OrderController extends Controller
 
     public function index(Request $request): Renderable
     {
-        $shop = $request->user()->shop;
+        $shop = $request->user()->currentShop();
 
         $filters = $this->filters($request);
         $sortKey = $this->resolveSort($request->query('sortowanie'));
@@ -134,7 +134,7 @@ class OrderController extends Controller
      */
     private function authorizeOrder(Request $request, Order $order): void
     {
-        abort_unless($order->shop_id === $request->user()->shop?->id, 403);
+        abort_unless($order->shop_id === $request->user()->currentShop()?->id, 403);
     }
 
     /**

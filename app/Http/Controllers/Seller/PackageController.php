@@ -29,7 +29,7 @@ class PackageController extends Controller
 {
     public function show(Request $request, AiQuota $quota): Renderable
     {
-        $shop = $request->user()->shop;
+        $shop = $request->user()->currentShop();
 
         abort_if($shop === null, 404);
 
@@ -89,7 +89,7 @@ class PackageController extends Controller
      */
     public function purchase(PackagePurchaseRequest $request, string $package, PackagePaymentService $payments): RedirectResponse
     {
-        $shop = $request->user()->shop;
+        $shop = $request->user()->currentShop();
 
         abort_if($shop === null, 404);
 

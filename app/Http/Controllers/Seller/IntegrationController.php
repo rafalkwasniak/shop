@@ -21,7 +21,7 @@ class IntegrationController extends Controller
 {
     public function edit(Request $request): Renderable|RedirectResponse
     {
-        $shop = $request->user()->shop;
+        $shop = $request->user()->currentShop();
 
         if ($shop === null) {
             return redirect()->route('seller.dashboard');
@@ -49,7 +49,7 @@ class IntegrationController extends Controller
 
     public function update(IntegrationRequest $request): RedirectResponse
     {
-        $shop = $request->user()->shop;
+        $shop = $request->user()->currentShop();
         $data = $request->validated();
 
         // GA/GTM bramkowane uprawnieniem pakietu (Stragan+) — bez niego karta się
