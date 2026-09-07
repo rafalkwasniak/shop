@@ -24,13 +24,19 @@
                             Dostęp odbierasz jednym kliknięciem — bez zmiany swojego hasła.
                         </x-seller.locked-feature>
                     </div>
-                @elseif ($employees->isEmpty())
+                @endunless
+
+                {{-- Lista pokazuje sie TAKZE przy zablokowanej funkcji. Po zejsciu
+                     z pakietu dostepy sa wygaszone, ale ludzie zostaja — wlasciciel
+                     musi widziec, kogo to dotyczy. Ekran z sama zacheta i bez ani
+                     jednego nazwiska wygladalby, jakby konta zniknely. --}}
+                @if ($allowed && $employees->isEmpty())
                     <div class="mt-8 flex flex-col items-center justify-center rounded-2xl border border-dashed border-stone-300 px-6 py-12 text-center">
                         <span class="flex h-14 w-14 items-center justify-center rounded-2xl bg-stone-100 text-2xl">👤</span>
                         <p class="mt-4 font-medium text-stone-700">Pracujesz sam</p>
                         <p class="mt-1 text-sm text-stone-500">Dodaj pierwszą osobę — dostanie link do ustawienia własnego hasła.</p>
                     </div>
-                @else
+                @elseif ($employees->isNotEmpty())
                     <div class="mt-6 space-y-4">
                         @foreach ($employees as $employee)
                             @php($person = $employee->user)
@@ -53,6 +59,11 @@
                                         <span class="rounded-full bg-stone-200 px-2.5 py-0.5 text-[11px] font-medium text-stone-600">Dostęp odebrany</span>
                                     @elseif ($employee->accepted_at === null)
                                         <span class="rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-medium text-amber-700">Zaproszony — nie ustawił hasła</span>
+                                    @elseif (! $allowed)
+                                        {{-- Pakiet przestal dawac konta pracownicze. „Aktywny" byloby
+                                             tu nieprawda, ktora wlasciciel odkrylby dopiero telefonem
+                                             od pracownika. Wiersz zostaje — po odnowieniu wraca sam. --}}
+                                        <span class="rounded-full bg-stone-200 px-2.5 py-0.5 text-[11px] font-medium text-stone-600">Wygaszony — pakiet</span>
                                     @else
                                         <span class="rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-medium text-emerald-700">Aktywny</span>
                                     @endif
@@ -115,7 +126,7 @@
                             </div>
                         @endforeach
                     </div>
-                @endunless
+                @endif
             </div>
         </div>
 

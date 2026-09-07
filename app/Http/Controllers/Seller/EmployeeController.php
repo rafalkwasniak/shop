@@ -35,7 +35,11 @@ class EmployeeController extends Controller
             'sections' => PanelSection::cases(),
             // Odebrani na końcu, reszta od najnowszych: lista ma zaczynać się od
             // ludzi, którzy dziś pracują.
-            'employees' => $allowed
+            // Lista widoczna TAKŻE przy zablokowanej funkcji: po zejściu z
+            // pakietu dostępy są wygaszone, ale ludzie zostają — właściciel
+            // musi widzieć, kogo to dotyczy i komu ewentualnie odebrać dostęp
+            // na stałe. Zachęta obok tłumaczy, dlaczego nikt nie wejdzie.
+            'employees' => $shop
                 ? $shop->employees()->with('user')->orderByRaw('revoked_at is not null')->latest('id')->get()
                 : collect(),
             'slotsLeft' => $allowed ? $shop->employeeSlotsLeft() : 0,

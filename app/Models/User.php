@@ -174,7 +174,12 @@ class User extends Authenticatable
     public function currentShop(): ?Shop
     {
         if ($this->isEmployee()) {
-            return $this->activeEmployment()?->shop;
+            // `isEffective()`, nie `isActive()`: gdy pakiet sklepu przestaje
+            // dawać konta pracownicze, pracownik nie ma gdzie pracować, mimo że
+            // jego zatrudnienie formalnie trwa.
+            $employment = $this->activeEmployment();
+
+            return $employment?->isEffective() === true ? $employment->shop : null;
         }
 
         return $this->shop;
@@ -222,7 +227,9 @@ class User extends Authenticatable
     public function canAccess(PanelSection $section): bool
     {
         if ($this->isEmployee()) {
-            return (bool) $this->activeEmployment()?->allows($section);
+            $employment = $this->activeEmployment();
+
+            return $employment?->isEffective() === true && $employment->allows($section);
         }
 
         return true;

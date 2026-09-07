@@ -73,6 +73,24 @@ class ShopEmployee extends Model
     }
 
     /**
+     * Czy to członkostwo REALNIE otwiera dziś panel.
+     *
+     * `isActive()` mówi o samym zatrudnieniu (przyjęte i nieodebrane), a to
+     * pytanie dokłada drugi warunek: czy pakiet sklepu nadal daje konta
+     * pracownicze. Sklep, który zszedł z pakietu albo nie odnowił abonamentu,
+     * nie może zachować działających kont — inaczej wystarczyłoby opłacić
+     * Pawilon raz, żeby mieć zespół na zawsze.
+     *
+     * Dostęp jest WYGASZANY, nie kasowany: wiersz zostaje nietknięty, więc po
+     * odnowieniu pakietu wszyscy wracają sami, bez zapraszania od nowa i bez
+     * ponownego ustawiania haseł.
+     */
+    public function isEffective(): bool
+    {
+        return $this->isActive() && (bool) $this->shop?->allowsEmployees();
+    }
+
+    /**
      * Warunek SQL „to członkostwo jest czynne", w kształcie do wstawienia w
      * `whereHas()`. Istnieje po to, żeby definicja czynnego zatrudnienia miała
      * JEDNO miejsce wspólne z `isActive()` — rozjazd oznaczałby, że lista

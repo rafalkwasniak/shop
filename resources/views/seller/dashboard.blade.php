@@ -173,6 +173,16 @@
                         @endunless
                     </div>
                 </div>
+            @elseif ($isEmployee)
+                {{-- Pracownik bez sklepu to NIE „sklep w przygotowaniu": jego
+                     dostęp został wygaszony razem z pakietem pracodawcy. Bez
+                     tego rozróżnienia czytałby komunikat o cudzym sklepie,
+                     którego nigdy nie zakładał. --}}
+                <div class="mt-6 flex flex-col items-center justify-center text-center">
+                    <span class="flex h-14 w-14 items-center justify-center rounded-2xl bg-stone-100 text-2xl">🔒</span>
+                    <p class="mt-4 font-medium text-stone-700">Dostęp nieaktywny</p>
+                    <p class="mt-1 text-sm text-stone-500">Twoje konto istnieje, ale sklep, w którym pracujesz, nie ma teraz aktywnych kont pracowniczych. Skontaktuj się z właścicielem sklepu — po odnowieniu pakietu wrócisz bez zakładania konta od nowa.</p>
+                </div>
             @else
                 <div class="mt-6 flex flex-col items-center justify-center text-center">
                     <span class="flex h-14 w-14 items-center justify-center rounded-2xl bg-stone-100 text-2xl">🛍️</span>

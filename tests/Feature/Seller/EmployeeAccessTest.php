@@ -109,6 +109,74 @@ class EmployeeAccessTest extends TestCase
         $response->assertDontSee(route('seller.package.show'), false);
     }
 
+    /**
+     * LUKA WYŁAPANA 07.09, po uznaniu funkcji za skończoną: zejście z pakietu
+     * (albo brak odnowienia abonamentu) zabiera właścicielowi ekran „Pracownicy",
+     * ale samych kont NIE gasiło. Sklep, który przestał płacić, zachowywał
+     * pięć działających dostępów — wystarczyłoby opłacić Pawilon raz.
+     */
+    public function test_losing_the_package_suspends_the_employees(): void
+    {
+        [$employee, $shop] = $this->employeeWith([PanelSection::Orders]);
+
+        $this->actingAs($employee)->get(route('seller.orders.index'))->assertOk();
+
+        $shop->assignPackage('stall');
+        $shop->save();
+
+        $this->actingAs($employee->fresh())->get(route('seller.orders.index'))->assertForbidden();
+        $this->assertNull($employee->fresh()->currentShop());
+    }
+
+    /**
+     * Wygaszenie, NIE skasowanie: po odnowieniu pakietu zespół wraca sam, bez
+     * zapraszania od nowa i bez ponownego ustawiania haseł. Inaczej każde
+     * spóźnienie z przelewem kosztowałoby sprzedawcę pół dnia roboty.
+     */
+    public function test_renewing_the_package_brings_the_team_back(): void
+    {
+        [$employee, $shop] = $this->employeeWith([PanelSection::Orders]);
+
+        $shop->assignPackage('stall');
+        $shop->save();
+        $this->actingAs($employee->fresh())->get(route('seller.orders.index'))->assertForbidden();
+
+        $shop->assignPackage('pavilion');
+        $shop->save();
+
+        $this->actingAs($employee->fresh())->get(route('seller.orders.index'))->assertOk();
+        $this->assertDatabaseCount('shop_employees', 1);
+    }
+
+    /**
+     * Właściciel musi widzieć, kogo dotyczy wygaszenie — inaczej po zejściu z
+     * pakietu ekran pokazywałby samą zachętę i ani jednego nazwiska.
+     */
+    public function test_locked_screen_still_lists_the_suspended_team(): void
+    {
+        // Właściciel z kompletem zgód — inaczej brama `ensure.consents`
+        // przekierowuje go na ekran dokumentów, zanim zobaczy listę.
+        $owner = User::factory()->consented()->create();
+        $shop = Shop::factory()->create(['owner_id' => $owner->getKey()]);
+        $shop->assignPackage('pavilion');
+        $shop->save();
+
+        ShopEmployee::factory()
+            ->withSections([PanelSection::Orders])
+            ->create(['shop_id' => $shop->getKey()]);
+
+        $shop->assignPackage('stall');
+        $shop->save();
+
+        $this->actingAs($owner)->get(route('seller.employees.index'))
+            ->assertOk()
+            // Nazwisko widoczne mimo zablokowanej funkcji, a stan nazwany
+            // wprost: „Aktywny" byłoby tu nieprawdą, którą właściciel odkryłby
+            // dopiero telefonem od pracownika.
+            ->assertSee('Wygaszony')
+            ->assertSee('Konta pracowników');
+    }
+
     public function test_owner_still_sees_and_reaches_everything(): void
     {
         $owner = User::factory()->consented()->create();
