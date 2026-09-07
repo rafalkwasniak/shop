@@ -50,7 +50,7 @@ class SubscriptionExpiryTest extends TestCase
 
         $this->assertTrue($shop->subscriptionActive());
         $this->assertTrue($shop->entitlement('bulk_mail'));
-        $this->assertSame(240, $shop->entitlement('max_products'));
+        $this->assertSame(600, $shop->entitlement('max_products'));
     }
 
     public function test_expired_package_falls_back_to_free_entitlements(): void
@@ -62,11 +62,11 @@ class SubscriptionExpiryTest extends TestCase
         // Efektywnie sklep ma uprawnienia Kramu…
         $this->assertFalse($shop->entitlement('bulk_mail'));
         $this->assertFalse($shop->entitlement('invoices'));
-        $this->assertSame(24, $shop->entitlement('max_products'));
+        $this->assertSame(60, $shop->entitlement('max_products'));
 
         // …ale SNAPSHOT jest nietknięty, więc widać, co klient kupił.
         $this->assertTrue($shop->rawEntitlement('bulk_mail'));
-        $this->assertSame(240, $shop->rawEntitlement('max_products'));
+        $this->assertSame(600, $shop->rawEntitlement('max_products'));
     }
 
     public function test_renewal_is_a_single_date_change(): void
@@ -138,7 +138,7 @@ class SubscriptionExpiryTest extends TestCase
         $this->assertTrue($shop->subscriptionActive());
         $this->assertTrue($shop->inSubscriptionGrace());
         $this->assertTrue($shop->entitlement('bulk_mail'));
-        $this->assertSame(240, $shop->entitlement('max_products'));
+        $this->assertSame(600, $shop->entitlement('max_products'));
     }
 
     public function test_features_die_when_the_grace_period_runs_out(): void
@@ -199,7 +199,7 @@ class SubscriptionExpiryTest extends TestCase
         // inaczej zapis formularza wykasowałby to, co klient kupił.
         Livewire::test(ShopManager::class, ['shop' => $shop])
             ->assertSet('bulk_mail', true)
-            ->assertSet('max_products', 240);
+            ->assertSet('max_products', 600);
     }
 
     public function test_admin_console_keeps_the_ai_limit_in_the_snapshot(): void

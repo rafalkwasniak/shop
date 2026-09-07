@@ -48,7 +48,7 @@ class ShopManagerTest extends TestCase
             ->test(ShopManager::class, ['shop' => $shop])
             ->call('applyPreset', 'pavilion')
             ->assertSet('package', 'pavilion')
-            ->assertSet('max_products', 240)
+            ->assertSet('max_products', 600)
             ->assertSet('order_editing', true)
             ->assertSet('bulk_mail', true)
             ->assertSet('price_yearly', '1500');
@@ -74,7 +74,7 @@ class ShopManagerTest extends TestCase
         $this->assertTrue($fresh->entitlement('online_payments'));
         $this->assertTrue($fresh->entitlement('invoices'));
         $this->assertFalse($fresh->entitlement('order_editing'));
-        $this->assertSame(72, $fresh->entitlement('max_products'));
+        $this->assertSame(300, $fresh->entitlement('max_products'));
         $this->assertSame(750.0, $fresh->priceYearly());
         $this->assertSame('2027-01-15', $fresh->subscription_ends_at->format('Y-m-d'));
     }

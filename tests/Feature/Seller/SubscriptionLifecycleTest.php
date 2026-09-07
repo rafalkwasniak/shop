@@ -21,6 +21,19 @@ class SubscriptionLifecycleTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * Limit produktów pakietu darmowego — czytany z configu, nie przybity.
+     *
+     * Po wygaśnięciu abonamentu sklep spada na uprawnienia Krama, więc to ta
+     * liczba rozstrzyga, ile produktów zostaje na witrynie. Wpisana na sztywno
+     * zamieniała każdą zmianę cennika w serię czerwonych testów o zejściu z
+     * pakietu — a te testy badają MECHANIZM zamka, nie wysokość limitu.
+     */
+    private function freeLimit(): int
+    {
+        return (int) config('shop.packages.'.config('shop.default_package').'.entitlements.max_products');
+    }
+
     private function paidShop(array $attributes = []): Shop
     {
         $seller = User::factory()->consented()->create();
@@ -121,25 +134,26 @@ class SubscriptionLifecycleTest extends TestCase
     public function test_grace_period_holds_the_lock_back(): void
     {
         $shop = $this->paidShop(['subscription_ends_at' => now()->subDay()]);
-        Product::factory()->count(30)->create(['shop_id' => $shop->id, 'is_active' => true]);
+        $count = $this->freeLimit() + 6;
+        Product::factory()->count($count)->create(['shop_id' => $shop->id, 'is_active' => true]);
 
         $this->check();
 
         // Termin minął, ale karencja trwa: nic nie gaśnie, nic nie znika.
         $this->assertDatabaseMissing('subscription_notices', ['kind' => 'locked']);
-        $this->assertSame(30, $shop->products()->where('is_active', true)->count());
+        $this->assertSame($count, $shop->products()->where('is_active', true)->count());
     }
 
     public function test_lock_hides_the_excess_and_explains_it_in_a_mail(): void
     {
         $grace = (int) config('shop.subscription.grace_days');
         $shop = $this->paidShop(['subscription_ends_at' => now()->subDays($grace + 1)]);
-        Product::factory()->count(30)->create(['shop_id' => $shop->id, 'is_active' => true]);
+        Product::factory()->count($this->freeLimit() + 6)->create(['shop_id' => $shop->id, 'is_active' => true]);
 
         $this->check();
 
-        // Kram = 24 miejsca, więc sześć produktów schodzi z witryny.
-        $this->assertSame(24, $shop->products()->where('is_active', true)->count());
+        // Sześć produktów ponad darmowy limit schodzi z witryny.
+        $this->assertSame($this->freeLimit(), $shop->products()->where('is_active', true)->count());
         $this->assertSame(6, $shop->products()->whereNotNull('auto_hidden_at')->count());
 
         $mail = EmailMessage::where('subject', 'like', '%wygasł%')->firstOrFail();
@@ -154,7 +168,7 @@ class SubscriptionLifecycleTest extends TestCase
     {
         $grace = (int) config('shop.subscription.grace_days');
         $shop = $this->paidShop(['subscription_ends_at' => now()->subDays($grace + 1)]);
-        Product::factory()->count(26)->create(['shop_id' => $shop->id, 'is_active' => true]);
+        Product::factory()->count($this->freeLimit() + 2)->create(['shop_id' => $shop->id, 'is_active' => true]);
 
         $this->check();
         $this->check();
@@ -181,7 +195,7 @@ class SubscriptionLifecycleTest extends TestCase
     {
         $grace = (int) config('shop.subscription.grace_days');
         $shop = $this->paidShop(['subscription_ends_at' => now()->subDays($grace + 1)]);
-        Product::factory()->count(30)->create(['shop_id' => $shop->id, 'is_active' => true]);
+        Product::factory()->count($this->freeLimit() + 6)->create(['shop_id' => $shop->id, 'is_active' => true]);
 
         $this->check();
         $this->assertSame(6, $shop->products()->whereNotNull('auto_hidden_at')->count());
@@ -191,7 +205,7 @@ class SubscriptionLifecycleTest extends TestCase
         $shop->forceFill(['subscription_ends_at' => now()->addYear()])->save();
         app(\App\Services\ProductLimitLock::class)->restore($shop->fresh());
 
-        $this->assertSame(30, $shop->products()->where('is_active', true)->count());
+        $this->assertSame($this->freeLimit() + 6, $shop->products()->where('is_active', true)->count());
         $this->assertSame(0, $shop->products()->whereNotNull('auto_hidden_at')->count());
     }
 }

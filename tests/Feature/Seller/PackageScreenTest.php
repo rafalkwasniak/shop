@@ -215,7 +215,7 @@ class PackageScreenTest extends TestCase
         $this->actingAs($seller)->get(route('seller.package.show'))
             ->assertOk()
             ->assertSee('Wykorzystanie')
-            ->assertSee('3 / 24')      // produkty
+            ->assertSee('3 / 60')      // produkty
             ->assertSee('0 / 100');    // zadania AI w Kramie
     }
 

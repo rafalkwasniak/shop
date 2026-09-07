@@ -231,7 +231,8 @@ return [
             'price_yearly' => 0,
             'available' => true,
             'entitlements' => [
-                'max_products' => 24,
+                'max_products' => 60,
+                'max_employees' => 0,
                 'ai_weekly_limit' => 100,
                 'online_payments' => false,
                 'courier_shipping' => false,
@@ -248,7 +249,8 @@ return [
             'price_yearly' => 750,
             'available' => true,
             'entitlements' => [
-                'max_products' => 72,
+                'max_products' => 300,
+                'max_employees' => 0,
                 'ai_weekly_limit' => 400,
                 'online_payments' => true,
                 'courier_shipping' => true,
@@ -265,7 +267,8 @@ return [
             'price_yearly' => 1500,
             'available' => true,
             'entitlements' => [
-                'max_products' => 240,
+                'max_products' => 600,
+                'max_employees' => 5,
                 'ai_weekly_limit' => 800,
                 'online_payments' => true,
                 'courier_shipping' => true,
@@ -303,6 +306,7 @@ return [
             'available' => false,
             'entitlements' => [
                 'max_products' => 1000000,
+                'max_employees' => 1000,
                 'ai_weekly_limit' => 100000,
                 'online_payments' => true,
                 'courier_shipping' => true,

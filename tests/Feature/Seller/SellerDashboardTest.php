@@ -63,7 +63,7 @@ class SellerDashboardTest extends TestCase
             // Dwa paski wykorzystania — te same liczby co na „Mój pakiet",
             // żeby oba ekrany mówiły to samo.
             ->assertSee('Produkty')
-            ->assertSee('2 / 24')
+            ->assertSee('2 / 60')
             ->assertSee('Zadania AI (tydzień)')
             ->assertSee('0 / 100')
             // Skrót do ekranu pakietu wprost z Pulpitu.

@@ -52,7 +52,7 @@ class LandingPackagesTest extends TestCase
         $this->assertTrue($stragan['Integracja z Fakturownią']);
         $this->assertTrue($stragan['Google Analytics i Tag Manager']);
         // Wyższy limit produktów to też różnica, choć cecha ta sama.
-        $this->assertTrue($stragan['Do 72 produktów']);
+        $this->assertTrue($stragan['Do 300 produktów']);
         // Tak samo tygodniowa pula AI — różni się liczbą, nie nazwą.
         $this->assertTrue($stragan['Korekta AI: 400 zadań tygodniowo']);
 
@@ -68,7 +68,7 @@ class LandingPackagesTest extends TestCase
         $this->assertTrue($pawilon['Edycja zamówień']);
         $this->assertTrue($pawilon['Kody rabatowe w koszyku']);
         $this->assertTrue($pawilon['Wiadomości do klientów']);
-        $this->assertTrue($pawilon['Do 240 produktów']);
+        $this->assertTrue($pawilon['Do 600 produktów']);
 
         // Ma je już Stragan, więc w Pawilonie to nie jest nowość.
         $this->assertFalse($pawilon['Integracja płatności online (własne konto Paynow)']);

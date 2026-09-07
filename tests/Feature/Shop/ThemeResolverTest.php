@@ -111,8 +111,8 @@ class ThemeResolverTest extends TestCase
         $addActive(18); // 46 → skok na 4 kolumny, 4×4 = 16
         $this->assertSame(['columns' => 4, 'per_page' => 16], $shop->listingDensity());
 
-        $addActive(30); // 76 → sufit 4×6 = 24 (dalej rosną tylko podstrony)
-        $this->assertSame(['columns' => 4, 'per_page' => 24], $shop->listingDensity());
+        $addActive(30); // 76 → sufit 4×5 = 20 (dalej rosną tylko podstrony)
+        $this->assertSame(['columns' => 4, 'per_page' => 20], $shop->listingDensity());
     }
 
     public function test_listing_density_ignores_hidden_products(): void

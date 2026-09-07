@@ -19,7 +19,7 @@ class PackageEntitlementsTest extends TestCase
 
         $fresh = $shop->fresh();
         $this->assertSame('pavilion', $fresh->package);
-        $this->assertSame(240, $fresh->entitlement('max_products'));
+        $this->assertSame(600, $fresh->entitlement('max_products'));
         $this->assertTrue($fresh->entitlement('order_editing'));
         // Snapshot obejmuje też cenę roczną (BRUTTO) pakietu.
         $this->assertSame(1500.0, $fresh->priceYearly());
@@ -36,13 +36,13 @@ class PackageEntitlementsTest extends TestCase
 
     public function test_entitlement_reads_snapshot_not_current_config(): void
     {
-        // Sklep kupił „stall" z limitem 24 (snapshot na sklepie).
+        // Sklep kupił „stall" z limitem 60 (snapshot na sklepie).
         $shop = Shop::factory()->package('stall')->create();
 
         // Później zmieniamy definicję pakietu w configu — snapshot NIE drgnie.
         config(['shop.packages.stall.entitlements.max_products' => 999]);
 
-        $this->assertSame(24, $shop->entitlement('max_products'));
+        $this->assertSame(60, $shop->entitlement('max_products'));
     }
 
     public function test_entitlement_falls_back_to_config_when_not_in_snapshot(): void
@@ -50,7 +50,7 @@ class PackageEntitlementsTest extends TestCase
         // Sklep bez snapshotu (legacy) — resolver sięga do configu aktualnego pakietu.
         $shop = Shop::factory()->create(['package' => 'booth', 'entitlements' => null]);
 
-        $this->assertSame(72, $shop->entitlement('max_products'));
+        $this->assertSame(300, $shop->entitlement('max_products'));
         $this->assertTrue($shop->entitlement('online_payments'));
     }
 
@@ -60,7 +60,7 @@ class PackageEntitlementsTest extends TestCase
         // więc resolver bierze wartość z definicji pakietu.
         $shop = Shop::factory()->create([
             'package' => 'stall',
-            'entitlements' => ['max_products' => 24], // stary, niepełny snapshot
+            'entitlements' => ['max_products' => 60], // stary, niepełny snapshot
         ]);
         config(['shop.packages.stall.entitlements.new_feature' => true]);
 
@@ -84,7 +84,7 @@ class PackageEntitlementsTest extends TestCase
         $shop = Shop::factory()->create();
 
         $this->assertSame('stall', $shop->package);
-        $this->assertSame(24, $shop->entitlement('max_products'));
+        $this->assertSame(60, $shop->entitlement('max_products'));
         $this->assertFalse($shop->entitlement('online_payments'));
     }
 
@@ -114,7 +114,7 @@ class PackageEntitlementsTest extends TestCase
     {
         return [
             'Kram (stall)' => ['stall', [
-                'max_products' => 24,
+                'max_products' => 60,
                 'online_payments' => false,
                 'courier_shipping' => false,
                 'invoices' => false,
@@ -124,7 +124,7 @@ class PackageEntitlementsTest extends TestCase
                 'bulk_mail' => false,
             ]],
             'Stragan (booth)' => ['booth', [
-                'max_products' => 72,
+                'max_products' => 300,
                 'online_payments' => true,
                 'courier_shipping' => true,
                 'invoices' => true,
@@ -134,7 +134,7 @@ class PackageEntitlementsTest extends TestCase
                 'bulk_mail' => false,
             ]],
             'Pawilon (pavilion)' => ['pavilion', [
-                'max_products' => 240,
+                'max_products' => 600,
                 'online_payments' => true,
                 'courier_shipping' => true,
                 'invoices' => true,

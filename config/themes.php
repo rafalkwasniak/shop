@@ -659,8 +659,23 @@ return [
     | Reguła: bierzemy PIERWSZY (najmniejszy) układ z drabinki `steps`, przy którym
     | wszystkie aktywne produkty mieszczą się w `max_pages` podstronach. Rośniemy
     | w kolejności wpisów: najpierw wiersze przy 3 kolumnach (3→5), a dopiero gdy
-    | i to nie starcza — skok na 4 kolumny (wiersze 4→6). Powyżej ostatniego stopnia
+    | i to nie starcza — skok na 4 kolumny (wiersze 4→5). Powyżej ostatniego stopnia
     | zostaje sufit i podstron po prostu przybywa.
+    |
+    | SUFIT TO 20 NA STRONĘ (4×5) I TO NIE JEST LICZBA PRZYPADKOWA. Limity
+    | produktów w pakietach (60 / 300 / 600) są jej wielokrotnościami, więc sklep
+    | z PEŁNYM katalogiem ma wszystkie podstrony pełne co do sztuki: 3, 15 i 30
+    | podstron. Przy dawnym suficie 24 Stragan wychodził 12×24+12 — ostatnia
+    | podstrona w połowie pusta.
+    |
+    | Zmiana sufitu albo limitów w `config/shop.php` musi iść PARAMI, inaczej ta
+    | własność cicho znika. Sufit jest jednocześnie ostatnim szczeblem drabinki
+    | i limitem Krama (60 = 3 × 20) — darmowy sklep z pełnym katalogiem mieści
+    | się dokładnie w założonych trzech podstronach.
+    |
+    | Czego to NIE załatwia: sklep, który ma 47 produktów, dalej skończy stronę
+    | niepełnym wierszem. Równa siatka na ostatniej podstronie zależy od liczby
+    | produktów SPRZEDAWCY, a limit rozstrzyga tylko o przypadku katalogu pełnego.
     |
     | Klucz: WIELKOŚĆ KAFLA robią kolumny (3 = duże, 4 = gęstsze); `rows` steruje
     | tylko długością strony (per_page = columns × rows). Liczba liczona z aktywnych
@@ -678,8 +693,7 @@ return [
             ['columns' => 3, 'rows' => 4], // 12 — do 36
             ['columns' => 3, 'rows' => 5], // 15 — do 45
             ['columns' => 4, 'rows' => 4], // 16 — do 48
-            ['columns' => 4, 'rows' => 5], // 20 — do 60
-            ['columns' => 4, 'rows' => 6], // 24 — do 72 (dalej: sufit + więcej podstron)
+            ['columns' => 4, 'rows' => 5], // 20 — do 60 (dalej: sufit + więcej podstron)
         ],
     ],
 
