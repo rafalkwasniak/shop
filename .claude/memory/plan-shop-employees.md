@@ -13,7 +13,7 @@ metadata:
 - **Krok 1 ZROBIONY** (commit `168b7ec`): `User::currentShop()`, 77 wywołań w 40 plikach. **Do przeniesienia do Magellana `cherry-pick`iem — jeszcze NIE zrobione.**
 - **Krok 2 ZROBIONY**: `PanelSection`, `shop_employees` (migracja PRZESZŁA na produkcji), `ShopEmployee`, `UserRole::Employee`, `max_employees` (Pawilon 5).
 - **Krok 3 ZROBIONY**: middleware `section:`, filtr menu, bramy w 9 komponentach Livewire, `role:seller,employee`, rzeczy właścicielskie za zagnieżdżonym `role:seller`.
-- **Krok 4 W TOKU**: ekran „Pracownicy" (lista, zaproszenie, edycja działów, cofnięcie).
+- **Krok 4 ZROBIONY**: ekran „Pracownicy" — lista z trzema stanami, zaproszenie, edycja działów w miejscu, odebranie i przywrócenie dostępu. Prawa kolumna („Jak to działa") POZA bramą pakietu — wzorzec z Kodów rabatowych, wskazany przez Rafała.
 - **Krok 5 CZEKA**: mail z zaproszeniem + aktywacja. **Etykieta w cenniku (`PackageFeatures::labels()`) jest ZAKOMENTOWANA — odkomentować dopiero, gdy zaproszenie zadziała.**
 
 ### Gotchy wyłapane przy kroku 3 (nie z planu)
