@@ -72,6 +72,7 @@
 - [Tailwind: klasa musi być w buildzie](tailwind-classes-must-exist-in-build.md) — grepuj `public/build/assets/*.css`.
 - [route()/url() na subdomenie](gotcha-route-helpers-on-subdomain.md) — używaj `Central::url()`.
 - [Livewire: ostrzejsza sygnatura = fatal](livewire-override-signature-fatal.md) — kopiuj sygnatury znak w znak.
+- [normalize() → typowana właściwość Livewire](gotcha-nullable-normalize-into-typed-livewire-property.md) — null = TypeError PRZED validate(). **Zawsze `?? $this->pole`. Trafione 2×.**
 - [Blade: blok @php psuje @php(...)](blade-php-block-breaks-inline-php.md) — rozwala CAŁY widok.
 - [Blade: `@if` przyklejone do słowa](blade-directive-glued-to-word-not-compiled.md) — cały widok 500. **Trafione 2×.**
 - [NIGDY zmiennej widoku `$errors`](blade-never-name-view-variable-errors.md) — nadpisuje worek walidacji.

@@ -12,6 +12,7 @@ use App\Models\Shop;
 use App\Services\CartService;
 use App\Services\CompanyLookup;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -154,7 +155,7 @@ class CheckoutTest extends TestCase
         $this->assertNull($order->customer_id);
     }
 
-    private function fillValidCheckout(Shop $shop): \Livewire\Features\SupportTesting\Testable
+    private function fillValidCheckout(Shop $shop): Testable
     {
         return Livewire::test(Checkout::class, ['shopId' => $shop->id])
             ->set('buyer_name', 'Jan')
@@ -344,6 +345,59 @@ class CheckoutTest extends TestCase
             ->assertHasNoErrors();
     }
 
+    /**
+     * Zakup na firmę z pustym NIP-em: klient ma zobaczyć komunikat walidacji,
+     * a nie wywrotkę. Normalizacja zwraca dla takiego wejścia null i przed
+     * poprawką leciał TypeError na typowanej właściwości.
+     */
+    public function test_company_purchase_with_blank_nip_fails_validation_not_type(): void
+    {
+        $shop = $this->shopReadyForOrders();
+        $this->cartProduct($shop);
+
+        Livewire::test(Checkout::class, ['shopId' => $shop->id])
+            ->set('buyer_name', 'Jan')
+            ->set('buyer_surname', 'Kowalski')
+            ->set('buyer_email', 'jan@example.com')
+            ->set('buyer_phone', '123456789')
+            ->set('delivery_method', 'pickup')
+            ->set('payment_method', 'pay_on_pickup')
+            ->set('accept_terms', true)
+            ->set('accept_privacy', true)
+            ->set('is_company', true)
+            ->set('company_name', 'ACME sp. z o.o.')
+            ->set('company_nip', '')
+            ->call('place')
+            ->assertHasErrors('company_nip');
+
+        $this->assertSame(0, Order::count());
+    }
+
+    /** Wejście bez cyfr zostaje w polu — klient widzi, co wpisał, i poprawia. */
+    public function test_company_nip_without_digits_is_kept_and_rejected(): void
+    {
+        $shop = $this->shopReadyForOrders();
+        $this->cartProduct($shop);
+
+        Livewire::test(Checkout::class, ['shopId' => $shop->id])
+            ->set('buyer_name', 'Jan')
+            ->set('buyer_surname', 'Kowalski')
+            ->set('buyer_email', 'jan@example.com')
+            ->set('buyer_phone', '123456789')
+            ->set('delivery_method', 'pickup')
+            ->set('payment_method', 'pay_on_pickup')
+            ->set('accept_terms', true)
+            ->set('accept_privacy', true)
+            ->set('is_company', true)
+            ->set('company_name', 'ACME sp. z o.o.')
+            ->set('company_nip', 'brak')
+            ->call('place')
+            ->assertSet('company_nip', 'brak')
+            ->assertHasErrors('company_nip');
+
+        $this->assertSame(0, Order::count());
+    }
+
     public function test_courier_option_requires_shipping_address(): void
     {
         $shop = $this->shopReadyForOrders();
@@ -405,7 +459,7 @@ class CheckoutTest extends TestCase
             ->assertRedirect('/kasa/dziekujemy');
 
         $order = Order::first();
-        $this->assertSame(\App\Enums\DeliveryMethod::Courier, $order->delivery_method);
+        $this->assertSame(DeliveryMethod::Courier, $order->delivery_method);
         $this->assertSame('15.00', $order->delivery_cost);
         $this->assertSame('55.00', $order->total_gross);   // 40 produkty + 15 dostawa
         $this->assertSame('Leśna', $order->ship_street);
@@ -460,7 +514,7 @@ class CheckoutTest extends TestCase
             ->assertRedirect('/kasa/dziekujemy');
 
         $order = Order::first();
-        $this->assertSame(\App\Enums\DeliveryMethod::ParcelLocker, $order->delivery_method);
+        $this->assertSame(DeliveryMethod::ParcelLocker, $order->delivery_method);
         $this->assertSame('12.00', $order->delivery_cost);
         $this->assertSame('52.00', $order->total_gross);   // 40 produkty + 12 dostawa
         // Kod znormalizowany do wersalików — klient nie ma za to obrywać.

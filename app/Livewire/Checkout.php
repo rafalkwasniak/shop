@@ -475,7 +475,10 @@ class Checkout extends Component
         $this->buyer_phone = app(PhoneService::class)->normalize($this->buyer_phone) ?? $this->buyer_phone;
 
         if ($this->is_company) {
-            $this->company_nip = app(NipService::class)->normalize($this->company_nip);
+            // normalize() zwraca null dla wejścia bez cyfr (pusty NIP, same
+            // litery). Zostawiamy wtedy to, co wpisał klient — walidacja niżej
+            // powie mu, co jest nie tak, zamiast wywracać się na typie.
+            $this->company_nip = app(NipService::class)->normalize($this->company_nip) ?? $this->company_nip;
         }
 
         // Kod paczkomatu: InPost zapisuje go wersalikami (KRA01A), a klient
