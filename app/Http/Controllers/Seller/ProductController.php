@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Seller;
 
+use App\Enums\SaleUnit;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Seller\ProductRequest;
 use App\Models\Product;
@@ -10,6 +11,7 @@ use App\Services\SlugService;
 use App\Services\TagNormalizer;
 use App\Support\MetaDescription;
 use Illuminate\Contracts\Support\Renderable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -39,7 +41,10 @@ class ProductController extends Controller
 
         $products = null;
         if ($shop !== null) {
-            $query = $shop->products()->with('images', 'priceHistory');
+            // `withExists`: kafelek mówi, CO zrobi usunięcie (ukrycie dla historii
+            // czy skasowanie ze zdjęciami), a to zależy od tego, czy produkt był
+            // kiedykolwiek zamówiony. Jednym podzapytaniem, nie pytaniem na kafelek.
+            $query = $shop->products()->with('images', 'priceHistory')->withExists('orderItems');
             $this->applyFilters($query, $filters);
 
             $sort = self::SORTS[$sortKey];
@@ -163,7 +168,7 @@ class ProductController extends Controller
         $data = array_merge($data, MetaDescription::fields($data['meta_description'] ?? null));
 
         // Stan na sztuki to liczba całkowita; na wagę zostaje ułamkiem (2,50 kg).
-        if ($data['stock'] !== null && ($data['sale_unit'] ?? 'piece') === \App\Enums\SaleUnit::Piece->value) {
+        if ($data['stock'] !== null && ($data['sale_unit'] ?? 'piece') === SaleUnit::Piece->value) {
             $data['stock'] = (int) round((float) $data['stock']);
         }
 
@@ -280,7 +285,7 @@ class ProductController extends Controller
      * Nakłada aktywne filtry na zapytanie o produkty. Szukanie po nazwie i opisie
      * (znaki specjalne LIKE ekranowane); tag po dokładnej nazwie (z podpowiedzi).
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<\App\Models\Product>  $query
+     * @param  Builder<Product>  $query
      * @param  array{cena_od: float|null, cena_do: float|null, szukaj: string, tag: string}  $f
      */
     private function applyFilters($query, array $f): void

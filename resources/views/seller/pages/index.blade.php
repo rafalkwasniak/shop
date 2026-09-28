@@ -44,12 +44,19 @@
                                         class="rounded-xl border border-stone-200 bg-white px-3 py-1.5 text-sm font-medium text-stone-700 transition hover:bg-stone-100">
                                         Edytuj
                                     </a>
+                                    {{-- Wiersz ma kilkadziesiąt pikseli, więc pytanie staje
+                                         W NIM, a nie na nakładce, która by się nie zmieściła. --}}
                                     @unless ($page->is_system)
-                                        <form method="POST" action="{{ route('seller.pages.destroy', $page) }}"
-                                            onsubmit="return confirm('Usunąć stronę „{{ $page->title }}”?');">
-                                            @csrf
-                                            <button type="submit" class="text-sm font-medium text-rose-700 transition hover:text-rose-800">Usuń</button>
-                                        </form>
+                                        <livewire:confirm-action
+                                            :key="'usun-strone-'.$page->id"
+                                            :action="route('seller.pages.destroy', $page)"
+                                            :title="'Usunąć stronę '.$page->title.'?'"
+                                            :lines="['Zniknie ze sklepu razem z odnośnikiem do niej.', 'Tej operacji nie da się cofnąć.']"
+                                            label="Usuń stronę"
+                                            text="Usuń"
+                                            icon="none"
+                                            :inline="true"
+                                            trigger-class="text-sm font-medium text-rose-700 transition hover:text-rose-800" />
                                     @endunless
                                 </div>
                             </li>

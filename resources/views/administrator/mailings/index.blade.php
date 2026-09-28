@@ -24,7 +24,7 @@
                 @else
                     <ul class="mt-6 space-y-3">
                         @foreach ($mailings as $mailing)
-                            <li class="rounded-2xl border border-stone-200 bg-white/70 p-4">
+                            <li class="relative rounded-2xl border border-stone-200 bg-white/70 p-4">
                                 <div class="flex flex-wrap items-start justify-between gap-3">
                                     <div class="min-w-0">
                                         <a href="{{ route('administrator.mailings.edit', $mailing) }}" class="break-words font-semibold text-stone-900 transition hover:text-amber-700">
@@ -70,11 +70,17 @@
                                     {{-- Wysłanej nie da się skasować — sprzedawcy mają ją
                                          w skrzynkach, więc zostaje jako zapis, co poszło. --}}
                                     @unless ($mailing->isSent())
-                                        <form method="POST" action="{{ route('administrator.mailings.destroy', $mailing) }}" class="ml-auto"
-                                            onsubmit="return confirm('Usunąć szkic „{{ $mailing->subject }}”? Tej operacji nie da się cofnąć.');">
-                                            @csrf
-                                            <button type="submit" class="text-sm font-medium text-rose-700 transition hover:text-rose-800">Usuń</button>
-                                        </form>
+                                        <div class="ml-auto">
+                                            <livewire:confirm-action
+                                                :key="'usun-szkic-'.$mailing->id"
+                                                :action="route('administrator.mailings.destroy', $mailing)"
+                                                :title="'Usunąć szkic '.$mailing->subject.'?'"
+                                                :lines="['Szkic nie został wysłany, więc nikt go nie dostał.', 'Zniknie na zawsze i nie da się tego cofnąć.']"
+                                                label="Usuń szkic"
+                                                text="Usuń"
+                                                icon="none"
+                                                trigger-class="text-sm font-medium text-rose-700 transition hover:text-rose-800" />
+                                        </div>
                                     @endunless
                                 </div>
                             </li>

@@ -115,21 +115,34 @@
                                         </form>
                                     @endif
 
-                                    <form method="POST"
-                                        action="{{ $revoked ? route('seller.employees.restore', $employee) : route('seller.employees.revoke', $employee) }}">
-                                        @csrf
-                                        @if ($revoked)
+                                    {{-- Przywrócenie dostępu nie pyta: nikomu niczego nie
+                                         zabiera, a ekran i tak pokazuje, kto jest odcięty. --}}
+                                    @if ($revoked)
+                                        <form method="POST" action="{{ route('seller.employees.restore', $employee) }}">
+                                            @csrf
                                             <button type="submit" class="font-medium text-stone-600 underline decoration-stone-300 underline-offset-2 transition hover:text-stone-800">
                                                 Przywróć dostęp
                                             </button>
-                                        @else
-                                            <button type="submit"
-                                                onclick="return confirm('Odebrać dostęp? Ta osoba przestanie wchodzić do panelu przy najbliższym kliknięciu.')"
-                                                class="font-medium text-rose-600 underline decoration-rose-300 underline-offset-2 transition hover:text-rose-700">
-                                                Odbierz dostęp
-                                            </button>
-                                        @endif
-                                    </form>
+                                        </form>
+                                    @endif
+
+                                    {{-- Odebranie dostępu jest ODWRACALNE (przycisk obok
+                                         przywraca), więc bursztynowo, nie różowo — kolor
+                                         w tym panelu mówi, czy coś znika na zawsze. --}}
+                                    @unless ($revoked)
+                                        <livewire:confirm-action
+                                            :key="'odbierz-dostep-'.$employee->id"
+                                            :action="route('seller.employees.revoke', $employee)"
+                                            title="Odebrać dostęp?"
+                                            :lines="['Ta osoba przestanie wchodzić do panelu przy najbliższym kliknięciu.', 'Dostęp możesz jej później przywrócić.']"
+                                            confirm-label="Tak, odbierz"
+                                            label="Odbierz dostęp"
+                                            text="Odbierz dostęp"
+                                            icon="none"
+                                            tone="amber"
+                                            :inline="true"
+                                            trigger-class="font-medium text-rose-600 underline decoration-rose-300 underline-offset-2 transition hover:text-rose-700" />
+                                    @endunless
                                 </div>
                             </li>
                         @endforeach

@@ -62,7 +62,7 @@
                         @foreach ($products as $product)
                             @php($main = $product->mainImage())
                             @php($editUrl = route('seller.products.edit', ['product' => $product] + $listQuery))
-                            <div class="group flex flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white/80 shadow-sm transition hover:shadow-md">
+                            <div class="group relative flex flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white/80 shadow-sm transition hover:shadow-md">
                                 {{-- Zdjęcie + status --}}
                                 <a href="{{ $editUrl }}" class="relative block aspect-square overflow-hidden bg-stone-50">
                                     @if ($main)
@@ -109,16 +109,18 @@
                                                 <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" />
                                             </svg>
                                         </a>
-                                        <form method="POST" action="{{ route('seller.products.destroy', $product) }}" class="ml-auto"
-                                            onsubmit="return confirm('Usunąć produkt „{{ $product->name }}”?');">
-                                            @csrf
-                                            <button type="submit" title="Usuń" aria-label="Usuń produkt"
-                                                class="inline-flex items-center justify-center rounded-lg border border-rose-200 bg-rose-50 p-1.5 text-rose-700 transition hover:bg-rose-100">
-                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
-                                                    <path d="M3 6h18" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" />
-                                                </svg>
-                                            </button>
-                                        </form>
+                                        {{-- Usunięcie pyta w kafelku, a nie okienkiem przeglądarki: to są
+                                             DWIE różne operacje i sprzedawca ma wiedzieć, która go czeka.
+                                             `order_items_exists` dokłada lista jednym zapytaniem (withExists),
+                                             więc zdanie nie kosztuje pytania na każdy kafelek. --}}
+                                        <div class="ml-auto">
+                                            <livewire:confirm-action
+                                                :key="'usun-'.$product->id"
+                                                :action="route('seller.products.destroy', $product)"
+                                                :title="'Usunąć '.$product->name.'?'"
+                                                :lines="$product->deletionConsequences()"
+                                                label="Usuń produkt" />
+                                        </div>
                                         </div>
                                     </div>
                                 </div>

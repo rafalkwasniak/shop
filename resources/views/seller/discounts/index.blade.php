@@ -51,7 +51,7 @@
                     @else
                     <div class="mt-6 space-y-2">
                         @foreach ($codes as $code)
-                            <div class="rounded-2xl border border-stone-200 bg-white/80 px-4 py-3.5 shadow-sm transition hover:border-amber-300">
+                            <div class="relative rounded-2xl border border-stone-200 bg-white/80 px-4 py-3.5 shadow-sm transition hover:border-amber-300">
                                 <div class="flex items-start justify-between gap-4">
                                     {{-- Lewa: sam kod + na co działa i jak długo --}}
                                     <div class="min-w-0">
@@ -98,11 +98,23 @@
                                         </button>
                                     </form>
 
-                                    <form method="POST" action="{{ route('seller.discounts.destroy', ['discountCode' => $code] + $listQuery) }}" class="ml-auto"
-                                        onsubmit="return confirm('Usunąć kod „{{ $code->code }}”?@if ($code->usedCount() > 0) Zamówienia, w których go użyto, zachowają zapis rabatu.@endif');">
-                                        @csrf
-                                        <button type="submit" class="text-sm font-medium text-rose-700 transition hover:text-rose-800">Usuń</button>
-                                    </form>
+                                    {{-- Zdanie o zamówieniach tylko wtedy, gdy kod był używany —
+                                         inaczej uspokajałoby w sprawie, której nie ma. --}}
+                                    <div class="ml-auto">
+                                        <livewire:confirm-action
+                                            :key="'usun-kod-'.$code->id"
+                                            :action="route('seller.discounts.destroy', ['discountCode' => $code] + $listQuery)"
+                                            :title="'Usunąć kod '.$code->code.'?'"
+                                            :lines="array_values(array_filter([
+                                                'Kod zniknie z listy i przestanie działać w kasie.',
+                                                $code->usedCount() > 0 ? 'Zamówienia, w których go użyto, zachowają zapis rabatu.' : null,
+                                                'Tej operacji nie da się cofnąć.',
+                                            ]))"
+                                            label="Usuń kod"
+                                            text="Usuń"
+                                            icon="none"
+                                            trigger-class="text-sm font-medium text-rose-700 transition hover:text-rose-800" />
+                                    </div>
                                 </div>
                             </div>
                         @endforeach

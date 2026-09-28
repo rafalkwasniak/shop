@@ -145,6 +145,38 @@ class Product extends Model
     }
 
     /**
+     * Co się stanie po usunięciu tego produktu — po jednym zdaniu na wiersz,
+     * do potwierdzenia w panelu.
+     *
+     * Zdania są dwa, bo `ProductController::destroy()` robi dwie różne rzeczy:
+     * produkt, który był zamawiany, zostaje ukryty (historia zamówień i
+     * dokumenty muszą go widzieć), a nigdy niezamawiany znika razem ze
+     * zdjęciami. Okienko przeglądarki nie umiało tego powiedzieć — stąd ta
+     * treść siedzi tutaj, a nie w widoku: jest jedna i daje się przetestować.
+     *
+     * Lista produktów dokłada `order_items_exists` jednym podzapytaniem
+     * (`withExists`), więc na liście nie ma pytania na kafelek; poza listą
+     * spadamy na zwykłe sprawdzenie.
+     *
+     * @return list<string>
+     */
+    public function deletionConsequences(): array
+    {
+        $ordered = $this->getAttribute('order_items_exists');
+        $ordered = $ordered === null ? $this->hasBeenOrdered() : (bool) $ordered;
+
+        return $ordered
+            ? [
+                'Produkt był zamawiany, więc zostanie ukryty, a nie skasowany — zamówienia i dokumenty muszą go dalej widzieć.',
+                'Zniknie z katalogu i ze sklepu.',
+            ]
+            : [
+                'Produkt nigdy nie był zamawiany, więc zniknie na zawsze, razem ze zdjęciami.',
+                'Tej operacji nie da się cofnąć.',
+            ];
+    }
+
+    /**
      * Trwałe usunięcie produktu wraz ze sprzątaniem — dla produktów, które NIGDY
      * nie były zamówione (bez wartości historycznej; typowo śmieci po testach).
      * Zdjęcia kasujemy przez Eloquent, by odpalił się hook ProductImage::deleting
