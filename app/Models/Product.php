@@ -145,6 +145,28 @@ class Product extends Model
     }
 
     /**
+     * Co się stanie po skopiowaniu tego produktu — po jednym zdaniu na wiersz,
+     * do potwierdzenia w panelu.
+     *
+     * Kopiowanie nic nie psuje, a mimo to pytamy: ikony „Edytuj" i „Kopiuj"
+     * stoją obok siebie, a skutek pomyłki jest CICHY. Sprzedawca ląduje
+     * w edycji kopii, poprawia ją w przekonaniu, że poprawia oryginał, i kończy
+     * z dwoma produktami zamiast jednego — a że kopia wchodzi ukryta, sklep
+     * niczego nie zdradzi. Dlatego zdania mówią wprost: to jest DRUGI produkt,
+     * pod własnym adresem.
+     *
+     * @return list<string>
+     */
+    public function duplicationConsequences(): array
+    {
+        return [
+            'Powstanie drugi produkt — oryginał zostaje bez zmian.',
+            'Kopia bierze zdjęcia, opis, cenę i tagi.',
+            'Dostanie własny adres w sklepie i wejdzie ukryta; otworzymy ją od razu do edycji.',
+        ];
+    }
+
+    /**
      * Co się stanie po usunięciu tego produktu — po jednym zdaniu na wiersz,
      * do potwierdzenia w panelu.
      *

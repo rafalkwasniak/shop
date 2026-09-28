@@ -152,6 +152,59 @@ class ProductController extends Controller
     }
 
     /**
+     * Kopia produktu. Katalog rośnie wariantami tego samego towaru (ten sam
+     * kubek w trzech kolorach, ta sama koszulka w pięciu wzorach), więc
+     * dodawanie ich od zera to przepisywanie tych samych pól po kilka razy.
+     *
+     * Kopia wchodzi UKRYTA i bez wyróżnienia na stronie głównej: sprzedawca ma
+     * ją najpierw dokończyć, a nie zobaczyć w sklepie drugi raz tego samego
+     * produktu. Zdjęcia dostają WŁASNE pliki — wspólna ścieżka sprawiłaby, że
+     * usunięcie zdjęcia w kopii zabiera je z oryginału.
+     *
+     * Czego nie kopiujemy: historii cen (Omnibus mówi o ofercie TEGO produktu,
+     * a kopia niczego jeszcze nie oferowała — obserwator zapisze jej własny
+     * pierwszy wpis) oraz ukrycia przez zamek limitu, bo ono należy do stanu
+     * abonamentu, nie do towaru.
+     */
+    public function duplicate(Request $request, Product $product, ProductImageService $images): RedirectResponse
+    {
+        $this->authorizeProduct($request, $product);
+
+        if ($this->limitReached($request)) {
+            return redirect()->route('seller.products.index')->with('error', $this->limitMessage($request));
+        }
+
+        $copy = $product->replicate(['auto_hidden_at']);
+        // Nazwa mieści się w limicie kolumny razem z dopiskiem (255 = 247 + 8).
+        $copy->name = mb_substr($product->name, 0, 247).' (kopia)';
+        $copy->slug = app(SlugService::class)->make($copy->name);
+        $copy->is_active = false;
+        $copy->show_on_homepage = false;
+
+        // Opis SEO od automatu należy do tekstu, z którego powstał — kopia
+        // dostanie własny (zleca go obserwator przy utworzeniu). Opis napisany
+        // ręcznie zostaje, bo jest pracą sprzedawcy.
+        if (! $copy->meta_description_manual) {
+            $copy->meta_description = null;
+        }
+
+        $copy->save();
+
+        $copy->tags()->sync($product->tags->pluck('id'));
+
+        foreach ($product->images as $image) {
+            $path = $images->copy($image->path, $copy);
+
+            if ($path !== null) {
+                $copy->images()->create(['path' => $path, 'position' => $image->position]);
+            }
+        }
+
+        return redirect()->route('seller.products.edit', $copy)
+            ->with('success', 'Kopia gotowa i na razie ukryta — popraw nazwę, zdjęcia i opis, a potem włącz ją w sklepie.');
+    }
+
+    /**
      * Dane do zapisu: stan ma znaczenie tylko przy włączonej kontroli stanu.
      *
      * @return array<string, mixed>

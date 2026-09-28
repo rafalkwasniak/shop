@@ -31,6 +31,32 @@ class ProductImageService
     }
 
     /**
+     * Kopiuje plik już zapisanego zdjęcia do katalogu innego produktu i zwraca
+     * nową ścieżkę (`null`, gdy pliku nie ma na dysku — brakujące zdjęcie nie
+     * może przerwać klonowania produktu).
+     *
+     * Kopia produktu nie może DZIELIĆ plików z oryginałem: usunięcie zdjęcia
+     * w kopii zabrałoby je wtedy z karty źródłowej. Obrazu nie przetwarzamy
+     * ponownie — jest już zoptymalizowany, a każde kolejne kodowanie WebP
+     * odbierałoby mu jakość bez żadnego zysku.
+     */
+    public function copy(string $path, Product $product): ?string
+    {
+        $disk = Storage::disk('public');
+
+        if (! $disk->exists($path)) {
+            return null;
+        }
+
+        $extension = pathinfo($path, PATHINFO_EXTENSION) ?: 'webp';
+        $copy = 'products/'.$product->id.'/'.Str::uuid()->toString().'.'.$extension;
+
+        $disk->copy($path, $copy);
+
+        return $copy;
+    }
+
+    /**
      * Skaluje i koduje obraz do WebP, zwraca binarną zawartość pliku.
      */
     private function optimize(UploadedFile $file): string

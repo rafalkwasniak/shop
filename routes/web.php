@@ -487,6 +487,7 @@ Route::middleware(['auth', 'role:seller,employee', 'ensure.consents'])
             Route::get('/produkty/{product}/edycja', [ProductController::class, 'edit'])->name('products.edit');
             Route::post('/produkty/{product}', [ProductController::class, 'update'])->name('products.update');
             Route::post('/produkty/{product}/usun', [ProductController::class, 'destroy'])->name('products.destroy');
+            Route::post('/produkty/{product}/kopia', [ProductController::class, 'duplicate'])->name('products.duplicate');
 
             // Zdjęcia produktu.
             Route::post('/produkty/{product}/zdjecia', [ProductImageController::class, 'store'])->name('products.images.store');

@@ -109,6 +109,19 @@
                                                 <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" />
                                             </svg>
                                         </a>
+                                        {{-- Kopia pyta, mimo że niczego nie psuje: stoi tuż obok „Edytuj",
+                                             a skutek pomyłki jest cichy — patrz Product::duplicationConsequences(). --}}
+                                        <livewire:confirm-action
+                                            :key="'kopia-'.$product->id"
+                                            :action="route('seller.products.duplicate', $product)"
+                                            :title="'Skopiować '.$product->name.'?'"
+                                            :lines="$product->duplicationConsequences()"
+                                            confirm-label="Tak, kopiuj"
+                                            label="Zrób kopię produktu"
+                                            text="Kopiuj"
+                                            icon="copy"
+                                            tone="amber" />
+
                                         {{-- Usunięcie pyta w kafelku, a nie okienkiem przeglądarki: to są
                                              DWIE różne operacje i sprzedawca ma wiedzieć, która go czeka.
                                              `order_items_exists` dokłada lista jednym zapytaniem (withExists),
