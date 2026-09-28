@@ -49,6 +49,8 @@
                         Dodaj pierwszy produkt — to ostatni krok, by opublikować sklep i zacząć sprzedaż.
                     @elseif ($activeProductCount === 0)
                         Masz produkty, ale wszystkie są ukryte. Włącz przynajmniej jeden, aby sklep stał się widoczny dla klientów.
+                    @elseif (! $acceptsOrders)
+                        Sklep jest widoczny, ale nie ma w nim koszyka: nie masz włączonego sposobu dostawy albo zapłaty, więc klient widzi ofertę bez przycisku „Do koszyka". Jeśli tak ma być — bo umawiasz się z klientami poza sklepem — nic nie musisz robić.
                     @elseif ($done < $total)
                         Sklep jest widoczny. Uzupełnij pozostałe kroki, aby budził pełne zaufanie klientów.
                     @else

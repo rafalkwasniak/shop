@@ -22,7 +22,7 @@ class SellerDashboardTest extends TestCase
         $this->actingAs($seller)
             ->get(route('seller.dashboard'))
             ->assertOk()
-            ->assertSee('0 / 6');
+            ->assertSee('0 / 7');
     }
 
     public function test_panel_renders_mobile_navigation(): void
@@ -163,13 +163,16 @@ class SellerDashboardTest extends TestCase
             'nip' => '1234563218',
             'contact_email' => 'kontakt@sklep.test',
             'contact_phone' => '48600700800',
+            // Ostatni krok ścieżki: jest czym dostarczyć i czym zapłacić.
+            'pickup_enabled' => true,
+            'pay_on_pickup_enabled' => true,
         ]);
         Product::factory()->create(['shop_id' => $shop->id]);
 
         $this->actingAs($seller)
             ->get(route('seller.dashboard'))
             ->assertOk()
-            ->assertSee('6 / 6');
+            ->assertSee('7 / 7');
     }
 
     public function test_contact_step_needs_both_email_and_phone(): void
@@ -232,7 +235,47 @@ class SellerDashboardTest extends TestCase
         $this->actingAs($seller)
             ->get(route('seller.dashboard'))
             ->assertOk()
-            ->assertDontSee('6 / 6')
+            ->assertDontSee('7 / 7')
             ->assertSee('wszystkie są ukryte', false);
+    }
+
+    /**
+     * Sklep opublikowany, z aktywnym produktem, a mimo to bez kasy: włączony
+     * przelew bez podanego numeru konta to ŻADNA metoda płatności, więc
+     * storefront chowa „Do koszyka". Dokładnie ten stan zgłoszono jako
+     * „zepsuł się koszyk", więc pulpit musi go nazywać wprost.
+     */
+    public function test_dashboard_says_plainly_when_the_shop_cannot_take_orders(): void
+    {
+        $seller = User::factory()->consented()->create();
+        $shop = Shop::factory()->sellable()->create([
+            'owner_id' => $seller->id,
+            'pay_on_pickup_enabled' => false,
+            'bank_transfer_enabled' => true,
+            'bank_account_number' => null,
+        ]);
+        Product::factory()->for($shop)->create();
+
+        $this->assertFalse($shop->acceptsOrders());
+
+        $this->actingAs($seller)
+            ->get(route('seller.dashboard'))
+            ->assertOk()
+            ->assertDontSee('7 / 7')
+            ->assertSee('nie ma w nim koszyka', false);
+    }
+
+    public function test_dashboard_stops_warning_once_the_shop_can_take_orders(): void
+    {
+        $seller = User::factory()->consented()->create();
+        $shop = Shop::factory()->sellable()->create(['owner_id' => $seller->id]);
+        Product::factory()->for($shop)->create();
+
+        $this->assertTrue($shop->acceptsOrders());
+
+        $this->actingAs($seller)
+            ->get(route('seller.dashboard'))
+            ->assertOk()
+            ->assertDontSee('nie ma w nim koszyka', false);
     }
 }
