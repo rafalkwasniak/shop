@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use Monolog\Handler\NullHandler;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -23,7 +24,7 @@ abstract class TestCase extends BaseTestCase
     ];
 
     /**
-     * Trzy gardy chroniące świat zewnętrzny przed suitą testów.
+     * Cztery gardy chroniące świat zewnętrzny przed suitą testów.
      *
      * 1. SQLITE-ONLY: gdyby phpunit.xml się zepsuł albo środowisko podłożyło
      *    produkcyjne połączenie, suita pada zamiast tknąć produkcję.
@@ -42,6 +43,8 @@ abstract class TestCase extends BaseTestCase
      *    Discord. Test, który czegoś nie zafake'ował, teraz o tym krzyczy.
      *
      * 3. ŻADNYCH PRAWDZIWYCH PLIKÓW. Lekcja z 2026-08-04, patrz `isolateDisks()`.
+     *
+     * 4. ŻADNYCH WPISÓW W DZIENNIKACH PRODUKCJI. Patrz `isolateLogChannels()`.
      */
     protected function setUp(): void
     {
@@ -60,7 +63,42 @@ abstract class TestCase extends BaseTestCase
         Http::preventStrayRequests();
 
         $this->isolateDisks();
+        $this->isolateLogChannels();
         $this->skipShopCardRendering();
+    }
+
+    /**
+     * Żaden kanał logowania nie pisze w testach do pliku.
+     *
+     * `LOG_CHANNEL=null` w phpunit.xml ucisza tylko kanał DOMYŚLNY. Kanały
+     * wołane po nazwie — `Log::channel('paynow')`, `'shipx'`, `'fakturownia'` —
+     * omijają tę wartość i pisały dalej: jeden przebieg suity zostawiał prawie
+     * 300 linii w dziennikach, które na produkcji są ŚLADEM AUDYTOWYM PIENIĘDZY
+     * (stąd 365 dni retencji w config/logging.php, a nie 14). Wymyślone kwoty
+     * z fabryk w tych samych plikach co realne płatności sprzedawców to nie
+     * bałagan, tylko zepsuty dowód — a sięga się po niego dokładnie wtedy, gdy
+     * trzeba odtworzyć, co się stało z czyimiś pieniędzmi.
+     *
+     * Ta sama zasada co przy dyskach: nie „autor testu pamiętał", tylko „plik
+     * produkcji jest poza zasięgiem suity, kropka". Dlatego uciszamy KAŻDY kanał
+     * z kluczem `path`, a nie wyliczoną trójkę — nowy kanał dzienny dołoży ktoś
+     * kiedyś bez czytania tego komentarza.
+     *
+     * `Log::spy()` i `Log::shouldReceive()` w konkretnych testach działają jak
+     * dawniej — podmieniają całą fasadę i konfiguracji nie dotykają.
+     */
+    private function isolateLogChannels(): void
+    {
+        foreach (config('logging.channels', []) as $name => $channel) {
+            if (! isset($channel['path'])) {
+                continue;
+            }
+
+            config()->set("logging.channels.{$name}", [
+                'driver' => 'monolog',
+                'handler' => NullHandler::class,
+            ]);
+        }
     }
 
     /**

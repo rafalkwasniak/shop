@@ -50,7 +50,11 @@ class DispatchEmailQueue extends Command
             }
         }
 
-        $this->info("Outbox: {$sent} wysłanych, {$failed} nieudanych.");
+        // Ze znacznikiem czasu, bo jedynym odbiorcą tej linii jest plik, do którego
+        // scheduler dopisuje wyjście komendy (patrz routes/console.php). Sam plik
+        // dat nie nadaje, a linia bez godziny w dzienniku dopisywanym co minutę
+        // nie pozwala powiązać awarii z niczym innym.
+        $this->info(now()->format('Y-m-d H:i:s')." Outbox: {$sent} wysłanych, {$failed} nieudanych.");
 
         return self::SUCCESS;
     }

@@ -11,7 +11,21 @@ Artisan::command('inspire', function () {
 
 // Outbox maili: krótki proces co minutę (bezpieczne na shared-hoście, nie demon).
 // Wymaga wpisu crona na serwerze: * * * * * php artisan schedule:run
-Schedule::command('email:dispatch')->everyMinute()->withoutOverlapping();
+//
+// `appendOutputTo`, bo scheduler domyślnie wyrzuca wyjście komendy do /dev/null.
+// Ta komenda padła pięć razy (25.08, 31.08, 05.09, 09.09, 11.09.2026) z kodem
+// wyjścia 254 i za każdym razem w logu został SAM NUMER, bez zdania o powodzie —
+// a 254 to zwykle proces ubity albo błąd krytyczny PHP, czyli dokładnie to, czego
+// nie widać z zewnątrz. Laravel dokleja `>> plik 2>&1`, więc łapiemy też stderr.
+//
+// Plik nie urośnie bez opamiętania: przy pustym outboksie komenda kończy się bez
+// jednego znaku na wyjściu, więc rosną tylko minuty z realną robotą (jedna linia)
+// i awarie. Nazwa spoza wzorca `laravel-*.log` celowo — ekran „Błędy w logach"
+// czyta tylko dzienniki aplikacji i ten plik go nie dotyczy.
+Schedule::command('email:dispatch')
+    ->everyMinute()
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/email-dispatch.log'));
 
 // Kolejka zadań w tle (na razie: wystawianie faktur VAT). Świadomie NIE demon
 // `queue:work`, lecz krótki bieg, który KOŃCZY się, gdy kolejka pusta — na idle

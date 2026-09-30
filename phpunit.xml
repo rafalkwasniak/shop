@@ -38,6 +38,24 @@
         <env name="DB_DATABASE" value=":memory:"/>
         <env name="DB_URL" value=""/>
         <env name="MAIL_MAILER" value="array"/>
+        <!--
+            Log W POWIETRZE, a nie na dysk. Bez tego wpisu testy pisały domyślnym
+            kanałem do `storage/logs/laravel-<dziś>.log` — tego samego pliku, który
+            na produkcji liczy PlatformHealth::recentErrors(). Ekran „Błędy w logach"
+            w Ustawieniach admina pokazywał więc awarie w dniach, w których nic się
+            nie stało: 6 wpisów z 28.09.2026 to w całości strażnik kopii ze suity.
+
+            To nie kosmetyka. Ekran diagnostyczny, który woła o pomoc po każdym
+            przebiegu testów, przestaje być czytany — a wtedy prawdziwa awaria
+            utonie w szumie. Osobno: testy nie mają prawa dotykać plików produkcji
+            (incydent 04.08.2026).
+
+            Nic nie tracimy: żaden test nie zależy od tego, że domyślny kanał pisze
+            na dysk. SlowQueryLoggingTest mockuje fasadę `Log`, a wyjątek z nieudanego
+            testu i tak pokazuje PHPUnit. Do debugowania konkretnego testu wystarczy
+            tymczasowo zdjąć tę linijkę.
+        -->
+        <env name="LOG_CHANNEL" value="null"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="PULSE_ENABLED" value="false"/>
