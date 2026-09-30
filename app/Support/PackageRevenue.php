@@ -77,9 +77,18 @@ class PackageRevenue
     }
 
     /**
-     * Rozbicie na pakiety w kolejności z cennika. Pakiety bez ani jednego sklepu
-     * ZOSTAJĄ na liście z zerem — pusta pozycja jest informacją („nikt tego nie
-     * kupuje"), a wycięcie jej udawałoby, że pakietu nie ma w ofercie.
+     * Rozbicie na pakiety w kolejności z cennika. Pakiety Z OFERTY bez ani
+     * jednego sklepu ZOSTAJĄ na liście z zerem — pusta pozycja jest informacją
+     * („nikt tego nie kupuje"), a wycięcie jej udawałoby, że pakietu nie ma
+     * w ofercie.
+     *
+     * Presety spoza oferty (`available => false`, dziś „Sklep dedykowany")
+     * pokazujemy dopiero wtedy, gdy jakiś sklep faktycznie w nich siedzi.
+     * Pusty wiersz mówiłby o Kramio nieprawdę — takiego pakietu na platformie
+     * nie ma, to preset wdrożenia u klienta na jego serwerze. Nie wycinamy go
+     * jednak bezwarunkowo: gdyby taki sklep istniał, jego sklepy i wartość
+     * roczna zniknęłyby z tabeli, a stopka „Razem" przestała się zgadzać
+     * z sumą wierszy.
      *
      * @param  Collection<int, Shop>  $shops
      * @param  Collection<int, Shop>  $billable
@@ -88,6 +97,9 @@ class PackageRevenue
     private static function byPackage(Collection $shops, Collection $billable): array
     {
         $packages = collect(config('shop.packages', []))
+            ->filter(fn (array $package, string $slug): bool => ($package['available'] ?? true) !== false
+                ? true
+                : $shops->where('package', $slug)->isNotEmpty())
             ->sortBy('order')
             ->map(fn (array $package, string $slug): array => [
                 'slug' => $slug,

@@ -153,6 +153,44 @@ class PackageOverviewTest extends TestCase
             ->assertSee('Rejestr opłat jest jeszcze pusty');
     }
 
+    public function test_package_outside_the_offer_is_hidden_until_a_shop_uses_it(): void
+    {
+        // „Sklep dedykowany" to preset wdrożenia u klienta na jego serwerze,
+        // a nie pakiet Kramio. Pusty wiersz w rozkładzie mówiłby o platformie
+        // nieprawdę — pokazujemy go dopiero, gdy jest czego pilnować.
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)
+            ->get(route('administrator.packages.index'))
+            ->assertOk()
+            ->assertSee('Rozkład po pakietach')
+            ->assertDontSee('Sklep dedykowany');
+
+        Shop::factory()->package('dedicated')->create(['comped' => true]);
+
+        $this->actingAs($admin)
+            ->get(route('administrator.packages.index'))
+            ->assertOk()
+            ->assertSee('Sklep dedykowany');
+    }
+
+    public function test_hidden_package_row_does_not_break_the_totals(): void
+    {
+        // Wycięcie wiersza nie może wycinać sklepów z podsumowania: stopka
+        // „Razem" liczy wszystkie sklepy, także te spoza oferty.
+        Shop::factory()->package('booth')->create(['subscription_ends_at' => now()->addYear()]);
+        Shop::factory()->package('dedicated')->create(['comped' => true]);
+
+        $summary = PackageRevenue::subscriptions();
+
+        $this->assertSame(2, $summary['shops']);
+        $this->assertSame(
+            2,
+            array_sum(array_column($summary['packages'], 'shops')),
+            'Suma sklepów z wierszy musi się zgadzać ze stopką tabeli.'
+        );
+    }
+
     public function test_seller_cannot_view_packages(): void
     {
         $seller = User::factory()->create();
