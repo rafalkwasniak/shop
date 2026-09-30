@@ -68,6 +68,7 @@
 - [Artefakt udostępnia PRZYPIĘTĄ wersję](gotcha-artifact-share-pinned-version.md) — **republish jej NIE zmienia; każda zmiana = NOWY artefakt.**
 - [TESTY NIGDY nie strzelają do API](tests-never-hit-real-apis.md) — INCYDENT 30.07: ~46 realnych faktur. `preventStrayRequests()` nigdy nie zdejmować.
 - [TESTY NIGDY nie ruszają plików produkcji](tests-never-touch-production-files.md) — INCYDENT 04.08. GOTCHA: `Storage::fake()` gubi `url`.
+- [TESTY NIGDY nie piszą w dziennikach produkcji](tests-never-write-production-logs.md) — **`LOG_CHANNEL=null` NIE WYSTARCZA** (kanały po nazwie go omijają).
 - [Factory na produkcji = konto z hasłem `password`](gotcha-factory-on-production-db.md) — INCYDENT 16.08, zabezpieczone Warstwą 7.
 - [Tailwind: klasa musi być w buildzie](tailwind-classes-must-exist-in-build.md) — grepuj `public/build/assets/*.css`.
 - [route()/url() na subdomenie](gotcha-route-helpers-on-subdomain.md) — używaj `Central::url()`.
