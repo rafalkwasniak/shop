@@ -117,6 +117,7 @@
 - [Shipping aggregator](shipping-aggregator-idea.md) — **ZAMKNIĘTE: Furgonetka WYPADA.**
 
 ## Handoffy (najnowsze u góry)
+- [09-30 pakiet spoza oferty + szum testów w logach](handoff-2026-09-30.md) — 1824→1832. **Gardy weryfikować przez WYŁĄCZENIE.** Przegląd kodu pracowników wciąż wisi.
 - [09-07 pracownicy w obu produktach](handoff-2026-09-07.md) — 1728→1803 i 1998→2072. **NA JUTRO: przegląd kodu modułu pracowników.**
 - [08-30 pulpit + analityka platformy](handoff-2026-08-30.md) — 1704→1713. **ZAMROŻENIE KODU do przeprowadzki; stary serwer zostaje żywy → wyłączyć na nim crona.**
 - [08-24 awaria rejestracji + garda fabryk](handoff-2026-08-24.md) — 1693→1704. **2× pierwsza hipoteza groźniejsza niż prawda.** Pierwsi sprzedawcy wchodzą.
