@@ -35,7 +35,7 @@ class AiTextImprover
      *
      * @throws RuntimeException gdy usługa nie jest skonfigurowana lub wywołanie zawiedzie.
      */
-    public function improve(string $text, Shop $shop, ?int $maxChars = null, ?string $taskId = null, ?callable $onDelta = null): string
+    public function improve(string $text, ?Shop $shop, ?int $maxChars = null, ?string $taskId = null, ?callable $onDelta = null): string
     {
         $system = 'Jesteś redaktorem języka polskiego. Popraw przesłany tekst: ortografię, '
             .'interpunkcję, styl i czytelność; możesz poprawić formatowanie. Nie dodawaj żadnych '
@@ -65,7 +65,7 @@ class AiTextImprover
      *
      * @throws RuntimeException gdy usługa nie jest skonfigurowana lub wywołanie zawiedzie.
      */
-    public function improveHtml(string $html, Shop $shop, ?int $maxChars = null, ?string $taskId = null, ?callable $onDelta = null): string
+    public function improveHtml(string $html, ?Shop $shop, ?int $maxChars = null, ?string $taskId = null, ?callable $onDelta = null): string
     {
         $system = 'Jesteś redaktorem języka polskiego pracującym na fragmencie HTML. Otrzymujesz '
             .'treść z prostymi znacznikami formatowania (m.in. <strong>, <em>, <del>, <h2>, <ul>, '

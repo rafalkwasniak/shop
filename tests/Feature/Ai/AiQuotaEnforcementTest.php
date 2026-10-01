@@ -7,12 +7,14 @@ use App\Models\User;
 use App\Services\AiQuota;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 /**
  * Egzekwowanie limitu w punkcie, przez który przechodzi KAŻDE wywołanie modelu.
  * Sklep jest obowiązkowym argumentem `AiClient::run()` właśnie po to, żeby nowe
- * miejsce wołające AI nie ominęło limitu przez zapomnienie.
+ * miejsce wołające AI nie ominęło limitu przez zapomnienie. Jedyny świadomy
+ * `null` to administrator — redaguje wiadomości platformy i nie ma sklepu.
  */
 class AiQuotaEnforcementTest extends TestCase
 {
@@ -39,7 +41,7 @@ class AiQuotaEnforcementTest extends TestCase
         return [$seller, $shop->fresh()];
     }
 
-    private function improve(User $seller, ?string $taskId = null): \Illuminate\Testing\TestResponse
+    private function improve(User $seller, ?string $taskId = null): TestResponse
     {
         return $this->actingAs($seller)->postJson(route('ai.improve'), array_filter([
             'field' => 'shop_description',
@@ -146,5 +148,56 @@ class AiQuotaEnforcementTest extends TestCase
             'field' => 'shop_description',
             'text' => 'tekst',
         ])->assertStatus(403)->assertJsonPath('message', 'Najpierw dokończ zakładanie sklepu.');
+    }
+
+    public function test_admin_without_a_shop_can_improve_a_mailing(): void
+    {
+        config(['ai.providers.deepseek.key' => 'test-key']);
+        Http::fake([
+            '*/chat/completions' => Http::response([
+                'choices' => [['message' => ['content' => '<div>Poprawiona wiadomość.</div>']]],
+            ]),
+        ]);
+
+        $admin = User::factory()->admin()->consented()->create();
+
+        // Panel admina → Wiadomości używa tego samego pola co newsletter
+        // sprzedawcy. Wcześniej kończyło się to 403 („dokończ zakładanie
+        // sklepu"), a przeglądarka pokazywała „usługa chwilowo niedostępna".
+        $this->actingAs($admin)->postJson(route('ai.improve'), [
+            'field' => 'mailing_body',
+            'text' => '<div>wiadomosc do poprawy</div>',
+        ])
+            ->assertOk()
+            ->assertJsonPath('text', '<div>Poprawiona wiadomość.</div>')
+            ->assertJsonPath('remaining', null);
+
+        // Praca platformy idzie bez puli — żaden sklep niczego nie traci.
+        $this->assertDatabaseCount('ai_usages', 0);
+    }
+
+    public function test_admin_without_a_shop_can_improve_a_mailing_by_stream(): void
+    {
+        config(['ai.providers.deepseek.key' => 'test-key', 'ai.streaming' => true]);
+        Http::fake([
+            '*/chat/completions' => Http::response(
+                'data: '.json_encode(['choices' => [['delta' => ['content' => 'Gotowe.']]]])."\n\n"
+                ."data: [DONE]\n\n",
+                200,
+                ['Content-Type' => 'text/event-stream'],
+            ),
+        ]);
+
+        $admin = User::factory()->admin()->consented()->create();
+
+        $body = $this->actingAs($admin)->postJson(route('ai.improve'), [
+            'field' => 'mailing_body',
+            'text' => '<div>wiadomosc</div>',
+            'stream' => true,
+        ])->assertOk()->streamedContent();
+
+        $this->assertStringContainsString('"done":true', $body);
+        $this->assertStringNotContainsString('"error":true', $body);
+        $this->assertDatabaseCount('ai_usages', 0);
     }
 }

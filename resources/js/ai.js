@@ -469,6 +469,12 @@ async function improveWithAi(button) {
             const body = await failure.json().catch(() => ({}));
             if (body.message) message = body.message;
             variant = 'info';
+        } else if (failure && failure.status >= 400 && failure.status < 500 && typeof failure.json === 'function') {
+            // Odmowa (403, 422) to nie awaria usługi — serwer mówi, CO jest
+            // nie tak, i to trzeba pokazać. Ogólne „chwilowo niedostępna"
+            // ukryło kiedyś brak sklepu na koncie administratora.
+            const body = await failure.json().catch(() => ({}));
+            if (body.message) message = body.message;
         }
 
         window.showToast(message, variant);

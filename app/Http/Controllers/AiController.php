@@ -48,9 +48,13 @@ class AiController extends Controller
         // Limit AI jest przypisany do SKLEPU, więc bez sklepu nie ma z czego go
         // pobrać. W praktyce nie zdarza się (sklep powstaje przy aktywacji konta),
         // ale lepiej powiedzieć to wprost niż udawać awarię usługi.
+        //
+        // Wyjątek: administrator. Nie ma sklepu, a redaguje wiadomości do
+        // sprzedawców (panel admina → Wiadomości). To praca platformy, więc
+        // idzie bez puli — sklep zostaje `null` i AiClient niczego nie pobiera.
         $shop = $request->user()->currentShop();
 
-        if ($shop === null) {
+        if ($shop === null && ! $request->user()->isAdmin()) {
             return response()->json(['message' => 'Najpierw dokończ zakładanie sklepu.'], 403);
         }
 
@@ -83,7 +87,7 @@ class AiController extends Controller
         // od razu — bez tego sprzedawca klika i widzi wciąż tę samą liczbę.
         return response()->json([
             'text' => $improved,
-            'remaining' => app(AiQuota::class)->remaining($shop),
+            'remaining' => $shop !== null ? app(AiQuota::class)->remaining($shop) : null,
         ]);
     }
 
@@ -104,7 +108,7 @@ class AiController extends Controller
      * @param  array{field: string, text: string, task_id?: string|null}  $validated
      * @param  array{max: int, html: bool}  $config
      */
-    private function improveStream(AiTextImprover $ai, array $validated, array $config, Shop $shop, int $maxOut): StreamedResponse
+    private function improveStream(AiTextImprover $ai, array $validated, array $config, ?Shop $shop, int $maxOut): StreamedResponse
     {
         return response()->stream(function () use ($ai, $validated, $config, $shop, $maxOut): void {
             // Bufory wyjściowe PHP sklejałyby zdarzenia w jedną paczkę na końcu
@@ -143,7 +147,7 @@ class AiController extends Controller
             $emit([
                 'done' => true,
                 'text' => $improved,
-                'remaining' => app(AiQuota::class)->remaining($shop),
+                'remaining' => $shop !== null ? app(AiQuota::class)->remaining($shop) : null,
             ]);
         }, 200, [
             'Content-Type' => 'text/event-stream',
