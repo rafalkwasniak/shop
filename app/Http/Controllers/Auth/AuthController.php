@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Services\LoginChallenges;
 use Illuminate\Contracts\Support\Renderable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -26,13 +27,25 @@ class AuthController extends Controller
     /**
      * Uwierzytelnienie i przekierowanie na pulpit zależny od roli.
      */
-    public function store(LoginRequest $request): RedirectResponse
+    public function store(LoginRequest $request, LoginChallenges $challenges): RedirectResponse
     {
-        $request->authenticate();
+        $user = $request->authenticatedUser();
+        $remember = $request->boolean('remember');
 
-        $request->session()->regenerate();
+        if (! LoginChallenges::enabled()) {
+            return LoginCodeController::logIn($request, $user, $remember);
+        }
 
-        return redirect()->intended(route($request->user()->role->homeRoute()));
+        // Hasło się zgadza, ale konto jeszcze nie jest zalogowane: sesja wie
+        // tylko, na którą próbę czeka ekran kodu.
+        $challenge = $challenges->start($user);
+
+        $request->session()->put(LoginCodeController::SESSION_KEY, [
+            'challenge' => $challenge->id,
+            'remember' => $remember,
+        ]);
+
+        return redirect()->route('login.code');
     }
 
     /**

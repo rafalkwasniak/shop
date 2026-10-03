@@ -41,6 +41,10 @@ return [
         'web' => [
             'driver' => 'session',
             'provider' => 'users',
+            // „Zapamiętaj mnie" w centrali: 30 dni (w minutach), nie domyślne
+            // lata. Logowanie z ciasteczka pomija kod 2FA, więc jego żywotność
+            // to zarazem odstęp, co jaki najdłużej trzeba podać kod.
+            'remember' => 60 * 24 * 30,
         ],
 
         // Klienci storefrontu — osobny guard, sesja per sklep (subdomena).

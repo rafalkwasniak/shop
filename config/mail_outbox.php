@@ -20,4 +20,8 @@ return [
 
     'retry_delay_minutes' => (int) env('MAIL_OUTBOX_RETRY_DELAY_MINUTES', 5),
 
+    // Ile sekund bieg czeka na blokadę, gdy inny bieg właśnie wysyła (cron
+    // i natychmiastowa wysyłka kodu logowania mogą wystartować naraz).
+    'lock_wait_seconds' => 15,
+
 ];

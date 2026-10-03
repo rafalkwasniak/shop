@@ -251,6 +251,11 @@ class EmployeeInvitationTest extends TestCase
         $this->post(route('login'), [
             'email' => 'sandra@example.com',
             'password' => 'Haslo123456',
+        ])->assertRedirect(route('login.code'));
+
+        // Pracownik zarządza sklepem, więc przechodzi przez kod jak właściciel.
+        $this->post(route('login.code.verify'), [
+            'code' => substr(EmailMessage::latest('id')->firstOrFail()->subject, -6),
         ])->assertRedirect(route('seller.dashboard'));
 
         $this->get(route('seller.orders.index'))->assertOk();

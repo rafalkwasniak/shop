@@ -96,6 +96,10 @@ class PasswordResetTest extends TestCase
         $this->post(route('login.attempt'), [
             'email' => $user->email,
             'password' => 'Nowe-Haslo1',
+        ])->assertRedirect(route('login.code'));
+
+        $this->post(route('login.code.verify'), [
+            'code' => substr(EmailMessage::latest('id')->firstOrFail()->subject, -6),
         ]);
 
         $this->assertAuthenticatedAs($user->fresh());

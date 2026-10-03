@@ -15,6 +15,7 @@ use App\Http\Controllers\AiController;
 use App\Http\Controllers\Auth\ActivationController;
 use App\Http\Controllers\Auth\EmployeeInvitationController;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Auth\LoginCodeController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ResendActivationController;
@@ -118,6 +119,17 @@ $panelPrefix = Mode::dedicated() ? '/sprzedawca' : '';
 Route::get($panelPrefix.'/logowanie', [AuthController::class, 'create'])->name('login');
 Route::post($panelPrefix.'/logowanie', [AuthController::class, 'store'])->name('login.attempt');
 Route::post($panelPrefix.'/wyloguj', [AuthController::class, 'destroy'])->middleware('auth')->name('logout');
+
+// Drugi krok logowania: kod z maila (config/security.php → two_factor).
+// Zgadywanie kodu hamuje limit prób na sam kod; dławik per IP pilnuje tylko,
+// żeby „Wyślij nowy kod" nie stał się maszynką do zalewania skrzynki.
+Route::get($panelPrefix.'/logowanie/kod', [LoginCodeController::class, 'create'])->name('login.code');
+Route::post($panelPrefix.'/logowanie/kod', [LoginCodeController::class, 'store'])
+    ->middleware('throttle:20,1')
+    ->name('login.code.verify');
+Route::post($panelPrefix.'/logowanie/kod/nowy', [LoginCodeController::class, 'resend'])
+    ->middleware('throttle:5,10')
+    ->name('login.code.resend');
 
 // Odzyskiwanie hasła. Prośba o link jest dławiona per IP: ten formularz wysyła
 // maila na podany adres, więc bez limitu byłby drugą — obok rejestracji —

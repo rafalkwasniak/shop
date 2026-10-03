@@ -3,6 +3,7 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\Customer;
+use App\Models\EmailMessage;
 use App\Models\Shop;
 use App\Models\User;
 use Illuminate\Auth\Events\Login;
@@ -18,6 +19,13 @@ class LoginTimestampTest extends TestCase
 {
     use RefreshDatabase;
 
+    private function completeWithCode(): void
+    {
+        $this->post(route('login.code.verify'), [
+            'code' => substr(EmailMessage::latest('id')->firstOrFail()->subject, -6),
+        ])->assertRedirect();
+    }
+
     public function test_logging_in_stamps_last_login_at(): void
     {
         $user = User::factory()->create(['email' => 'sprzedawca@example.com']);
@@ -27,6 +35,7 @@ class LoginTimestampTest extends TestCase
             'email' => 'sprzedawca@example.com',
             'password' => 'password',
         ])->assertRedirect();
+        $this->completeWithCode();
 
         $this->assertNotNull($user->fresh()->last_login_at);
     }
@@ -44,6 +53,7 @@ class LoginTimestampTest extends TestCase
             'email' => 'sprzedawca@example.com',
             'password' => 'password',
         ])->assertRedirect();
+        $this->completeWithCode();
 
         Carbon::setTestNow();
 

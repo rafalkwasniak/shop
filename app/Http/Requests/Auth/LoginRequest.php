@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Auth;
 
 use App\Http\Requests\ThrottlesLogins;
+use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -41,13 +42,14 @@ class LoginRequest extends FormRequest
     }
 
     /**
-     * Próba uwierzytelnienia na podstawie danych z żądania.
+     * Sprawdza e-mail i hasło, ale NIE loguje — przy 2FA wejście następuje
+     * dopiero po kodzie z maila (AuthController, LoginCodeController).
      */
-    public function authenticate(): void
+    public function authenticatedUser(): User
     {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+        if (! Auth::validate($this->only('email', 'password'))) {
             $this->hitRateLimiter();
 
             throw ValidationException::withMessages([
@@ -56,6 +58,9 @@ class LoginRequest extends FormRequest
         }
 
         $this->clearRateLimiter();
+
+        /** @var User */
+        return Auth::getLastAttempted();
     }
 
     /**

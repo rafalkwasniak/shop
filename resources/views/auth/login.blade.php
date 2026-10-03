@@ -35,7 +35,7 @@
                 <label class="flex items-center gap-2 text-stone-600">
                     <input type="checkbox" name="remember" value="1"
                         class="rounded-md border-stone-300 text-amber-600 focus:ring-amber-500">
-                    Zapamiętaj mnie
+                    Zapamiętaj mnie na {{ intdiv((int) config('auth.guards.web.remember'), 60 * 24) }} dni
                 </label>
 
                 <a href="{{ route('password.request') }}" class="font-medium text-amber-700 transition hover:text-amber-800">

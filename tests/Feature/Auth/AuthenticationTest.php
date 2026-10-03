@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Models\EmailMessage;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -19,10 +20,15 @@ class AuthenticationTest extends TestCase
     {
         $admin = User::factory()->admin()->create();
 
-        $response = $this->post(route('login.attempt'), [
+        $this->post(route('login.attempt'), [
             'email' => $admin->email,
             'password' => 'password',
-        ]);
+        ])->assertRedirect(route('login.code'));
+
+        // Samo hasło nie wpuszcza — drugi krok to kod z maila (LoginTwoFactorTest).
+        $this->assertGuest();
+
+        $response = $this->post(route('login.code.verify'), ['code' => $this->mailedCode()]);
 
         $this->assertAuthenticatedAs($admin);
         $response->assertRedirect(route('administrator.dashboard'));
@@ -32,13 +38,23 @@ class AuthenticationTest extends TestCase
     {
         $seller = User::factory()->create();
 
-        $response = $this->post(route('login.attempt'), [
+        $this->post(route('login.attempt'), [
             'email' => $seller->email,
             'password' => 'password',
-        ]);
+        ])->assertRedirect(route('login.code'));
+
+        // Samo hasło nie wpuszcza — drugi krok to kod z maila (LoginTwoFactorTest).
+        $this->assertGuest();
+
+        $response = $this->post(route('login.code.verify'), ['code' => $this->mailedCode()]);
 
         $this->assertAuthenticatedAs($seller);
         $response->assertRedirect(route('seller.dashboard'));
+    }
+
+    private function mailedCode(): string
+    {
+        return substr(EmailMessage::latest('id')->firstOrFail()->subject, -6);
     }
 
     public function test_users_cannot_authenticate_with_invalid_password(): void

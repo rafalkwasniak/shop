@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Administrator;
 
 use App\Http\Controllers\Controller;
+use App\Services\LoginCodeMailer;
 use App\Support\MailBranding;
 use App\Support\Vocative;
 use Illuminate\Contracts\Support\Renderable;
@@ -52,6 +53,26 @@ class MailPreviewController extends Controller
                     'Link jest ważny przez 24 godziny.',
                 ],
             ],
+            'kod-logowania' => $this->fromOutbox(app(LoginCodeMailer::class)->content('Anna', '482913')),
+        ];
+    }
+
+    /**
+     * Wiersz outboksu → właściwości komponentu x-mail.message.
+     *
+     * @param  array<string, mixed>  $message
+     * @return array<string, mixed>
+     */
+    private function fromOutbox(array $message): array
+    {
+        return [
+            'preheader' => $message['preheader'] ?? null,
+            'heading' => $message['heading'] ?? null,
+            'greeting' => $message['greeting'] ?? null,
+            'lines' => $message['intro_lines'] ?? [],
+            'actionText' => $message['action_text'] ?? null,
+            'actionUrl' => $message['action_url'] ?? null,
+            'outroLines' => $message['outro_lines'] ?? [],
         ];
     }
 }

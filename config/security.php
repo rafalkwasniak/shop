@@ -20,6 +20,32 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Logowanie dwuetapowe do centrali (kod z maila)
+    |--------------------------------------------------------------------------
+    |
+    | Dotyczy KAŻDEGO, kto zarządza sklepem: administratora, sprzedawcy,
+    | pracownika. Klientów sklepów nie dotyczy — kupują nawet bez konta.
+    |
+    | Kod: 6 cyfr. Same cyfry, bo tylko takie Safari pewnie wyłapuje z Maila
+    | i podpowiada nad klawiaturą. Przy 5 próbach na kod trafienie na ślepo to
+    | szansa 1 do 200 000, a każda nowa seria wymaga znowu hasła.
+    |
+    | `enabled` = WYŁĄCZNIK AWARYJNY. Gdy padnie SMTP, nikt nie wejdzie do
+    | panelu; `LOGIN_TWO_FACTOR=false` w .env wraca do samego hasła. Do
+    | pojedynczego wejścia bez wyłączania: `php artisan auth:login-code {email}`.
+    |
+    */
+
+    'two_factor' => [
+        'enabled' => (bool) env('LOGIN_TWO_FACTOR', true),
+        'code_length' => 6,
+        'ttl_minutes' => 10,
+        'max_attempts' => 5,
+        'resend_cooldown_seconds' => 60,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Limity formularzy publicznych (per IP)
     |--------------------------------------------------------------------------
     |

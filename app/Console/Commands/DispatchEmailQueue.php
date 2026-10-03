@@ -2,18 +2,15 @@
 
 namespace App\Console\Commands;
 
-use App\Mail\OutboxMailable;
-use App\Models\EmailMessage;
+use App\Services\EmailOutbox;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Mail;
-use Throwable;
 
 /**
  * Opróżnia outbox maili. Przeznaczona do uruchamiania co minutę przez cron:
  * krótki proces jest bezpieczny na CloudLinux LVE, w odróżnieniu od długo
  * żyjącego demona kolejki. Każdy bieg wysyła do `mail_outbox.batch_size`
  * wiadomości gotowych do wysłania (throttle), najwyższy priorytet pierwszy,
- * ponawiając błędy aż do `max_attempts`.
+ * ponawiając błędy aż do `max_attempts`. Sama wysyłka: App\Services\EmailOutbox.
  */
 class DispatchEmailQueue extends Command
 {
@@ -21,40 +18,20 @@ class DispatchEmailQueue extends Command
 
     protected $description = 'Wyślij paczkę zaległych maili z kolejki outbox';
 
-    public function handle(): int
+    public function handle(EmailOutbox $outbox): int
     {
-        $batchSize = (int) config('mail_outbox.batch_size');
+        $result = $outbox->dispatch();
 
-        $messages = EmailMessage::query()
-            ->dueForSending()
-            ->limit($batchSize)
-            ->get();
-
-        if ($messages->isEmpty()) {
+        // Pusty outbox albo zajęta blokada = cisza w dzienniku.
+        if ($result === null || $result['sent'] + $result['failed'] === 0) {
             return self::SUCCESS;
-        }
-
-        $sent = 0;
-        $failed = 0;
-
-        foreach ($messages as $message) {
-            try {
-                Mail::to($message->to_email, $message->to_name)
-                    ->send(new OutboxMailable($message));
-
-                $message->markSent();
-                $sent++;
-            } catch (Throwable $e) {
-                $message->markFailed($e->getMessage());
-                $failed++;
-            }
         }
 
         // Ze znacznikiem czasu, bo jedynym odbiorcą tej linii jest plik, do którego
         // scheduler dopisuje wyjście komendy (patrz routes/console.php). Sam plik
         // dat nie nadaje, a linia bez godziny w dzienniku dopisywanym co minutę
         // nie pozwala powiązać awarii z niczym innym.
-        $this->info(now()->format('Y-m-d H:i:s')." Outbox: {$sent} wysłanych, {$failed} nieudanych.");
+        $this->info(now()->format('Y-m-d H:i:s')." Outbox: {$result['sent']} wysłanych, {$result['failed']} nieudanych.");
 
         return self::SUCCESS;
     }

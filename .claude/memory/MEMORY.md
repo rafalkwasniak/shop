@@ -70,6 +70,7 @@
 - [TESTY NIGDY nie ruszają plików produkcji](tests-never-touch-production-files.md) — INCYDENT 04.08. GOTCHA: `Storage::fake()` gubi `url`.
 - [TESTY NIGDY nie piszą w dziennikach produkcji](tests-never-write-production-logs.md) — **`LOG_CHANNEL=null` NIE WYSTARCZA** (kanały po nazwie go omijają).
 - [Factory na produkcji = konto z hasłem `password`](gotcha-factory-on-production-db.md) — INCYDENT 16.08, zabezpieczone Warstwą 7.
+- [Artisan::call() z WWW = exec() zablokowany](gotcha-artisan-call-from-web-exec-sandbox.md) — INCYDENT 03.10. **Testy tego NIE łapią**; logika komendy → usługa.
 - [Tailwind: klasa musi być w buildzie](tailwind-classes-must-exist-in-build.md) — grepuj `public/build/assets/*.css`.
 - [route()/url() na subdomenie](gotcha-route-helpers-on-subdomain.md) — używaj `Central::url()`.
 - [Livewire: ostrzejsza sygnatura = fatal](livewire-override-signature-fatal.md) — kopiuj sygnatury znak w znak.
@@ -85,6 +86,7 @@
 - [Vite build RAYON_NUM_THREADS=1](vite-build-rayon-threads.md) · [Orphaned build processes](orphaned-build-processes-incident.md)
 
 ## Moduły WDROŻONE (skrót)
+- [2FA logowania do centrali](plan-login-two-factor.md) — 03.10. Kod 6 cyfr z maila, Safari podpowiada. **Klienci sklepów bez 2FA.**
 - [Wiadomość serwisowa do sprzedawcy](plan-seller-service-notices.md) — 24.08. **POZA zgodą marketingową — to sens modułu.**
 - [Przesyłki za pobraniem InPost](plan-cash-on-delivery.md) — 17.08. Pobranie = metody DOSTAWY. **Sklep z samym pobraniem MUSI przyjmować zamówienia.**
 - [Wolna subdomena zaprasza do rejestracji](plan-unclaimed-subdomain-landing.md) — 12.08. Status zostaje 404/noindex.
