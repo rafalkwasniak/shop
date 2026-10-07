@@ -63,7 +63,8 @@ class LoyaltyCustomerDirectoryTest extends TestCase
             ->assertSee('3,00 zł')
             ->assertSee('Powitanie')
             ->assertSee('Korekta punktów')
-            ->assertSee('wygasa');
+            ->assertSee('wygasa')
+            ->assertSee('1 pkt = 0,01 zł');
     }
 
     public function test_customer_without_points_sees_only_zero_without_rows(): void

@@ -179,11 +179,20 @@
                     <form method="POST" action="{{ route('seller.customers.points', ['email' => $customer['email']]) }}" class="mt-5 space-y-3 border-t border-stone-100 pt-4" novalidate data-validate>
                         @csrf
                         <p class="text-sm font-medium text-stone-700">Korekta punktów</p>
-                        <div>
+                        {{-- Przelicznik na żywo (Alpine): punkty → zł po wartości punktu sklepu,
+                             żeby „dam klientowi 30 zł" nie wymagało liczenia w głowie. --}}
+                        @php($pointGrosze = (int) round($shop->loyaltyPointValue() * 100))
+                        <div x-data="{ points: @js((string) old('points', '')), grosze: {{ $pointGrosze }},
+                                parsed() { const n = String(this.points).replace(/[\s+]/g, '').replace('−', '-'); return /^-?\d+$/.test(n) ? parseInt(n, 10) : 0; },
+                                money() { const g = this.parsed() * this.grosze; return (g < 0 ? '−' : '') + (Math.abs(g) / 100).toFixed(2).replace('.', ',') + ' zł'; } }">
                             <label for="points" class="block text-xs text-stone-500">Liczba punktów — ujemna odejmuje</label>
                             <input id="points" name="points" type="text" inputmode="numeric" placeholder="np. 500 albo -200" required
-                                value="{{ old('points') }}" data-msg-required="Podaj liczbę punktów, np. 500 albo -200."
+                                value="{{ old('points') }}" x-model="points" data-msg-required="Podaj liczbę punktów, np. 500 albo -200."
                                 class="mt-1 block w-full rounded-2xl border border-stone-200 bg-white/80 px-4 py-2.5 text-sm shadow-sm transition focus:border-amber-500 focus:outline-none focus:ring-4 focus:ring-amber-500/15">
+                            <p class="mt-1.5 text-xs text-stone-500">
+                                <span x-show="parsed() !== 0" style="display: none">= <span class="font-medium tabular-nums text-stone-700" x-text="money()"></span></span>
+                                <span x-show="parsed() === 0">1 pkt = {{ \App\Support\Money::pln($shop->loyaltyPointValue()) }}</span>
+                            </p>
                             @error('points')
                                 <p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p>
                             @enderror
