@@ -45,7 +45,7 @@
                  akapit: „Ciasteczka" to formularz, a formularz w akapicie
                  przeglądarka wyrzuca poza niego — linki traciły wtedy
                  wyśrodkowanie (zgłosił Rafał 07.10). --}}
-            <div class="mt-10 text-center text-xs text-stone-400">
+            <div class="mt-10 text-center text-sm text-stone-500">
                 <x-cookie-settings-link class="inline" />
                 <span class="px-1">·</span>
                 <x-report-content-link class="inline" />

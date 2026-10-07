@@ -28,6 +28,6 @@ class CookieLinkMarkupTest extends TestCase
     {
         $this->get(route('login'))
             ->assertOk()
-            ->assertSee('<div class="mt-10 text-center text-xs text-stone-400">', false);
+            ->assertSee('<div class="mt-10 text-center text-sm text-stone-500">', false);
     }
 }
