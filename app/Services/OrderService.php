@@ -306,7 +306,7 @@ class OrderService
             return null;
         }
 
-        $redemption = $this->loyalty->redeemable($shop, $authCustomer->email, $items);
+        $redemption = $this->loyalty->redeemable($shop, $authCustomer->email, $items, $this->cart->pointsChoice($shop->id));
 
         if (! $redemption->usable()) {
             $this->cart->stopUsingPoints($shop->id);

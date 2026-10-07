@@ -27,6 +27,14 @@ class Cart extends Component
 
     public ?string $discountError = null;
 
+    /** Liczba punktów wpisywana w karcie „Twoje punkty" (nie: już zastosowana). */
+    public string $pointsInput = '';
+
+    public ?string $pointsError = null;
+
+    /** Czy klient zmienia zastosowaną liczbę punktów („Zmień"). */
+    public bool $editingPoints = false;
+
     public function mount(int $shopId): void
     {
         $this->shopId = $shopId;
@@ -122,16 +130,66 @@ class Cart extends Component
         $this->discountError = null;
     }
 
+    /** „Wykorzystaj wszystkie" — tyle, ile wolno w tym koszyku. */
     public function usePoints(): void
     {
         if ($this->customer() !== null) {
             app(CartService::class)->usePoints($this->shopId);
+            $this->resetPointsForm();
         }
+    }
+
+    /**
+     * Własna liczba punktów. Więcej niż wolno — przytniemy przy renderze i
+     * powiemy o tym; mniej niż minimum sklepu — odmowa od razu, z liczbą.
+     */
+    public function applyPoints(): void
+    {
+        $customer = $this->customer();
+        $shop = Shop::find($this->shopId);
+
+        if ($customer === null || $shop === null) {
+            return;
+        }
+
+        $raw = str_replace([' ', "\u{a0}"], '', trim($this->pointsInput));
+
+        if (! preg_match('/^\d+$/', $raw) || (int) $raw <= 0) {
+            $this->pointsError = 'Wpisz liczbę punktów, np. 500.';
+
+            return;
+        }
+
+        $minimum = $shop->loyalty_min_redeem_points;
+
+        if ($minimum && (int) $raw < $minimum) {
+            $this->pointsError = 'Najmniej możesz wykorzystać '.$minimum.' pkt.';
+
+            return;
+        }
+
+        app(CartService::class)->usePoints($this->shopId, (int) $raw);
+        $this->resetPointsForm();
+    }
+
+    public function changePoints(): void
+    {
+        $this->editingPoints = true;
+        $this->pointsInput = (string) (app(CartService::class)->pointsChoice($this->shopId) ?? '');
+        $this->pointsError = null;
     }
 
     public function stopUsingPoints(): void
     {
         app(CartService::class)->stopUsingPoints($this->shopId);
+        $this->resetPointsForm();
+    }
+
+    private function resetPointsForm(): void
+    {
+        $this->pointsInput = '';
+        $this->pointsError = null;
+        $this->editingPoints = false;
     }
 
     /**
@@ -179,7 +237,7 @@ class Cart extends Component
         $shop = Shop::find($this->shopId);
         $customer = $this->customer();
         $redemption = $customer !== null && $shop !== null
-            ? app(LoyaltyLedger::class)->redeemable($shop, $customer->email, $itemsTotal - $itemsDiscount)
+            ? app(LoyaltyLedger::class)->redeemable($shop, $customer->email, $itemsTotal - $itemsDiscount, app(CartService::class)->pointsChoice($this->shopId))
             : null;
         $pointsApplied = $redemption?->usable() && app(CartService::class)->usesPoints($this->shopId);
         $pointsDiscount = $pointsApplied ? $redemption->amount : 0.0;

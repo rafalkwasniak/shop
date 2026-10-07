@@ -38,7 +38,7 @@ metadata:
   - `OrderTotals`: najpierw kod, potem punkty od reszty, jeden `spread()` na VAT; faktura: ceny pozycji po rabacie + adnotacja „rabat za punkty”;
   - zwrot: pieniądze od części zapłaconej (spread kod+punkty), `points_discount` maleje o udział zwracanych sztuk → `OrderObserver` (spadek `points_discount`) → `syncSpent()` → `restore($order, $n)` częściowo, od ostatnio zużytych; to samo przy edycji w dół. Anulowanie = `restore()` całości;
   - punkty naliczane od części zapłaconej pieniędzmi (`baseAmount` odejmuje `points_discount`).
-  Testy `tests/Feature/Loyalty/LoyaltyRedemptionTest.php`. Suita 1909→1924. Do sprawdzenia z księgowym (wspomniane raz): punkty traktujemy jak rabat obniżający podstawę VAT.
+  Testy `tests/Feature/Loyalty/LoyaltyRedemptionTest.php`. Suita 1909→1924. **Punkty na FV = rabat obniżający cenę pozycji** (jak kod rabatowy) — potwierdzone przez Rafała 07.10, pytanie do księgowego ZAMKNIĘTE.
 
 - **Krok D ZROBIONY (07.10 wieczór):** kartoteka klientów: plakietka salda na liście (`LoyaltyLedger::balances()`, jedno zapytanie GROUP BY e-mail, ta sama definicja co `balance()`), na karcie klienta box „Punkty” (saldo + wartość w zł dla sprzedawcy, oczekujące) z formularzem korekty (`seller.customers.points`, `LoyaltyAdjustmentRequest`: liczba ze znakiem, akceptuje „+500” i „−200”, opis OBOWIĄZKOWY, bo klient go widzi) + „Historia punktów” pod zamówieniami. Korekta tylko gdy `visibleFor()`, inaczej 404.
 
@@ -48,6 +48,8 @@ metadata:
 - **START 07.10 wieczór:** włącznik `loyalty_enabled` w sekcji Ustawień (wyłączenie zatrzymuje naliczanie, strona zasad zostaje); sklep bez uprawnienia widzi w Ustawieniach `x-seller.locked-feature` („Punkty za zakupy w pakiecie Pawilon”); `config/shop.php`: **pavilion + dedicated = true**, stall/booth false; `PackageFeatures`: klucz w `forShop`, etykieta „Punkty za zakupy dla klientów” (z `?? false` dla starych snapshotów), kafelek 🪙 w `highlights()`. **Na produkcji WSZYSTKIE 12 sklepów są na Kramie** → realnie punkty ma tylko Lemoniady (ręcznie). `packages:sync-entitlements` w podglądzie chce dopisać 11 sklepom `false` (efekt zerowy) → NIE uruchamiane, za zgodą Rafała do decyzji. Suita 1941.
 
 - **Karta „Punkty” na stronie zamówienia w panelu sprzedawcy (07.10):** te same wpisy co u klienta (`LoyaltyLedger::forOrder`) + „Saldo klienta: X pkt” z odnośnikiem do kartoteki; tylko gdy zamówienie ma wpisy. Statyczny Blade — po zmianie statusu w Livewire odświeży się dopiero po przeładowaniu strony.
+
+- **Własna liczba punktów w koszyku (07.10):** „Wykorzystaj wszystkie (X pkt)” albo pole „wpisz, ile chcesz wykorzystać” + „Zastosuj”; po zastosowaniu „Zmień · Nie wykorzystuj”. W sesji `cart_points` = liczba albo `'all'` (`CartService::pointsChoice()`). `redeemable(..., ?int $requested)`: więcej niż wolno → PRZYCINAMY z informacją (decyzja Rafała), mniej niż minimum → `below_minimum`. `LoyaltyRedemption` ma `maximum`, `requested`, `canRedeem()`, `capped()`. Wydawanie od najwcześniej wygasających (Rafał: „od najstarszych — wiadomo”).
 
 **PLAN (historyczny, wykonany):** uprawnienie `loyalty_points` dodane od razu, ale FALSE we WSZYSTKICH pakietach (także Pawilonie); Rafał włącza je ręcznie tylko Lemoniadom. Funkcja rośnie po cichu, sprzedawcy zobaczą ją dopiero kompletną.
 - **A** (1 sesja): uprawnienie w ShopManager (+ PackageFeatures, SyncPackageEntitlements) + sekcja „Punkty” w Ustawieniach (z checkboxem przeliczenia przy zmianie wartości) + strona „Zasady punktów” (domyślna treść z ustawień, edytowalna, nieusuwalna przy włączonych). Włączenie wymaga zasad.

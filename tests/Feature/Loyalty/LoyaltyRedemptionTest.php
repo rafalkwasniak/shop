@@ -151,7 +151,7 @@ class LoyaltyRedemptionTest extends TestCase
 
         Livewire::test(Cart::class, ['shopId' => $shop->id])
             ->assertSee('Masz')
-            ->assertSee('Wykorzystaj 1094 pkt')
+            ->assertSee('Wykorzystaj wszystkie (1094 pkt)')
             ->assertDontSee('−10,94 zł')
             ->call('usePoints')
             ->assertSee('Wykorzystujesz')
@@ -160,6 +160,90 @@ class LoyaltyRedemptionTest extends TestCase
             ->assertSee('28,86 zł')
             ->call('stopUsingPoints')
             ->assertSee('39,80 zł');
+    }
+
+    public function test_cart_accepts_a_custom_number_of_points(): void
+    {
+        $shop = $this->shop();
+        $customer = $this->customer($shop, 1094);
+        app(CartService::class)->add($this->product($shop, 39.80), 1);
+        $this->actingAs($customer, 'customer');
+
+        Livewire::test(Cart::class, ['shopId' => $shop->id])
+            ->set('pointsInput', '500')
+            ->call('applyPoints')
+            ->assertSee('Wykorzystujesz')
+            ->assertSee('Pozostanie: <strong>594 pkt</strong>.', false)
+            ->assertSee('−5,00 zł')
+            ->call('changePoints')
+            ->assertSet('pointsInput', '500')
+            ->set('pointsInput', '1 000')
+            ->call('applyPoints')
+            ->assertSee('Pozostanie: <strong>94 pkt</strong>.', false);
+    }
+
+    public function test_too_many_points_are_capped_with_a_note(): void
+    {
+        $shop = $this->shop();
+        $customer = $this->customer($shop, 1094);
+        app(CartService::class)->add($this->product($shop, 39.80), 1);
+        $this->actingAs($customer, 'customer');
+
+        Livewire::test(Cart::class, ['shopId' => $shop->id])
+            ->set('pointsInput', '5000')
+            ->call('applyPoints')
+            ->assertSee('Pozostanie: <strong>0 pkt</strong>.', false)
+            ->assertSee('możesz wykorzystać najwyżej 1094 pkt');
+    }
+
+    public function test_invalid_or_too_small_numbers_are_refused(): void
+    {
+        $shop = $this->shop(['loyalty_min_redeem_points' => 100]);
+        $customer = $this->customer($shop, 1094);
+        app(CartService::class)->add($this->product($shop, 39.80), 1);
+        $this->actingAs($customer, 'customer');
+
+        $component = Livewire::test(Cart::class, ['shopId' => $shop->id]);
+
+        foreach (['abc', '0', '2,5', ''] as $input) {
+            $component->set('pointsInput', $input)->call('applyPoints')
+                ->assertSet('pointsError', 'Wpisz liczbę punktów, np. 500.');
+        }
+
+        $component->set('pointsInput', '50')->call('applyPoints')
+            ->assertSet('pointsError', 'Najmniej możesz wykorzystać 100 pkt.');
+
+        $this->assertFalse(app(CartService::class)->usesPoints($shop->id));
+    }
+
+    public function test_redeemable_honours_the_requested_number(): void
+    {
+        $shop = $this->shop(['loyalty_min_redeem_points' => 100]);
+        $this->customer($shop, 1094);
+
+        $chosen = $this->ledger->redeemable($shop, 'anna@example.com', 39.80, 500);
+        $this->assertSame(500, $chosen->points);
+        $this->assertSame(1094, $chosen->maximum);
+        $this->assertFalse($chosen->capped());
+
+        $tooMany = $this->ledger->redeemable($shop, 'anna@example.com', 39.80, 5000);
+        $this->assertSame(1094, $tooMany->points);
+        $this->assertTrue($tooMany->capped());
+
+        $this->assertSame('below_minimum', $this->ledger->redeemable($shop, 'anna@example.com', 39.80, 50)->reason);
+    }
+
+    public function test_order_uses_the_chosen_number_of_points(): void
+    {
+        $shop = $this->shop();
+        $customer = $this->customer($shop, 1094);
+        app(CartService::class)->add($this->product($shop, 39.80), 1);
+        app(CartService::class)->usePoints($shop->id, 500);
+
+        $order = app(OrderService::class)->place($shop, $this->orderData(), $customer);
+
+        $this->assertSame(5.00, (float) $order->points_discount);
+        $this->assertSame(594, $this->ledger->balance($shop, 'anna@example.com'));
     }
 
     public function test_guest_is_invited_to_log_in(): void

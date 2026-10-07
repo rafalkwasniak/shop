@@ -145,12 +145,23 @@ class CartService
      */
     public function usesPoints(int $shopId): bool
     {
-        return (bool) session()->get(self::POINTS_KEY.'.'.$shopId, false);
+        return session()->has(self::POINTS_KEY.'.'.$shopId);
     }
 
-    public function usePoints(int $shopId): void
+    /**
+     * Liczba punktów wpisana przez klienta; null = „wszystkie, ile wolno".
+     * Przycinanie do maksimum robi `redeemable()` przy każdym renderze.
+     */
+    public function pointsChoice(int $shopId): ?int
     {
-        session()->put(self::POINTS_KEY.'.'.$shopId, true);
+        $choice = session()->get(self::POINTS_KEY.'.'.$shopId);
+
+        return is_int($choice) ? $choice : null;
+    }
+
+    public function usePoints(int $shopId, ?int $points = null): void
+    {
+        session()->put(self::POINTS_KEY.'.'.$shopId, $points ?? 'all');
     }
 
     public function stopUsingPoints(int $shopId): void

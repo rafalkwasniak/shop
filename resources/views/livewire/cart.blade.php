@@ -156,24 +156,46 @@
                         <h2 class="st-brand st-box-title">Twoje punkty</h2>
                         <p class="mt-3 text-sm">Masz <strong>{{ $loyalty->balance }} pkt</strong>.</p>
 
-                        @if ($loyalty->usable())
-                            @if ($pointsApplied)
-                                <div class="mt-4 flex items-baseline justify-between gap-3">
+                        @if ($loyalty->canRedeem())
+                            @if ($pointsApplied && ! $editingPoints)
+                                <div class="mt-4 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                                     <span class="min-w-0 text-sm">Wykorzystujesz <strong>{{ $loyalty->points }} pkt</strong></span>
-                                    <button type="button" wire:click="stopUsingPoints"
-                                        class="shrink-0 text-sm underline opacity-70 transition hover:opacity-100">Nie wykorzystuj</button>
+                                    <span class="flex shrink-0 gap-3">
+                                        <button type="button" wire:click="changePoints"
+                                            class="text-sm underline opacity-70 transition hover:opacity-100">Zmień</button>
+                                        <button type="button" wire:click="stopUsingPoints"
+                                            class="text-sm underline opacity-70 transition hover:opacity-100">Nie wykorzystuj</button>
+                                    </span>
                                 </div>
                                 <p class="mt-2 text-sm">Pozostanie: <strong>{{ $loyalty->balance - $loyalty->points }} pkt</strong>.</p>
+                                @if ($loyalty->capped())
+                                    <p class="mt-2 text-xs opacity-60">W tym zamówieniu możesz wykorzystać najwyżej {{ $loyalty->maximum }} pkt.</p>
+                                @endif
                             @else
+                                {{-- „Wszystkie" jednym kliknięciem albo własna liczba. Bez kwoty
+                                     w zł (decyzja Rafała 07.10) — ta pokazuje się w podsumowaniu. --}}
                                 <button type="button" wire:click="usePoints"
                                     class="st-border mt-4 w-full rounded-full border px-4 py-2.5 text-sm font-semibold transition hover:brightness-95">
-                                    {{-- Bez kwoty w zł (decyzja Rafała 07.10) — pokazuje się
-                                         w podsumowaniu dopiero po kliknięciu. --}}
-                                    Wykorzystaj {{ $loyalty->points }} pkt
+                                    {{ $loyalty->maximum === $loyalty->balance ? 'Wykorzystaj wszystkie ('.$loyalty->maximum.' pkt)' : 'Wykorzystaj '.$loyalty->maximum.' pkt' }}
                                 </button>
-                            @endif
-                            @if (! $pointsApplied && $loyalty->points < $loyalty->balance)
-                                <p class="mt-3 text-xs opacity-60">W tym zamówieniu możesz wykorzystać {{ $loyalty->points }} z {{ $loyalty->balance }} pkt — reszta zostanie na kolejne zakupy.</p>
+                                <p class="mt-4 text-sm opacity-70">albo wpisz, ile chcesz wykorzystać:</p>
+                                <div class="mt-2 flex gap-2">
+                                    <label for="points-amount" class="sr-only">Liczba punktów</label>
+                                    <input id="points-amount" type="text" inputmode="numeric" wire:model="pointsInput"
+                                        wire:keydown.enter="applyPoints" placeholder="np. 500"
+                                        class="st-border h-10 min-w-0 flex-1 rounded-full border bg-transparent px-4 text-sm focus:outline-none focus:ring-2 focus:ring-current/20">
+                                    <button type="button" wire:click="applyPoints"
+                                        class="st-border h-10 shrink-0 rounded-full border px-4 text-sm font-semibold transition hover:brightness-95">
+                                        Zastosuj
+                                    </button>
+                                </div>
+                                @php($pointsMessage = $pointsError ?? ($loyalty->reason === 'below_minimum' ? 'Najmniej możesz wykorzystać '.$loyalty->minimum.' pkt.' : null))
+                                @if ($pointsMessage)
+                                    <p class="mt-2 text-sm opacity-80" role="status" aria-live="polite">{{ $pointsMessage }}</p>
+                                @endif
+                                @if ($loyalty->maximum < $loyalty->balance)
+                                    <p class="mt-3 text-xs opacity-60">W tym zamówieniu możesz wykorzystać najwyżej {{ $loyalty->maximum }} z {{ $loyalty->balance }} pkt — reszta zostanie na kolejne zakupy.</p>
+                                @endif
                             @endif
                         @else
                             <p class="mt-3 text-sm opacity-70">

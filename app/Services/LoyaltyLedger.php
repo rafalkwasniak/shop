@@ -176,8 +176,12 @@ class LoyaltyLedger
      * minimum sklepu, limit procentowy sklepu i `loyalty.min_payable` — po
      * punktach musi zostać coś do zapłaty, bo zamówienie za 0 zł nie przejdzie
      * przez płatność. Liczymy w groszach; punkty tylko w całości.
+     *
+     * `$requested` = liczba wpisana przez klienta (null = „wszystkie"). Więcej
+     * niż wolno PRZYCINAMY do maksimum (klient nie musi zgadywać — decyzja
+     * Rafała 07.10); mniej niż minimum sklepu odrzucamy (`below_minimum`).
      */
-    public function redeemable(Shop $shop, string $email, float $items): LoyaltyRedemption
+    public function redeemable(Shop $shop, string $email, float $items, ?int $requested = null): LoyaltyRedemption
     {
         $balance = $this->balance($shop, $email);
         $minimum = $shop->loyalty_min_redeem_points;
@@ -204,7 +208,13 @@ class LoyaltyLedger
             return new LoyaltyRedemption($balance, 0, 0.0, 'cart', $minimum);
         }
 
-        return new LoyaltyRedemption($balance, $points, $points * $value / 100, null, $minimum);
+        if ($requested !== null && $minimum && $requested < $minimum) {
+            return new LoyaltyRedemption($balance, 0, 0.0, 'below_minimum', $minimum, $points, $requested);
+        }
+
+        $used = $requested !== null ? min(max($requested, 0), $points) : $points;
+
+        return new LoyaltyRedemption($balance, $used, $used * $value / 100, $used > 0 ? null : 'empty', $minimum, $points, $requested);
     }
 
     /**

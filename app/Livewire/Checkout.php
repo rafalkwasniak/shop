@@ -539,7 +539,7 @@ class Checkout extends Component
         // OrderService (który przy składaniu liczy je jeszcze raz i zdejmuje).
         $customer = $this->authCustomer();
         $redemption = $customer !== null && $cart->usesPoints($this->shopId)
-            ? app(LoyaltyLedger::class)->redeemable($shop, $customer->email, $gross - $itemsDiscount)
+            ? app(LoyaltyLedger::class)->redeemable($shop, $customer->email, $gross - $itemsDiscount, $cart->pointsChoice($this->shopId))
             : null;
         $pointsDiscount = $redemption?->usable() ? $redemption->amount : 0.0;
 
