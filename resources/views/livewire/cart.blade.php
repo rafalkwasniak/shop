@@ -163,7 +163,7 @@
                                     <button type="button" wire:click="stopUsingPoints"
                                         class="shrink-0 text-sm underline opacity-70 transition hover:opacity-100">Nie wykorzystuj</button>
                                 </div>
-                                <p class="mt-2 text-sm opacity-70">Pozostanie: {{ $loyalty->balance - $loyalty->points }} pkt.</p>
+                                <p class="mt-2 text-sm">Pozostanie: <strong>{{ $loyalty->balance - $loyalty->points }} pkt</strong>.</p>
                             @else
                                 <button type="button" wire:click="usePoints"
                                     class="st-border mt-4 w-full rounded-full border px-4 py-2.5 text-sm font-semibold transition hover:brightness-95">

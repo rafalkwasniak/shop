@@ -155,7 +155,7 @@ class LoyaltyRedemptionTest extends TestCase
             ->assertDontSee('−10,94 zł')
             ->call('usePoints')
             ->assertSee('Wykorzystujesz')
-            ->assertSee('Pozostanie: 0 pkt.')
+            ->assertSee('Pozostanie: <strong>0 pkt</strong>.', false)
             ->assertSee('−10,94 zł')
             ->assertSee('28,86 zł')
             ->call('stopUsingPoints')
