@@ -94,6 +94,34 @@ class LoyaltyExpiryReminder
         $host = 'https://'.$shop->host();
         $activated = $account?->isActivated() ?? false;
 
+        // Dłuższa, ciepła treść (Rafał 07.10: pełniejsze maile działają lepiej),
+        // ale wciąż o punktach KLIENTA — bez promowania produktów czy ofert,
+        // bo wtedy byłaby to informacja handlowa wymagająca zgody.
+        $collectsMore = $shop->loyaltyActive();
+        $replyLine = filled($shop->contact_email)
+            ? 'Masz pytanie? Odpowiedz na tę wiadomość — trafi prosto do sklepu.'
+            : null;
+
+        $intro = [
+            'W sklepie **'.$shop->name.'** czekają na Ciebie punkty: **'.$points.' pkt** wygaśnie **'.$date.'**.',
+            'To rabat, który już masz na koncie. Po tym dniu punkty przepadną i nie da się ich przywrócić, więc szkoda, żeby się zmarnowały.',
+        ];
+
+        if ($activated) {
+            $intro[] = 'Wykorzystanie ich zajmuje chwilę: dodaj produkty do koszyka, zaloguj się i kliknij „Wykorzystaj". Wartość punktów odejmiemy od ceny od razu, jeszcze przed zapłatą.';
+        } else {
+            $intro[] = 'Punkty są zapisane na ten adres e-mail. Żeby z nich skorzystać, załóż konto w sklepie na ten sam adres — zajmie to minutę, a wszystkie zebrane punkty od razu pojawią się na koncie.';
+            $intro[] = 'Potem wystarczy dodać produkty do koszyka i kliknąć „Wykorzystaj" — wartość punktów odejmiemy od ceny jeszcze przed zapłatą.';
+        }
+
+        if ($collectsMore) {
+            $intro[] = 'A przy okazji zbierzesz nowe punkty: za część zamówienia zapłaconą pieniędzmi dostaniesz kolejne — na następne zakupy.';
+        }
+
+        $outro = $activated
+            ? ['Saldo, punkty oczekujące i daty wygaśnięcia sprawdzisz w Moim koncie, w zakładce „Punkty".', $replyLine]
+            : ['Konto przyda się też później: zobaczysz w nim historię zamówień i wszystkie swoje punkty.', $replyLine];
+
         EmailMessage::create([
             'priority' => MailPriority::Mid,
             'shop_id' => $shop->id,
@@ -102,20 +130,13 @@ class LoyaltyExpiryReminder
             'to_email' => $email,
             'to_name' => trim(($account?->name ?? $name).' '.($account?->surname ?? '')),
             'subject' => 'Twoje punkty wkrótce wygasną — '.$shop->name,
-            'preheader' => $points.' pkt wygaśnie '.$date.'.',
+            'preheader' => $points.' pkt wygaśnie '.$date.'. Szkoda, żeby się zmarnowały.',
             'heading' => 'Punkty wkrótce wygasną',
             'greeting' => Vocative::greeting($name),
-            'intro_lines' => array_values(array_filter([
-                'W sklepie **'.$shop->name.'** masz punkty, którym kończy się ważność: **'.$points.' pkt** wygaśnie **'.$date.'**.',
-                $activated
-                    ? 'Możesz je wykorzystać przy kolejnym zamówieniu — w koszyku kliknij „Wykorzystaj".'
-                    : 'Punkty są zapisane na ten adres e-mail. Żeby z nich skorzystać, załóż konto w sklepie na ten sam adres — punkty od razu się na nim pojawią.',
-            ])),
-            'action_text' => $activated ? 'Przejdź do sklepu' : 'Załóż konto',
+            'intro_lines' => $intro,
+            'action_text' => $activated ? 'Wykorzystaj punkty' : 'Załóż konto i odbierz punkty',
             'action_url' => $activated ? $host : $host.'/rejestracja',
-            'outro_lines' => $activated
-                ? ['Saldo i historię punktów znajdziesz w Moim koncie, w zakładce „Punkty".']
-                : [],
+            'outro_lines' => array_values(array_filter($outro)),
         ]);
     }
 }

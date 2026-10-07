@@ -109,7 +109,10 @@ class LoyaltyExpiryReminderTest extends TestCase
 
         $this->artisan('loyalty:remind');
 
-        $this->assertStringContainsString('/rejestracja', EmailMessage::sole()->action_url);
+        $mail = EmailMessage::sole();
+        $this->assertStringContainsString('/rejestracja', $mail->action_url);
+        $this->assertSame('Załóż konto i odbierz punkty', $mail->action_text);
+        $this->assertStringContainsString('zapisane na ten adres e-mail', $this->body($mail));
     }
 
     public function test_customer_with_account_is_sent_to_the_shop(): void
@@ -122,7 +125,20 @@ class LoyaltyExpiryReminderTest extends TestCase
 
         $mail = EmailMessage::sole();
         $this->assertSame('https://'.$shop->host(), $mail->action_url);
-        $this->assertStringContainsString('Wykorzystaj', $this->body($mail));
+        $this->assertSame('Wykorzystaj punkty', $mail->action_text);
+        $this->assertStringContainsString('przepadną', $this->body($mail));
+        $this->assertStringContainsString('zbierzesz nowe punkty', $this->body($mail));
+    }
+
+    public function test_shop_that_ended_the_programme_does_not_promise_new_points(): void
+    {
+        $shop = $this->shop();
+        $this->lot($shop, 199, 10);
+        $shop->update(['loyalty_enabled' => false]);
+
+        $this->artisan('loyalty:remind');
+
+        $this->assertStringNotContainsString('zbierzesz nowe punkty', $this->body(EmailMessage::sole()));
     }
 
     public function test_no_mail_when_debt_would_eat_the_expiring_points(): void
