@@ -762,7 +762,8 @@ class OrderMailer
         }
 
         $lines = [
-            '**Punkty za to zamówienie: '.$entry->points.' pkt** ('.Money::pln($entry->points * $shop->loyaltyPointValue()).' na kolejne zakupy).',
+            // Same punkty, bez wartości w zł (decyzja Rafała 07.10).
+            '**Punkty za to zamówienie: '.$entry->points.' pkt**.',
             $entry->available_at->isFuture()
                 ? 'Będą do wykorzystania od '.$entry->available_at->format('d.m.Y').' — wcześniej trwa czas na ewentualny zwrot.'
                 : 'Możesz z nich skorzystać już teraz.',

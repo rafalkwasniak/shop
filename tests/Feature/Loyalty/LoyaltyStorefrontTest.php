@@ -58,18 +58,24 @@ class LoyaltyStorefrontTest extends TestCase
         return $order->fresh();
     }
 
-    public function test_product_page_shows_points_with_link_to_rules(): void
+    public function test_product_page_shows_points_only_without_money_or_rules_link(): void
     {
         $shop = $this->shop();
         $page = LoyaltyRules::ensurePage($shop);
         $product = $this->product($shop);
 
-        $this->get($this->host($shop).$product->storefrontPath())
+        // Same punkty: bez wartości w zł i bez odnośnika do zasad (są w menu) —
+        // decyzja Rafała 07.10.
+        $response = $this->get($this->host($shop).$product->storefrontPath())
             ->assertOk()
             ->assertSee('Za ten zakup dostaniesz')
             ->assertSee('199 pkt')
-            ->assertSee('1,99 zł na kolejne zakupy')
-            ->assertSee($page->storefrontPath());
+            ->assertDontSee('1,99 zł');
+
+        // Zasady są w menu i stopce sklepu — karta produktu nie dokłada własnego odnośnika.
+        $onHome = substr_count($this->get($this->host($shop).'/')->getContent(), $page->storefrontPath());
+        $this->assertGreaterThan(0, $onHome);
+        $this->assertSame($onHome, substr_count($response->getContent(), $page->storefrontPath()));
     }
 
     public function test_product_page_without_points_shows_nothing(): void
@@ -103,7 +109,8 @@ class LoyaltyStorefrontTest extends TestCase
             ->assertSee('Za zakup')
             ->assertSee('zamówienie #'.$order->number)
             ->assertSee('Prezent od sklepu')
-            ->assertSee('do wykorzystania od');
+            ->assertSee('do wykorzystania od')
+            ->assertDontSee('zł rabatu');
     }
 
     public function test_points_collected_as_guest_appear_after_registration(): void
@@ -154,6 +161,7 @@ class LoyaltyStorefrontTest extends TestCase
 
         $lines = json_encode(EmailMessage::latest('id')->first()->intro_lines, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         $this->assertStringContainsString('Punkty za to zamówienie: 500 pkt', $lines);
+        $this->assertStringNotContainsString('na kolejne zakupy', $lines);
         $this->assertStringContainsString('Masz już łącznie **500 pkt**', $lines);
         $this->assertStringContainsString('/rejestracja', $lines);
     }

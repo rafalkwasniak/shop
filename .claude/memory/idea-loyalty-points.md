@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 7092e827-f5de-4490-9ede-6b446045c5b5
-  modified: 2026-10-07T11:13:59.684Z
+  modified: 2026-10-07T11:24:55.281Z
 ---
 
 **Stan 2026-10-07: SILNIK WDROŻONY, NIEPODPIĘTY.** Rafał chciał krok, który „sam w sobie nic nie zepsuje”. Zrobione: `config/loyalty.php`, kolumny `shops.loyalty_*` (wszystko domyślnie wyłączone), tabele `loyalty_entries` + `loyalty_entry_usages`, `App\Services\LoyaltyLedger` (award / reconcile / spend / restore / adjust / balance / pending / expire), `LoyaltyEntryType`, `LoyaltyException`, testy `tests/Feature/Loyalty/LoyaltyLedgerTest.php` (15). Migracja ODPALONA na produkcji (0/12 sklepów z punktami). Suita 1852→1867.
@@ -26,6 +26,8 @@ metadata:
 - **Poprawki po odbiorze A (Rafał 07.10):** dwa formularze w Ustawieniach ZOSTAJĄ (świadomie), dodane ostrzeżenie o niezapisanych zmianach w drugiej sekcji: komunikat w stronie + drugie kliknięcie, NIE `confirm()` (test `PanelConfirmationsTest` zabrania okienek przeglądarki w panelu). **Wartość punktu = dowolna kwota 0,01–10,00 zł** (`loyalty.point_value_min/max`, NIE lista); `revalue()` sprawdza zakres. Przelicznik na żywo (Alpine `loyaltyPreview` w widoku Ustawień): „za zakupy za [100] zł klient dostanie X pkt = Y zł”, liczy jak `pointsFromBase` — zmieniając silnik, zmieniaj i JS.
 
 - **Krok B ZROBIONY (07.10):** karta produktu „Za ten zakup dostaniesz X pkt (Y zł) · zasady” (tylko `loyaltyActive`, przy wadze „za 1 kg”); zakładka „Punkty” w Moim koncie (`storefront.account.points`, widok `storefront/account/points.blade.php`, w menu `account-shell` gdy `LoyaltyLedger::visibleFor()` = sklep nalicza ALBO klient ma historię) + kafelek salda na stronie Mojego konta; blok w mailu o „Zrealizowane” (`OrderMailer::loyaltyBlock`: aktywne konto → link do punktów, gość → łączne saldo + link `/rejestracja`). **Blok maila w try/catch:** awaria punktów nie może zablokować maila o statusie (wyłapał to test z mockiem). GOTCHA testów: `json_encode` maila bez `JSON_UNESCAPED_SLASHES` zamienia `/` na `\/`.
+
+- **ZASADA PREZENTACJI (Rafał 07.10, OBOWIĄZUJE też w krokach C/D):** klientowi pokazujemy SAME PUNKTY. Bez wartości w zł, bez procentu zwrotu, bez wyliczeń „ile odzyskasz” (zwrot jest mały, konkurencja go nie wykłada). Wyjątki: (1) Zasady punktów: jedna stawka w pkt na złotówkę (`LoyaltyRules::earnPhrase`: 1/10/100 zł → pełna liczba) + jeden przelicznik „100 pkt = X zł” (`redeemPhrase`), zostawiony świadomie, bo zasady programu muszą mówić, ile punkty są warte (zatajenie = ryzyko nieuczciwej praktyki); (2) w KOSZYKU kwota rabatu w zł musi być widoczna (cena końcowa), ale dopiero tam. Odnośników do Zasad na karcie produktu i w Moim koncie NIE dajemy, bo strona jest w menu i stopce. Panel sprzedawcy pokazuje zł normalnie.
 
 **PLAN DALSZY (zaproponowany 07.10, czeka na start):** uprawnienie `loyalty_points` dodane od razu, ale FALSE we WSZYSTKICH pakietach (także Pawilonie); Rafał włącza je ręcznie tylko Lemoniadom. Funkcja rośnie po cichu, sprzedawcy zobaczą ją dopiero kompletną.
 - **A** (1 sesja): uprawnienie w ShopManager (+ PackageFeatures, SyncPackageEntitlements) + sekcja „Punkty” w Ustawieniach (z checkboxem przeliczenia przy zmianie wartości) + strona „Zasady punktów” (domyślna treść z ustawień, edytowalna, nieusuwalna przy włączonych). Włączenie wymaga zasad.

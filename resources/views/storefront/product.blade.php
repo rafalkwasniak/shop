@@ -58,17 +58,14 @@
 
                 {{-- Punkty za zakupy: liczone od ceny brutto, tą samą formułą co
                      naliczenie (LoyaltyLedger::pointsFromBase). Przy produkcie na
-                     wagę — za 1 kg, jak cena obok. Tylko gdy sklep punkty NALICZA. --}}
+                     wagę — za 1 kg, jak cena obok. Tylko gdy sklep punkty NALICZA.
+                     SAME PUNKTY, bez wartości w zł i bez odnośnika do zasad — te są w menu
+                     sklepu (decyzja Rafała 07.10). --}}
                 @if ($shop->loyaltyActive())
                     @php($productPoints = app(\App\Services\LoyaltyLedger::class)->pointsFromBase($shop, (float) $product->price_gross))
                     @if ($productPoints > 0)
-                        @php($rulesPage = \App\Support\LoyaltyRules::publishedPage($shop))
                         <p class="mt-2 text-sm">
                             Za ten zakup dostaniesz <strong class="st-brand">{{ $productPoints }} pkt</strong>@if ($product->sale_unit->isWeight()) za 1 {{ $product->sale_unit->abbreviation() }}@endif
-                            <span class="opacity-70">({{ \App\Support\Money::pln($productPoints * $shop->loyaltyPointValue()) }} na kolejne zakupy)</span>
-                            @if ($rulesPage)
-                                · <a href="{{ $rulesPage->storefrontPath() }}" wire:navigate class="underline underline-offset-2 opacity-70 hover:opacity-100">zasady</a>
-                            @endif
                         </p>
                     @endif
                 @endif

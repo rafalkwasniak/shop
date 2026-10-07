@@ -84,7 +84,10 @@ class LoyaltySettingsTest extends TestCase
         $page = $shop->pages()->where('system_key', Page::LOYALTY_RULES)->sole();
         $this->assertSame('Zasady punktów', $page->title);
         $this->assertTrue($page->published);
-        $this->assertStringContainsString('3,5%', $page->content);
+        // Stawka w punktach, nie w procentach; przelicznik tylko na setkę punktów.
+        $this->assertStringContainsString('Za każde 10 zł wydane na produkty dostajesz 35 pkt.', $page->content);
+        $this->assertStringContainsString('100 pkt = 1,00 zł', $page->content);
+        $this->assertStringNotContainsString('3,5%', $page->content);
         $this->assertStringContainsString('24 miesiące', $page->content);
         $this->assertStringContainsString('najwyżej 40%', $page->content);
     }
@@ -205,6 +208,23 @@ class LoyaltySettingsTest extends TestCase
 
         $this->assertSame(LoyaltyRules::ensurePage($shop)->id, LoyaltyRules::ensurePage($shop)->id);
         $this->assertSame(1, $shop->pages()->where('system_key', Page::LOYALTY_RULES)->count());
+    }
+
+    public function test_earn_phrase_uses_smallest_amount_giving_whole_points(): void
+    {
+        $shop = Shop::factory()->withLoyalty(['loyalty_earn_percent' => 5, 'loyalty_point_value' => 0.01])->make();
+        $this->assertSame('Za każdą złotówkę wydaną na produkty dostajesz 5 pkt.', LoyaltyRules::earnPhrase($shop));
+
+        $shop->loyalty_earn_percent = 2.5;
+        $shop->loyalty_point_value = 0.05;
+        $this->assertSame('Za każde 10 zł wydane na produkty dostajesz 5 pkt.', LoyaltyRules::earnPhrase($shop));
+
+        // Żadna z kwot nie daje pełnej liczby — 100 zł, w dół.
+        $shop->loyalty_earn_percent = 3;
+        $shop->loyalty_point_value = 0.07;
+        $this->assertSame('Za każde 100 zł wydane na produkty dostajesz 42 pkt.', LoyaltyRules::earnPhrase($shop));
+
+        $this->assertSame('100 pkt = 7,00 zł', LoyaltyRules::redeemPhrase($shop));
     }
 
     public function test_month_words_follow_polish_grammar(): void

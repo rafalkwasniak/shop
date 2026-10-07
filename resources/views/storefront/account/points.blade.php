@@ -3,14 +3,14 @@
     ['label' => 'Moje konto', 'url' => '/moje-konto'],
     ['label' => 'Punkty'],
 ]">
-    @php($pointValue = $shop->loyaltyPointValue())
-
+    {{-- Same punkty, bez wartości w zł (decyzja Rafała 07.10) — przelicznik
+         jest w Zasadach, kwota rabatu pojawia się dopiero w koszyku. --}}
     {{-- Saldo, oczekujące, najbliższe wygaśnięcie --}}
     <div class="grid gap-4 sm:grid-cols-3">
         <div class="st-card st-border rounded-2xl border p-5">
             <p class="text-xs uppercase tracking-wide opacity-50">Do wykorzystania</p>
             <p class="mt-1 text-3xl font-bold tabular-nums {{ $balance < 0 ? 'text-rose-700' : '' }}">{{ $balance }} pkt</p>
-            <p class="mt-0.5 text-sm opacity-60">{{ \App\Support\Money::pln(max(0, $balance) * $pointValue) }} rabatu</p>
+            <p class="mt-0.5 text-sm opacity-60">do wydania w koszyku</p>
         </div>
         <div class="st-card st-border rounded-2xl border p-5">
             <p class="text-xs uppercase tracking-wide opacity-50">Oczekujące</p>
@@ -35,12 +35,7 @@
         </div>
     @endif
 
-    <p class="mt-4 text-sm opacity-70">
-        Punkty wykorzystasz w koszyku po zalogowaniu.
-        @if ($rulesPage)
-            <a href="{{ $rulesPage->storefrontPath() }}" wire:navigate class="st-brand underline underline-offset-2">Zasady punktów</a>
-        @endif
-    </p>
+    <p class="mt-4 text-sm opacity-70">Punkty wykorzystasz w koszyku po zalogowaniu.</p>
 
     {{-- Historia --}}
     <div class="mt-8">

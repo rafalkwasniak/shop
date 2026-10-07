@@ -10,7 +10,6 @@ use App\Http\Requests\Storefront\ProfileUpdateRequest;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Services\LoyaltyLedger;
-use App\Support\LoyaltyRules;
 use Illuminate\Contracts\Support\Renderable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -99,7 +98,6 @@ class AccountController extends Controller
             'pending' => $ledger->pending($shop, $customer->email),
             'nextExpiring' => $ledger->nextExpiring($shop, $customer->email),
             'history' => $ledger->history($shop, $customer->email),
-            'rulesPage' => LoyaltyRules::publishedPage($shop),
         ]);
     }
 

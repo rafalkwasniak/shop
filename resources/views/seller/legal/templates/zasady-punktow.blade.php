@@ -5,18 +5,17 @@
      gdy są), akapity w <div>, bo HtmlSanitizer wycina <p>.
 
      Ton jak do klienta („Ty"), bo to strona do przeczytania przed zakupem, nie
-     umowa. Zdania o przeliczeniu i zakończeniu programu opisują to, co robi
+     umowa. BEZ procentu zwrotu i bez wyliczeń „ile odzyskasz" (decyzja Rafała
+     07.10): stawka w punktach na złotówkę + jeden przelicznik przy wydawaniu.
+     Zdania o przeliczeniu i zakończeniu programu opisują to, co robi
      `LoyaltyLedger` — zmieniając silnik, zmieniaj też ten tekst.
 
-     Zmienne: $shop, $percent, $pointValue, $examplePoints, $exampleValue,
-     $delay, $validity (null = bez terminu), $maxRedeem, $minRedeem. --}}
+     Zmienne: $shop, $earnPhrase, $redeemPhrase, $delay, $validity (null = bez terminu), $maxRedeem, $minRedeem. --}}
 <div>W sklepie „{{ $shop->name }}" za każdy zrealizowany zakup dostajesz punkty, które wymienisz na rabat przy kolejnych zamówieniach. Poniżej wszystko, co warto o nich wiedzieć.</div>
 
 <h2>Ile punktów dostajesz</h2>
 <ul>
-    <li><strong>{{ $percent }}</strong> wartości kupionych produktów wraca do Ciebie w punktach. Liczymy kwotę faktycznie zapłaconą za produkty — po rabatach, bez kosztu dostawy.</li>
-    <li>Jeden punkt jest wart <strong>{{ $pointValue }}</strong>.</li>
-    <li>Przykład: za zakupy za 100,00 zł dostajesz {{ $examplePoints }} pkt, czyli {{ $exampleValue }} na kolejne zakupy.</li>
+    <li><strong>{{ $earnPhrase }}</strong> Liczymy kwotę faktycznie zapłaconą za produkty — po rabatach, bez kosztu dostawy.</li>
     <li>Przy każdym produkcie widzisz, ile punktów za niego dostaniesz.</li>
 </ul>
 
@@ -37,6 +36,7 @@
 <h2>Jak wykorzystać punkty</h2>
 <ol>
     <li>Zaloguj się na swoje konto w sklepie i w koszyku zaznacz „Użyj punktów" — ich wartość odejmiemy od ceny produktów.</li>
+    <li>Przy zakupie punkty zamieniamy na rabat: {{ $redeemPhrase }}.</li>
     @if ($maxRedeem)
         <li>Punktami zapłacisz najwyżej {{ $maxRedeem }}% wartości produktów w zamówieniu.</li>
     @endif
