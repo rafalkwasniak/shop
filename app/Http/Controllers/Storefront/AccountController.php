@@ -42,10 +42,12 @@ class AccountController extends Controller
             'ordersCount' => $customer->orders()->countedAsSale()->count(),
             'totalSpent' => $customer->orders()->countedAsSale()->sum('total_gross'),
             'lastOrder' => $customer->orders()->withCount('items')->latest('id')->first(),
-            // null = kafelka punktów nie pokazujemy (sklep ich nie ma, klient bez historii).
-            'loyaltyBalance' => $ledger->visibleFor($customer->shop, $customer->email)
-                ? $ledger->balance($customer->shop, $customer->email)
-                : null,
+            // null = kafelków punktów nie pokazujemy (sklep ich nie ma, klient bez historii).
+            'loyalty' => $ledger->visibleFor($customer->shop, $customer->email) ? [
+                'balance' => $ledger->balance($customer->shop, $customer->email),
+                'pending' => $ledger->pending($customer->shop, $customer->email),
+                'nextExpiring' => $ledger->nextExpiring($customer->shop, $customer->email),
+            ] : null,
         ]);
     }
 

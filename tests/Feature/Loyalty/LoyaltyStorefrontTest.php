@@ -99,7 +99,11 @@ class LoyaltyStorefrontTest extends TestCase
             ->get($this->host($shop).'/moje-konto')
             ->assertOk()
             ->assertSee('/moje-konto/punkty')
-            ->assertSee('Punkty do wykorzystania');
+            ->assertSee('Do wykorzystania')
+            ->assertSee('Najbliżej wygasa')
+            ->assertSee('120 pkt')
+            ->assertSee('500 pkt')
+            ->assertDontSee('Historia punktów');
 
         $this->actingAs($customer, 'customer')
             ->get($this->host($shop).'/moje-konto/punkty')

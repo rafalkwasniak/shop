@@ -38,16 +38,10 @@
         </div>
     </div>
 
-    {{-- Punkty za zakupy — skrót do zakładki „Punkty". --}}
-    @if ($loyaltyBalance !== null)
-        <a href="/moje-konto/punkty" wire:navigate
-            class="st-card st-border mt-4 flex flex-wrap items-center justify-between gap-4 rounded-2xl border p-5 transition hover:brightness-[0.98]">
-            <div>
-                <p class="text-xs uppercase tracking-wide opacity-50">Punkty do wykorzystania</p>
-                <p class="mt-1 text-3xl font-bold tabular-nums">{{ $loyaltyBalance }} pkt</p>
-            </div>
-            <span class="st-brand text-sm font-medium">Historia punktów →</span>
-        </a>
+    {{-- Punkty za zakupy — te same kafelki co w zakładce „Punkty"; bez odnośnika,
+         bo zakładka jest w menu po lewej. --}}
+    @if ($loyalty !== null)
+        <x-storefront.loyalty-summary class="mt-4" :balance="$loyalty['balance']" :pending="$loyalty['pending']" :next-expiring="$loyalty['nextExpiring']" />
     @endif
 
     {{-- Ostatnie zamówienie --}}
