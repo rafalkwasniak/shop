@@ -3,6 +3,8 @@
     ['label' => 'Moje konto', 'url' => '/moje-konto'],
     ['label' => 'Zamówienia'],
 ]">
+    <x-storefront.order-stats class="mb-6" :count="$ordersCount" :total="$totalSpent" />
+
     @if ($orders->isEmpty())
         <div class="st-card st-border rounded-3xl border p-10 text-center">
             <p class="opacity-70">Nie masz jeszcze zamówień.</p>

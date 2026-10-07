@@ -60,6 +60,9 @@ class AccountController extends Controller
 
         return view('storefront.account.orders', [
             'orders' => $orders,
+            // Te same kafelki co na stronie „Moje konto" — bez anulowanych.
+            'ordersCount' => $this->customer()->orders()->countedAsSale()->count(),
+            'totalSpent' => $this->customer()->orders()->countedAsSale()->sum('total_gross'),
         ]);
     }
 

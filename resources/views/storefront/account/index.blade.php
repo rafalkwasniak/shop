@@ -27,16 +27,7 @@
     </div>
 
     {{-- Statystyki --}}
-    <div class="mt-6 grid gap-4 sm:grid-cols-2">
-        <div class="st-card st-border rounded-2xl border p-5">
-            <p class="text-xs uppercase tracking-wide opacity-50">Złożone zamówienia</p>
-            <p class="mt-1 text-3xl font-bold tabular-nums">{{ $ordersCount }}</p>
-        </div>
-        <div class="st-card st-border rounded-2xl border p-5">
-            <p class="text-xs uppercase tracking-wide opacity-50">Łączna wartość zamówień</p>
-            <p class="mt-1 text-3xl font-bold tabular-nums">{{ \App\Support\Money::pln($totalSpent) }}</p>
-        </div>
-    </div>
+    <x-storefront.order-stats class="mt-6" :count="$ordersCount" :total="$totalSpent" />
 
     {{-- Punkty za zakupy — te same kafelki co w zakładce „Punkty"; bez odnośnika,
          bo zakładka jest w menu po lewej. --}}

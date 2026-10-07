@@ -48,6 +48,23 @@ class CustomerAccountAreaTest extends TestCase
             ->assertDontSee('#303');
     }
 
+    public function test_orders_list_shows_the_same_stats_as_the_overview(): void
+    {
+        $shop = Shop::factory()->create();
+        $customer = Customer::factory()->for($shop)->create();
+        Order::factory()->for($shop)->create(['customer_id' => $customer->id, 'total_gross' => 100.50]);
+        Order::factory()->for($shop)->create(['customer_id' => $customer->id, 'total_gross' => 20.00]);
+        // Anulowane nie jest zakupem — nie podbija liczby ani kwoty.
+        Order::factory()->for($shop)->create(['customer_id' => $customer->id, 'total_gross' => 999.00, 'status' => \App\Enums\OrderStatus::Cancelled]);
+
+        $this->actingAs($customer, 'customer')
+            ->get($this->host($shop).'/moje-konto/zamowienia')
+            ->assertOk()
+            ->assertSee('Złożone zamówienia')
+            ->assertSee('120,50 zł')
+            ->assertDontSee('1 119,50 zł');
+    }
+
     public function test_orders_list_shows_all_customer_orders(): void
     {
         $shop = Shop::factory()->create();
