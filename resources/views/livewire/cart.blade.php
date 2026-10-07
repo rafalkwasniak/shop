@@ -176,7 +176,7 @@
                                      w zł (decyzja Rafała 07.10) — ta pokazuje się w podsumowaniu. --}}
                                 <button type="button" wire:click="usePoints"
                                     class="st-border mt-4 w-full rounded-full border px-4 py-2.5 text-sm font-semibold transition hover:brightness-95">
-                                    {{ $loyalty->maximum === $loyalty->balance ? 'Wykorzystaj wszystkie ('.$loyalty->maximum.' pkt)' : 'Wykorzystaj '.$loyalty->maximum.' pkt' }}
+                                    {{ $loyalty->maximum === $loyalty->balance ? 'Wykorzystaj wszystkie '.$loyalty->maximum.' pkt' : 'Wykorzystaj '.$loyalty->maximum.' pkt' }}
                                 </button>
                                 <p class="mt-4 text-sm opacity-70">albo wpisz, ile chcesz wykorzystać:</p>
                                 <div class="mt-2 flex gap-2">
