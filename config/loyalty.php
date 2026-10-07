@@ -35,4 +35,14 @@ return [
 
     'validity_months' => 12,
 
+    /*
+    | `min_payable` = ile złotych musi zostać do zapłaty po użyciu punktów
+    | (decyzja Rafała 07.10). Zamówienie za 0 zł nie ma jak przejść przez
+    | płatność online ani pobranie, więc punkty nigdy nie pokrywają całości.
+    | Liczone od wartości produktów po kodzie rabatowym — punkty i tak nie
+    | płacą za dostawę.
+    */
+
+    'min_payable' => 1.00,
+
 ];

@@ -22,6 +22,9 @@ class CartService
     /** Kody rabatowe przyklejone do koszyków: [shop_id => 'KOD']. */
     private const DISCOUNT_KEY = 'cart_discounts';
 
+    /** Przełącznik „Użyj punktów" per sklep — sama decyzja, nigdy kwota. */
+    private const POINTS_KEY = 'cart_points';
+
     /**
      * Surowa zawartość koszyka sklepu: [product_id => qty]. Ilość jest ułamkowa
      * (waga: 2,50 kg) albo całkowita (sztuki). Kolejność wstawiania zachowana.
@@ -109,6 +112,7 @@ class CartService
     {
         session()->forget(self::KEY.'.'.$shopId);
         $this->clearDiscountCode($shopId);
+        $this->stopUsingPoints($shopId);
     }
 
     /**
@@ -132,6 +136,26 @@ class CartService
     public function clearDiscountCode(int $shopId): void
     {
         session()->forget(self::DISCOUNT_KEY.'.'.$shopId);
+    }
+
+    /**
+     * Czy klient chce zapłacić punktami. Jak przy kodzie rabatowym, w sesji
+     * leży WYŁĄCZNIE decyzja — ile punktów i za ile złotych, liczy przy każdym
+     * renderze `LoyaltyLedger::redeemable()` z aktualnego koszyka i salda.
+     */
+    public function usesPoints(int $shopId): bool
+    {
+        return (bool) session()->get(self::POINTS_KEY.'.'.$shopId, false);
+    }
+
+    public function usePoints(int $shopId): void
+    {
+        session()->put(self::POINTS_KEY.'.'.$shopId, true);
+    }
+
+    public function stopUsingPoints(int $shopId): void
+    {
+        session()->forget(self::POINTS_KEY.'.'.$shopId);
     }
 
     /**

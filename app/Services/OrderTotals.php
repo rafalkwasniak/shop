@@ -48,7 +48,16 @@ class OrderTotals
         // zamówienia (usunięcie pozycji) zrobiłaby ujemne zamówienie albo
         // zjadła koszt wysyłki, którego rabat na produkty tykać nie może.
         $discount = min(round((float) $order->discount_amount, 2), round($itemsTotal, 2));
-        $shares = DiscountAllocation::spread($discount, $lineGrossValues);
+
+        // Punkty za zakupy płacą to, co zostało PO kodzie — i też nigdy więcej niż
+        // produkty. Gdy edycja albo zwrot zmniejszą zamówienie poniżej kwoty
+        // zapłaconej punktami, przycinamy ją, a `OrderObserver` oddaje różnicę
+        // klientowi na konto (LoyaltyLedger::syncSpent).
+        $points = min(round((float) $order->points_discount, 2), round($itemsTotal - $discount, 2));
+
+        // Kod i punkty rozbijamy JEDNYM podziałem — dwa osobne zaokrąglenia
+        // mogłyby rozjechać się o grosz z fakturą.
+        $shares = DiscountAllocation::spread(round($discount + $points, 2), $lineGrossValues);
 
         $totalNet = 0.0;
         $totalVat = 0.0;
@@ -69,9 +78,10 @@ class OrderTotals
             // pozycji na liście; rabat mieszka osobno w `discount_amount`.
             'items_total' => round($itemsTotal, 2),
             'discount_amount' => $discount,
+            'points_discount' => $points,
             'total_net' => round($totalNet, 2),
             'total_vat' => round($totalVat, 2),
-            'total_gross' => round($itemsTotal - $discount + (float) $order->delivery_cost, 2),
+            'total_gross' => round($itemsTotal - $discount - $points + (float) $order->delivery_cost, 2),
         ]);
     }
 

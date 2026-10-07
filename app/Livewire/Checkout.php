@@ -10,6 +10,7 @@ use App\Models\Shop;
 use App\Services\CartService;
 use App\Services\CompanyLookup;
 use App\Services\DiscountResolver;
+use App\Services\LoyaltyLedger;
 use App\Services\NipService;
 use App\Services\OrderService;
 use App\Services\PhoneService;
@@ -534,6 +535,14 @@ class Checkout extends Component
         $method = $this->selectedDelivery();
         $deliveryCost = $freeShippingByCode ? 0.0 : ($method !== null ? $shop->deliveryCostFor($method, $gross) : 0.0);
 
+        // Punkty — od tego, co zostało po kodzie, tą samą metodą co koszyk i
+        // OrderService (który przy składaniu liczy je jeszcze raz i zdejmuje).
+        $customer = $this->authCustomer();
+        $redemption = $customer !== null && $cart->usesPoints($this->shopId)
+            ? app(LoyaltyLedger::class)->redeemable($shop, $customer->email, $gross - $itemsDiscount)
+            : null;
+        $pointsDiscount = $redemption?->usable() ? $redemption->amount : 0.0;
+
         return [
             'lines' => $lines,
             'gross' => $gross,
@@ -542,7 +551,8 @@ class Checkout extends Component
             'itemsDiscount' => $itemsDiscount,
             'freeShippingByCode' => $freeShippingByCode,
             'deliveryCost' => $deliveryCost,
-            'total' => round($gross - $itemsDiscount + $deliveryCost, 2),
+            'pointsDiscount' => $pointsDiscount,
+            'total' => round($gross - $itemsDiscount - $pointsDiscount + $deliveryCost, 2),
         ];
     }
 
@@ -569,7 +579,8 @@ class Checkout extends Component
 
         // Netto liczone PO rabacie, rozbitym na pozycje proporcjonalnie — ten sam
         // podział co w OrderTotals, więc „netto" w kasie zgadza się z fakturą.
-        $shares = DiscountAllocation::spread($itemsDiscount, $lines->pluck('line_total')->all());
+        $pointsDiscount = $pricing['pointsDiscount'];
+        $shares = DiscountAllocation::spread(round($itemsDiscount + $pointsDiscount, 2), $lines->pluck('line_total')->all());
         $net = $lines->values()->sum(fn (array $line, int $i): float => round(
             ($line['line_total'] - ($shares[$i] ?? 0.0)) / (1 + $line['product']->vat_rate->fraction()), 2
         ));
@@ -607,6 +618,7 @@ class Checkout extends Component
             'discountCode' => $discountApplies ? $discountCode : null,
             'formattedItems' => Money::pln($gross),
             'formattedDiscount' => $itemsDiscount > 0 ? Money::pln($itemsDiscount) : null,
+            'formattedPoints' => $pointsDiscount > 0 ? Money::pln($pointsDiscount) : null,
             'formattedTotal' => Money::pln($pricing['total']),
             'cashOnDelivery' => $this->cashOnDelivery(),
             'codLimit' => $this->codLimit(),

@@ -9,6 +9,7 @@ use App\Models\LoyaltyEntry;
 use App\Models\LoyaltyEntryUsage;
 use App\Models\Order;
 use App\Models\Shop;
+use App\Support\LoyaltyRedemption;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -46,7 +47,8 @@ class LoyaltyLedger
      */
     public function baseAmount(Order $order): float
     {
-        return max(0.0, round((float) $order->items_total - (float) $order->discount_amount, 2));
+        // Część zapłacona punktami nie daje punktów (decyzja Rafała 06.10).
+        return max(0.0, round((float) $order->items_total - (float) $order->discount_amount - (float) $order->points_discount, 2));
     }
 
     /** Ile punktów należy się za zamówienie przy bieżących ustawieniach sklepu. */
@@ -169,6 +171,76 @@ class LoyaltyLedger
     }
 
     /**
+     * Ile punktów klient może wydać na koszyk o wartości produktów `$items`
+     * (już po kodzie rabatowym). Ograniczenia, w tej kolejności: saldo,
+     * minimum sklepu, limit procentowy sklepu i `loyalty.min_payable` — po
+     * punktach musi zostać coś do zapłaty, bo zamówienie za 0 zł nie przejdzie
+     * przez płatność. Liczymy w groszach; punkty tylko w całości.
+     */
+    public function redeemable(Shop $shop, string $email, float $items): LoyaltyRedemption
+    {
+        $balance = $this->balance($shop, $email);
+        $minimum = $shop->loyalty_min_redeem_points;
+
+        if ($balance <= 0) {
+            return new LoyaltyRedemption($balance, 0, 0.0, 'empty', $minimum);
+        }
+
+        if ($minimum && $balance < $minimum) {
+            return new LoyaltyRedemption($balance, 0, 0.0, 'minimum', $minimum);
+        }
+
+        $itemsGrosze = (int) round($items * 100);
+        $cap = $itemsGrosze - (int) round((float) config('loyalty.min_payable') * 100);
+
+        if ($shop->loyalty_max_redeem_percent) {
+            $cap = min($cap, intdiv($itemsGrosze * $shop->loyalty_max_redeem_percent, 100));
+        }
+
+        $value = $this->grosze($shop->loyaltyPointValue());
+        $points = $cap > 0 ? min($balance, intdiv($cap, $value)) : 0;
+
+        if ($points <= 0) {
+            return new LoyaltyRedemption($balance, 0, 0.0, 'cart', $minimum);
+        }
+
+        return new LoyaltyRedemption($balance, $points, $points * $value / 100, null, $minimum);
+    }
+
+    /**
+     * Ile punktów wciąż „siedzi" w zamówieniu — wydane i jeszcze nie oddane.
+     */
+    public function spentOn(Order $order): int
+    {
+        return (int) LoyaltyEntryUsage::query()
+            ->whereIn('entry_id', $this->orderEntries($order, LoyaltyEntryType::Spent)->select('id'))
+            ->sum('points');
+    }
+
+    /**
+     * Dopasowuje punkty wydane na zamówienie do kwoty, która wciąż jest nimi
+     * zapłacona (`orders.points_discount`). Gdy kwota spadła — zwrot części
+     * towaru albo edycja zamówienia w dół — różnica wraca klientowi na konto
+     * (decyzja Rafała 07.10: punkty za zwróconą część wracają). Nigdy nie
+     * zdejmuje dodatkowych punktów. Zwraca liczbę oddanych.
+     */
+    public function syncSpent(Order $order): int
+    {
+        $spent = $this->spentOn($order);
+
+        if ($spent === 0) {
+            return 0;
+        }
+
+        // W górę: ułamek punktu, który dalej płaci zamówienie, zostaje przy nim
+        // tylko w całości — reszta wraca do klienta.
+        $value = $this->grosze($order->shop->loyaltyPointValue());
+        $stillPaid = (int) ceil((int) round((float) $order->points_discount * 100) / $value);
+
+        return $spent > $stillPaid ? $this->restore($order, $spent - $stillPaid) : 0;
+    }
+
+    /**
      * Wydaje punkty na zamówienie. Najpierw spłaca ewentualny dług z dostępnych
      * porcji, potem sprawdza saldo — klient z długiem nie wyda punktów, które
      * w rzeczywistości są już „zajęte".
@@ -205,27 +277,35 @@ class LoyaltyLedger
     }
 
     /**
-     * Oddaje punkty wydane na anulowane zamówienie — do tych samych porcji, z ich
-     * terminem ważności. Porcja, która w międzyczasie wygasła, nie wraca (punkty
-     * i tak by przepadły). Idempotentne: zapis wykorzystań kasujemy po oddaniu.
+     * Oddaje punkty wydane na zamówienie — wszystkie (anulowanie) albo `$points`
+     * (zwrot części, edycja w dół) — do tych samych porcji, z ich terminem
+     * ważności; częściowo od ostatnio zużytych. Porcja, która w międzyczasie
+     * wygasła, nie wraca (punkty i tak by przepadły). Zapis wykorzystań maleje
+     * o oddane punkty, więc kolejne wywołanie nie odda ich drugi raz.
      */
-    public function restore(Order $order): int
+    public function restore(Order $order, ?int $points = null): int
     {
-        return DB::transaction(function () use ($order) {
+        return DB::transaction(function () use ($order, $points) {
             $spent = $this->orderEntries($order, LoyaltyEntryType::Spent)->with('usages')->lockForUpdate()->get();
+            $usages = $spent->flatMap->usages->sortByDesc('id');
+            $left = $points ?? PHP_INT_MAX;
             $restored = 0;
 
-            foreach ($spent as $entry) {
-                foreach ($entry->usages as $usage) {
-                    $lot = LoyaltyEntry::query()->lockForUpdate()->find($usage->lot_id);
-
-                    if ($lot !== null && ($lot->expires_at === null || $lot->expires_at->isFuture())) {
-                        $lot->increment('remaining', $usage->points);
-                        $restored += $usage->points;
-                    }
-
-                    $usage->delete();
+            foreach ($usages as $usage) {
+                if ($left <= 0) {
+                    break;
                 }
+
+                $take = min($usage->points, $left);
+                $left -= $take;
+                $lot = LoyaltyEntry::query()->lockForUpdate()->find($usage->lot_id);
+
+                if ($lot !== null && ($lot->expires_at === null || $lot->expires_at->isFuture())) {
+                    $lot->increment('remaining', $take);
+                    $restored += $take;
+                }
+
+                $take === $usage->points ? $usage->delete() : $usage->update(['points' => $usage->points - $take]);
             }
 
             if ($restored > 0) {

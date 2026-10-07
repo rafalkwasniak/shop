@@ -2,10 +2,12 @@
 
 namespace App\Livewire;
 
+use App\Models\Customer;
 use App\Models\Product;
 use App\Models\Shop;
 use App\Services\CartService;
 use App\Services\DiscountResolver;
+use App\Services\LoyaltyLedger;
 use App\Support\DiscountResult;
 use App\Support\Money;
 use Livewire\Component;
@@ -120,6 +122,29 @@ class Cart extends Component
         $this->discountError = null;
     }
 
+    public function usePoints(): void
+    {
+        if ($this->customer() !== null) {
+            app(CartService::class)->usePoints($this->shopId);
+        }
+    }
+
+    public function stopUsingPoints(): void
+    {
+        app(CartService::class)->stopUsingPoints($this->shopId);
+    }
+
+    /**
+     * Zalogowany klient TEGO sklepu — tylko on może płacić punktami (gość
+     * zbiera je na e-mail, ale wydaje dopiero po rejestracji).
+     */
+    private function customer(): ?Customer
+    {
+        $customer = auth('customer')->user();
+
+        return $customer instanceof Customer && $customer->shop_id === $this->shopId ? $customer : null;
+    }
+
     /**
      * Aktywny produkt tego sklepu (dla kroku/jednostki), lub null gdy zdjęty.
      */
@@ -147,6 +172,18 @@ class Cart extends Component
         $itemsTotal = (float) $lines->sum('line_total');
         $itemsDiscount = $discount?->accepted() ? $discount->itemsDiscount : 0.0;
 
+        // Punkty: liczone od tego, co zostało po kodzie, przy każdym renderze —
+        // w sesji jest tylko decyzja „użyj". Karta jest, gdy klient MA punkty,
+        // także w sklepie, który je wyłączył (zebrane wydaje się do końca
+        // ważności). Gość dostaje tylko zaproszenie do logowania.
+        $shop = Shop::find($this->shopId);
+        $customer = $this->customer();
+        $redemption = $customer !== null && $shop !== null
+            ? app(LoyaltyLedger::class)->redeemable($shop, $customer->email, $itemsTotal - $itemsDiscount)
+            : null;
+        $pointsApplied = $redemption?->usable() && app(CartService::class)->usesPoints($this->shopId);
+        $pointsDiscount = $pointsApplied ? $redemption->amount : 0.0;
+
         return view('livewire.cart', [
             'lines' => $lines,
             'itemsTotal' => $itemsTotal,
@@ -155,7 +192,11 @@ class Cart extends Component
             'discountCode' => $discountsEnabled ? app(CartService::class)->discountCode($this->shopId) : null,
             'discountIssue' => $this->discountIssue($discount),
             'discountNote' => $this->discountNote($discount),
-            'total' => round($itemsTotal - $itemsDiscount, 2),
+            'loyalty' => $redemption !== null && $redemption->balance > 0 ? $redemption : null,
+            'loyaltyInvite' => $customer === null && $shop?->loyaltyActive(),
+            'pointsApplied' => $pointsApplied,
+            'pointsDiscount' => $pointsDiscount,
+            'total' => round($itemsTotal - $itemsDiscount - $pointsDiscount, 2),
             'notices' => $notices,
         ]);
     }

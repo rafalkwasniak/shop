@@ -88,6 +88,12 @@
                                 <dd class="tabular-nums text-emerald-700">−{{ \App\Support\Money::pln($order->discount_amount) }}</dd>
                             </div>
                         @endif
+                        @if ((float) $order->points_discount > 0)
+                            <div class="flex items-baseline justify-between gap-4">
+                                <dt class="text-stone-500">Zapłacone punktami</dt>
+                                <dd class="tabular-nums text-emerald-700">−{{ \App\Support\Money::pln($order->points_discount) }}</dd>
+                            </div>
+                        @endif
                         <div class="flex items-baseline justify-between gap-4">
                             <dt class="text-stone-500">Dostawa</dt>
                             <dd class="tabular-nums text-stone-700">{{ \App\Support\Money::pln($order->delivery_cost) }}</dd>

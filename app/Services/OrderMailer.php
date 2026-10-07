@@ -852,17 +852,22 @@ class OrderMailer
     private function amountLines(Order $order, string $totalLabel): array
     {
         $discount = (float) $order->discount_amount;
+        $points = (float) $order->points_discount;
         $delivery = (float) $order->delivery_cost;
         $lines = [];
 
         // Wiersz „Produkty" ma sens dopiero, gdy pod spodem coś od niego odejmujemy
         // albo do niego dodajemy — inaczej powtarzałby sumę pozycji.
-        if ($discount > 0 || $delivery > 0) {
+        if ($discount > 0 || $points > 0 || $delivery > 0) {
             $lines[] = 'Produkty: '.Money::pln($order->items_total);
         }
 
         if ($discount > 0) {
             $lines[] = 'Rabat'.(filled($order->discount_code) ? ' '.$order->discount_code : '').': −'.Money::pln($discount);
+        }
+
+        if ($points > 0) {
+            $lines[] = 'Punkty: −'.Money::pln($points);
         }
 
         if ($delivery > 0) {

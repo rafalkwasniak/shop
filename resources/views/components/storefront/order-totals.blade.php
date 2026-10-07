@@ -6,9 +6,12 @@
      trzy razy (i trzy razy o nim zapomnieć).
 
      Rabat pokazujemy Z NAZWĄ KODU i zawsze nad dostawą: klient ma widzieć, że
-     zniżka zeszła z produktów, a nie z wysyłki. --}}
+     zniżka zeszła z produktów, a nie z wysyłki. Punkty za zakupy — osobnym
+     wierszem pod rabatem, tak samo jak w koszyku i kasie. --}}
 
-@php($hasDiscount = (float) $order->discount_amount > 0)
+@php($hasCode = (float) $order->discount_amount > 0)
+@php($hasPoints = (float) $order->points_discount > 0)
+@php($hasDiscount = $hasCode || $hasPoints)
 @php($shipped = $order->delivery_method->isShipped())
 @php($freeShipping = $shipped && (float) $order->delivery_cost <= 0)
 
@@ -18,12 +21,20 @@
             <span class="opacity-70">Produkty</span>
             <span class="shrink-0 tabular-nums opacity-70">{{ \App\Support\Money::pln($order->items_total) }}</span>
         </div>
-        <div class="flex items-baseline justify-between gap-3">
-            <span class="min-w-0 opacity-70">
-                Rabat @if (filled($order->discount_code))<span class="font-semibold uppercase tracking-wide break-words">{{ $order->discount_code }}</span>@endif
-            </span>
-            <span class="shrink-0 font-semibold tabular-nums">−{{ \App\Support\Money::pln($order->discount_amount) }}</span>
-        </div>
+        @if ($hasCode)
+            <div class="flex items-baseline justify-between gap-3">
+                <span class="min-w-0 opacity-70">
+                    Rabat @if (filled($order->discount_code))<span class="font-semibold uppercase tracking-wide break-words">{{ $order->discount_code }}</span>@endif
+                </span>
+                <span class="shrink-0 font-semibold tabular-nums">−{{ \App\Support\Money::pln($order->discount_amount) }}</span>
+            </div>
+        @endif
+        @if ($hasPoints)
+            <div class="flex items-baseline justify-between gap-3">
+                <span class="min-w-0 opacity-70">Punkty</span>
+                <span class="shrink-0 font-semibold tabular-nums">−{{ \App\Support\Money::pln($order->points_discount) }}</span>
+            </div>
+        @endif
     </div>
 @endif
 

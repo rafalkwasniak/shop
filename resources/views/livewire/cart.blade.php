@@ -146,18 +146,70 @@
                 </div>
                 @endif
 
+                {{-- Punkty za zakupy: osobna karta, jak kod rabatowy. TU klient pierwszy
+                     raz widzi wartość punktów w zł — i tylko tu, bo musi znać cenę
+                     końcową (decyzja Rafała 07.10: poza koszykiem same punkty). Ile
+                     punktów, liczy LoyaltyLedger::redeemable() — saldo, minimum i limit
+                     sklepu, a po punktach zostaje co najmniej loyalty.min_payable. --}}
+                @if ($loyalty !== null)
+                    <div class="st-card st-border rounded-3xl border p-6">
+                        <h2 class="st-brand st-box-title">Twoje punkty</h2>
+                        <p class="mt-3 text-sm">Masz <strong>{{ $loyalty->balance }} pkt</strong>.</p>
+
+                        @if ($loyalty->usable())
+                            @if ($pointsApplied)
+                                <div class="mt-4 flex items-baseline justify-between gap-3">
+                                    <span class="min-w-0 text-sm">Używasz <strong>{{ $loyalty->points }} pkt</strong></span>
+                                    <button type="button" wire:click="stopUsingPoints"
+                                        class="shrink-0 text-sm underline opacity-70 transition hover:opacity-100">Nie używaj</button>
+                                </div>
+                            @else
+                                <button type="button" wire:click="usePoints"
+                                    class="st-border mt-4 w-full rounded-full border px-4 py-2.5 text-sm font-semibold transition hover:brightness-95">
+                                    Użyj {{ $loyalty->points }} pkt (−{{ \App\Support\Money::pln($loyalty->amount) }})
+                                </button>
+                            @endif
+                            @if ($loyalty->points < $loyalty->balance)
+                                <p class="mt-3 text-xs opacity-60">W tym zamówieniu możesz użyć {{ $loyalty->points }} z {{ $loyalty->balance }} pkt — reszta zostanie na kolejne zakupy.</p>
+                            @endif
+                        @else
+                            <p class="mt-3 text-sm opacity-70">
+                                @if ($loyalty->reason === 'minimum')
+                                    Z punktów skorzystasz, gdy uzbierasz co najmniej {{ $loyalty->minimum }} pkt.
+                                @else
+                                    Dodaj więcej produktów, żeby zapłacić częścią punktów.
+                                @endif
+                            </p>
+                        @endif
+                    </div>
+                @elseif ($loyaltyInvite)
+                    <div class="st-card st-border rounded-3xl border p-6">
+                        <h2 class="st-brand st-box-title">Masz punkty?</h2>
+                        <p class="mt-3 text-sm opacity-80"><a href="/logowanie" class="underline underline-offset-2">Zaloguj się</a>, żeby z nich skorzystać.</p>
+                    </div>
+                @endif
+
                 <div class="st-card st-border rounded-3xl border p-6">
                     <h2 class="st-brand st-box-title">Podsumowanie</h2>
 
                     <div class="mt-4 space-y-2 border-t st-border pt-4">
-                        @if ($discount !== null && $discount->accepted() && $discount->itemsDiscount > 0)
+                        @php($codeDiscountShown = $discount !== null && $discount->accepted() && $discount->itemsDiscount > 0)
+                        @if ($codeDiscountShown || $pointsDiscount > 0)
                             <div class="flex items-baseline justify-between text-sm">
                                 <span class="opacity-70">Produkty</span>
                                 <span class="tabular-nums opacity-70">{{ \App\Support\Money::pln($itemsTotal) }}</span>
                             </div>
+                        @endif
+                        @if ($codeDiscountShown)
                             <div class="flex items-baseline justify-between text-sm">
                                 <span class="opacity-70">Rabat</span>
                                 <span class="tabular-nums font-semibold">−{{ \App\Support\Money::pln($discount->itemsDiscount) }}</span>
+                            </div>
+                        @endif
+                        @if ($pointsDiscount > 0)
+                            <div class="flex items-baseline justify-between text-sm">
+                                <span class="opacity-70">Punkty</span>
+                                <span class="tabular-nums font-semibold">−{{ \App\Support\Money::pln($pointsDiscount) }}</span>
                             </div>
                         @endif
                         <div class="flex items-baseline justify-between">

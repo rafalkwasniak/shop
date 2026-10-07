@@ -253,13 +253,25 @@ class FakturowniaService
     private function discountNote(Order $order): ?string
     {
         $discount = (float) $order->discount_amount;
+        $points = (float) $order->points_discount;
 
-        if ($discount <= 0) {
+        if ($discount <= 0 && $points <= 0) {
             return null;
         }
 
-        return 'Uwzględniono rabat'.(filled($order->discount_code) ? ' (kod '.$order->discount_code.')' : '')
-            .': '.Money::pln($discount).'. Ceny pozycji są po rabacie.';
+        // Punkty za zakupy działają jak rabat sklepu (obniżają cenę, nie są
+        // zapłatą od kogoś trzeciego), więc idą tą samą drogą: w cenach pozycji.
+        $parts = [];
+
+        if ($discount > 0) {
+            $parts[] = 'rabat'.(filled($order->discount_code) ? ' (kod '.$order->discount_code.')' : '').': '.Money::pln($discount);
+        }
+
+        if ($points > 0) {
+            $parts[] = 'rabat za punkty: '.Money::pln($points);
+        }
+
+        return 'Uwzględniono '.implode(', ', $parts).'. Ceny pozycji są po rabacie.';
     }
 
     /**
@@ -311,8 +323,9 @@ class FakturowniaService
         // klient faktycznie płaci, więc zgadza się z sumą zamówienia.
         $items = $order->items->filter(fn ($item): bool => $item->effectiveQuantity() > 0)->values();
 
+        // Kod i punkty jednym podziałem — tak samo jak OrderTotals.
         $shares = DiscountAllocation::spread(
-            (float) $order->discount_amount,
+            round((float) $order->discount_amount + (float) $order->points_discount, 2),
             $items->pluck('line_total_gross')->map(fn ($v): float => (float) $v)->all(),
         );
 

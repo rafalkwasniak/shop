@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 7092e827-f5de-4490-9ede-6b446045c5b5
-  modified: 2026-10-07T11:24:55.281Z
+  modified: 2026-10-07T12:11:20.405Z
 ---
 
 **Stan 2026-10-07: SILNIK WDROŻONY, NIEPODPIĘTY.** Rafał chciał krok, który „sam w sobie nic nie zepsuje”. Zrobione: `config/loyalty.php`, kolumny `shops.loyalty_*` (wszystko domyślnie wyłączone), tabele `loyalty_entries` + `loyalty_entry_usages`, `App\Services\LoyaltyLedger` (award / reconcile / spend / restore / adjust / balance / pending / expire), `LoyaltyEntryType`, `LoyaltyException`, testy `tests/Feature/Loyalty/LoyaltyLedgerTest.php` (15). Migracja ODPALONA na produkcji (0/12 sklepów z punktami). Suita 1852→1867.
@@ -28,6 +28,17 @@ metadata:
 - **Krok B ZROBIONY (07.10):** karta produktu „Za ten zakup dostaniesz X pkt (Y zł) · zasady” (tylko `loyaltyActive`, przy wadze „za 1 kg”); zakładka „Punkty” w Moim koncie (`storefront.account.points`, widok `storefront/account/points.blade.php`, w menu `account-shell` gdy `LoyaltyLedger::visibleFor()` = sklep nalicza ALBO klient ma historię) + na stronie Mojego konta TE SAME trzy kafelki (wspólny komponent `x-storefront.loyalty-summary`, bez odnośnika do historii — Rafał 07.10); karta „Punkty” na stronie zamówienia klienta (`LoyaltyLedger::forOrder`, tylko gdy są wpisy); blok w mailu o „Zrealizowane” (`OrderMailer::loyaltyBlock`: aktywne konto → link do punktów, gość → łączne saldo + link `/rejestracja`). **Blok maila w try/catch:** awaria punktów nie może zablokować maila o statusie (wyłapał to test z mockiem). GOTCHA testów: `json_encode` maila bez `JSON_UNESCAPED_SLASHES` zamienia `/` na `\/`.
 
 - **ZASADA PREZENTACJI (Rafał 07.10, OBOWIĄZUJE też w krokach C/D):** klientowi pokazujemy SAME PUNKTY. Bez wartości w zł, bez procentu zwrotu, bez wyliczeń „ile odzyskasz” (zwrot jest mały, konkurencja go nie wykłada). Wyjątki: (1) Zasady punktów: jedna stawka w pkt na złotówkę (`LoyaltyRules::earnPhrase`: 1/10/100 zł → pełna liczba) + jeden przelicznik „100 pkt = X zł” (`redeemPhrase`), zostawiony świadomie, bo zasady programu muszą mówić, ile punkty są warte (zatajenie = ryzyko nieuczciwej praktyki); (2) w KOSZYKU kwota rabatu w zł musi być widoczna (cena końcowa), ale dopiero tam. Odnośników do Zasad na karcie produktu i w Moim koncie NIE dajemy, bo strona jest w menu i stopce. Panel sprzedawcy pokazuje zł normalnie.
+
+- **Krok C ZROBIONY (07.10):** płacenie punktami. Decyzje Rafała: **po punktach zostaje ≥ 1 zł** (`loyalty.min_payable`, bo zamówienie za 0 zł nie przejdzie przez Paynow ani pobranie); **przy zwrocie części punkty za zwróconą część WRACAJĄ**. Budowa:
+  - `orders.points_discount` (kwota w zł, osobno od `discount_amount`);
+  - `LoyaltyLedger::redeemable()` → `App\Support\LoyaltyRedemption` (saldo → minimum → limit % → min_payable; powody `empty`/`minimum`/`cart`);
+  - w sesji tylko przełącznik (`CartService::usesPoints/usePoints/stopUsingPoints`, czyści go `clear()`);
+  - karta „Twoje punkty” w koszyku (gościowi „Masz punkty? Zaloguj się” tylko przy `loyaltyActive`), wiersz „Punkty” w koszyku, kasie, `order-totals`, mailach (`amountLines`), panelu sprzedawcy i admina;
+  - `OrderService::resolvePoints` + `spend()` w transakcji zamówienia (odmowa → `CartNeedsReviewException`); płacić może TYLKO zalogowany (`$authCustomer`), nie konto dopięte po e-mailu;
+  - `OrderTotals`: najpierw kod, potem punkty od reszty, jeden `spread()` na VAT; faktura: ceny pozycji po rabacie + adnotacja „rabat za punkty”;
+  - zwrot: pieniądze od części zapłaconej (spread kod+punkty), `points_discount` maleje o udział zwracanych sztuk → `OrderObserver` (spadek `points_discount`) → `syncSpent()` → `restore($order, $n)` częściowo, od ostatnio zużytych; to samo przy edycji w dół. Anulowanie = `restore()` całości;
+  - punkty naliczane od części zapłaconej pieniędzmi (`baseAmount` odejmuje `points_discount`).
+  Testy `tests/Feature/Loyalty/LoyaltyRedemptionTest.php`. Suita 1909→1924. Do sprawdzenia z księgowym (wspomniane raz): punkty traktujemy jak rabat obniżający podstawę VAT.
 
 **PLAN DALSZY (zaproponowany 07.10, czeka na start):** uprawnienie `loyalty_points` dodane od razu, ale FALSE we WSZYSTKICH pakietach (także Pawilonie); Rafał włącza je ręcznie tylko Lemoniadom. Funkcja rośnie po cichu, sprzedawcy zobaczą ją dopiero kompletną.
 - **A** (1 sesja): uprawnienie w ShopManager (+ PackageFeatures, SyncPackageEntitlements) + sekcja „Punkty” w Ustawieniach (z checkboxem przeliczenia przy zmianie wartości) + strona „Zasady punktów” (domyślna treść z ustawień, edytowalna, nieusuwalna przy włączonych). Włączenie wymaga zasad.

@@ -180,6 +180,13 @@
                 <dd class="shrink-0 tabular-nums font-medium text-stone-700">−{{ \App\Support\Money::pln($order->discount_amount) }}</dd>
             </div>
         @endif
+        @if ((float) $order->points_discount > 0)
+            {{-- Część zapłacona punktami za zakupy — z tego samego powodu co rabat. --}}
+            <div class="flex justify-between gap-3">
+                <dt class="min-w-0 text-stone-500">Zapłacone punktami</dt>
+                <dd class="shrink-0 tabular-nums font-medium text-stone-700">−{{ \App\Support\Money::pln($order->points_discount) }}</dd>
+            </div>
+        @endif
         @if ($order->delivery_method->isShipped())
             <div class="flex justify-between">
                 <dt class="text-stone-500">Dostawa</dt>

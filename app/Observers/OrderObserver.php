@@ -16,7 +16,8 @@ use Throwable;
  *
  *  - „Zrealizowane" → naliczenie porcji (tylko sklep z włączonymi punktami);
  *  - „Anulowane" → oddanie wydanych punktów i odebranie przyznanych;
- *  - spadek kwoty produktów (zwrot, edycja) → proporcjonalne odebranie.
+ *  - spadek kwoty produktów (zwrot, edycja) → proporcjonalne odebranie;
+ *  - spadek kwoty zapłaconej punktami → oddanie różnicy klientowi.
  *
  * Oddawanie i odbieranie działa także w sklepie, który punkty WYŁĄCZYŁ: punkty
  * już przyznane klientom muszą dalej reagować na anulowanie i zwrot.
@@ -34,7 +35,11 @@ class OrderObserver
     public function updated(Order $order): void
     {
         $status = $order->wasChanged('status') ? $order->status : null;
-        $amountsChanged = $order->wasChanged(['items_total', 'discount_amount']);
+        $amountsChanged = $order->wasChanged(['items_total', 'discount_amount', 'points_discount']);
+        // Spadek kwoty zapłaconej punktami (zwrot części, edycja w dół) — różnica
+        // wraca klientowi. Przy anulowaniu oddaje wszystko `restore()` niżej.
+        $pointsPaidDropped = $order->wasChanged('points_discount')
+            && (float) $order->points_discount < (float) $order->getOriginal('points_discount');
 
         if ($status === OrderStatus::Completed) {
             $this->afterCommit(fn () => $this->ledger->award($order));
@@ -44,7 +49,13 @@ class OrderObserver
                 $this->ledger->reconcile($order);
             });
         } elseif ($amountsChanged) {
-            $this->afterCommit(fn () => $this->ledger->reconcile($order));
+            $this->afterCommit(function () use ($order, $pointsPaidDropped): void {
+                if ($pointsPaidDropped) {
+                    $this->ledger->syncSpent($order);
+                }
+
+                $this->ledger->reconcile($order);
+            });
         }
     }
 

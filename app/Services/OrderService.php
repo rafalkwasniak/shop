@@ -5,11 +5,13 @@ namespace App\Services;
 use App\Enums\DeliveryMethod;
 use App\Enums\PaymentMethod;
 use App\Exceptions\CartNeedsReviewException;
+use App\Exceptions\LoyaltyException;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Shop;
 use App\Support\DiscountResult;
+use App\Support\LoyaltyRedemption;
 use App\Support\OrderFlow;
 use Illuminate\Support\Facades\DB;
 
@@ -28,6 +30,7 @@ class OrderService
         private OrderTotals $totals,
         private CustomerActivationMailer $activationMailer,
         private DiscountResolver $discounts,
+        private LoyaltyLedger $loyalty,
     ) {}
 
     /**
@@ -98,7 +101,7 @@ class OrderService
             // nieaktywne (mail aktywacyjny po commicie); inaczej gość.
             [$customer, $needsActivation] = $this->resolveCustomer($shop, $data, $authCustomer);
 
-            $order = $this->createOrder($shop, $data, $lines, $customer);
+            $order = $this->createOrder($shop, $data, $lines, $customer, $authCustomer);
 
             // Powiadomienie „nowe zamówienie" dla sprzedawcy — licznik na sklepie
             // rośnie atomowo (UPDATE … + 1), zeruje wejście na listę Zamówień.
@@ -169,8 +172,9 @@ class OrderService
      *
      * @param  array<string, mixed>  $data
      * @param  list<array{product: Product, quantity: float}>  $lines
+     * @param  ?Customer  $authCustomer  zalogowany klient — tylko on płaci punktami
      */
-    private function createOrder(Shop $shop, array $data, array $lines, ?Customer $customer = null): Order
+    private function createOrder(Shop $shop, array $data, array $lines, ?Customer $customer = null, ?Customer $authCustomer = null): Order
     {
         $delivery = DeliveryMethod::from($data['delivery_method']);
         $payment = PaymentMethod::from($data['payment_method']);
@@ -220,6 +224,9 @@ class OrderService
             ? 0.0
             : $shop->deliveryCostFor($delivery, $itemsGross);
 
+        // Punkty — też PONOWNIE, na finalnych pozycjach i po kodzie.
+        $redemption = $this->resolvePoints($shop, $authCustomer, $itemsGross - ($discount?->itemsDiscount ?? 0.0));
+
         $order = $shop->orders()->create([
             'number' => $shop->allocateOrderNumber(),
             'customer_id' => $customer?->id,
@@ -257,6 +264,7 @@ class OrderService
             'discount_code_id' => $discount?->code?->id,
             'discount_code' => $discount?->code?->code,
             'discount_amount' => $discount?->itemsDiscount ?? 0,
+            'points_discount' => $redemption?->amount ?? 0,
             'total_net' => 0,
             'total_vat' => 0,
             'total_gross' => 0,
@@ -268,7 +276,47 @@ class OrderService
         // Sumy z jednego źródła (OrderTotals) — identycznie jak przy edycji zamówienia.
         $this->totals->recalculate($order->load('items'));
 
+        // Punkty schodzą z salda W TEJ SAMEJ transakcji co zamówienie: odmowa
+        // księgi (ktoś równolegle wydał te punkty) cofa całe zamówienie.
+        if ($redemption !== null) {
+            try {
+                $this->loyalty->spend($order, $authCustomer->email, $redemption->points);
+            } catch (LoyaltyException) {
+                $this->cart->stopUsingPoints($shop->id);
+
+                throw new CartNeedsReviewException([
+                    'Punkty nie zostały naliczone — saldo zmieniło się w międzyczasie. Sprawdź podsumowanie i złóż zamówienie ponownie.',
+                ]);
+            }
+        }
+
         return $order;
+    }
+
+    /**
+     * Punkty, którymi klient chce zapłacić, sprawdzone na FINALNYM koszyku (null,
+     * gdy nie chce albo nie jest zalogowany). Jak przy kodzie rabatowym: jeśli
+     * w kasie widział inną kwotę niż wychodzi teraz, przerywamy składanie,
+     * zamiast obciążyć go wyższą. Tańsza wersja z mniejszą liczbą punktów
+     * byłaby cichą zmianą ceny — klient ma zobaczyć ją sam.
+     */
+    private function resolvePoints(Shop $shop, ?Customer $authCustomer, float $items): ?LoyaltyRedemption
+    {
+        if ($authCustomer === null || ! $this->cart->usesPoints($shop->id)) {
+            return null;
+        }
+
+        $redemption = $this->loyalty->redeemable($shop, $authCustomer->email, $items);
+
+        if (! $redemption->usable()) {
+            $this->cart->stopUsingPoints($shop->id);
+
+            throw new CartNeedsReviewException([
+                'Punkty nie zostały naliczone — w tym zamówieniu nie można ich teraz użyć. Sprawdź podsumowanie i złóż zamówienie ponownie.',
+            ]);
+        }
+
+        return $redemption;
     }
 
     /**

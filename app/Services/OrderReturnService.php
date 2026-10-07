@@ -58,6 +58,7 @@ class OrderReturnService
             }
 
             $refunds = $this->refundAmounts($order, $lines);
+            $pointsShare = $this->pointsShare($order, $lines);
 
             $return = $order->returns()->create([
                 'customer_name' => $declaration['customer_name'] ?? '',
@@ -77,6 +78,13 @@ class OrderReturnService
                 $item = $order->items->firstWhere('id', $itemId);
                 $item->returned_quantity = round((float) $item->returned_quantity + $quantity, 2);
                 $item->save();
+            }
+
+            // Część zapłacona punktami za zwracane sztuki schodzi z zamówienia —
+            // `OrderObserver` odda te punkty klientowi na konto (decyzja Rafała
+            // 07.10). Pieniądze oddajemy wyłącznie za część zapłaconą pieniędzmi.
+            if ($pointsShare > 0) {
+                $order->points_discount = round((float) $order->points_discount - $pointsShare, 2);
             }
 
             // Sumy liczą się z ilości efektywnych, więc zamówienie kurczy się
@@ -132,8 +140,8 @@ class OrderReturnService
 
     /**
      * Kwota do oddania za każdą zwracaną linię — liczona od ceny PO RABACIE, bo
-     * tyle klient faktycznie zapłacił. Rabat rozbijamy tym samym podziałem, co
-     * OrderTotals i faktura, więc trzy miejsca dają ten sam grosz.
+     * tyle klient faktycznie zapłacił. Rabat (kod + punkty) rozbijamy tym samym
+     * podziałem, co OrderTotals i faktura, więc trzy miejsca dają ten sam grosz.
      *
      * @param  array<int, float>  $lines
      * @return array<int, float>
@@ -144,7 +152,7 @@ class OrderReturnService
             ->mapWithKeys(fn (OrderItem $item): array => [$item->id => (float) $item->line_total_gross])
             ->all();
 
-        $shares = DiscountAllocation::spread((float) $order->discount_amount, $lineGrossValues);
+        $shares = DiscountAllocation::spread(round((float) $order->discount_amount + (float) $order->points_discount, 2), $lineGrossValues);
 
         $refunds = [];
 
@@ -162,5 +170,35 @@ class OrderReturnService
         }
 
         return $refunds;
+    }
+
+    /**
+     * Ile z zapłaconego punktami przypada na zwracane sztuki — ten sam podział
+     * na linie co w OrderTotals, proporcjonalnie do zwracanej ilości.
+     *
+     * @param  array<int, float>  $lines
+     */
+    private function pointsShare(Order $order, array $lines): float
+    {
+        if ((float) $order->points_discount <= 0) {
+            return 0.0;
+        }
+
+        $lineGrossValues = $order->items
+            ->mapWithKeys(fn (OrderItem $item): array => [$item->id => (float) $item->line_total_gross])
+            ->all();
+
+        $shares = DiscountAllocation::spread((float) $order->points_discount, $lineGrossValues);
+        $total = 0.0;
+
+        foreach ($lines as $itemId => $quantity) {
+            $item = $order->items->firstWhere('id', $itemId);
+            $effective = $item->effectiveQuantity();
+            $share = $shares[$itemId] ?? 0.0;
+
+            $total += $quantity >= $effective ? $share : round($share / $effective * $quantity, 2);
+        }
+
+        return round($total, 2);
     }
 }
