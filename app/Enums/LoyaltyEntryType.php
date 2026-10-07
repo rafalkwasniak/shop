@@ -14,6 +14,7 @@ enum LoyaltyEntryType: string
     case Clawback = 'clawback';
     case Expired = 'expired';
     case Adjustment = 'adjustment';
+    case Revaluation = 'revaluation';
 
     public function label(): string
     {
@@ -24,6 +25,7 @@ enum LoyaltyEntryType: string
             self::Clawback => 'Odebrane po zwrocie',
             self::Expired => 'Wygasłe',
             self::Adjustment => 'Korekta sklepu',
+            self::Revaluation => 'Przeliczenie',
         };
     }
 }

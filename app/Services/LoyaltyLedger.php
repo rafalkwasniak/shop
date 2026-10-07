@@ -6,6 +6,7 @@ use App\Enums\LoyaltyEntryType;
 use App\Enums\OrderStatus;
 use App\Exceptions\LoyaltyException;
 use App\Models\LoyaltyEntry;
+use App\Models\LoyaltyEntryUsage;
 use App\Models\Order;
 use App\Models\Shop;
 use Carbon\CarbonInterface;
@@ -104,6 +105,7 @@ class LoyaltyLedger
                 'type' => LoyaltyEntryType::Earned,
                 'points' => $points,
                 'remaining' => $points,
+                'point_value' => $shop->loyaltyPointValue(),
                 'base_amount' => $base,
                 'available_at' => $availableAt,
                 'expires_at' => $this->expiryFrom($shop, $availableAt),
@@ -127,16 +129,24 @@ class LoyaltyLedger
                 return 0;
             }
 
-            $target = 0;
+            // Liczymy w groszach, nie w punktach: między naliczeniem a zwrotem
+            // sprzedawca mógł zmienić wartość punktu i przeliczyć salda, a
+            // historia trzyma liczby w jednostkach ze swojego dnia.
+            $earnedValue = $earned->points * $this->grosze($earned->point_value);
+            $targetValue = 0;
             $baseThen = (int) round((float) $earned->base_amount * 100);
 
             if ($order->status !== OrderStatus::Cancelled && $baseThen > 0) {
                 $baseNow = min($baseThen, (int) round($this->baseAmount($order) * 100));
-                $target = intdiv($earned->points * $baseNow, $baseThen);
+                $targetValue = intdiv($earnedValue * $baseNow, $baseThen);
             }
 
-            $taken = -(int) $this->orderEntries($order, LoyaltyEntryType::Clawback)->sum('points');
-            $due = $earned->points - $taken - $target;
+            $takenValue = $this->orderEntries($order, LoyaltyEntryType::Clawback)->get()
+                ->sum(fn (LoyaltyEntry $entry) => -$entry->points * $this->grosze($entry->point_value));
+
+            $currentValue = $this->grosze($order->shop->loyaltyPointValue());
+            // W dół: ułamek punktu zostaje u klienta.
+            $due = intdiv(max(0, $earnedValue - $takenValue - $targetValue), $currentValue);
 
             if ($due <= 0) {
                 return 0;
@@ -151,6 +161,7 @@ class LoyaltyLedger
                 'type' => LoyaltyEntryType::Clawback,
                 'points' => -$due,
                 'remaining' => -$uncovered,
+                'point_value' => $order->shop->loyaltyPointValue(),
             ]);
 
             return $due;
@@ -184,6 +195,7 @@ class LoyaltyLedger
                 'type' => LoyaltyEntryType::Spent,
                 'points' => -$points,
                 'remaining' => 0,
+                'point_value' => $order->shop->loyaltyPointValue(),
             ]);
 
             $this->consume($order->shop_id, $email, $points, spend: $entry);
@@ -224,6 +236,7 @@ class LoyaltyLedger
                     'type' => LoyaltyEntryType::Restored,
                     'points' => $restored,
                     'remaining' => 0,
+                    'point_value' => $order->shop->loyaltyPointValue(),
                 ]);
             }
 
@@ -254,6 +267,7 @@ class LoyaltyLedger
                     'type' => LoyaltyEntryType::Adjustment,
                     'points' => $points,
                     'remaining' => $points,
+                    'point_value' => $shop->loyaltyPointValue(),
                     'available_at' => $now,
                     'expires_at' => $this->expiryFrom($shop, $now),
                     'note' => $note,
@@ -268,6 +282,7 @@ class LoyaltyLedger
                 'type' => LoyaltyEntryType::Adjustment,
                 'points' => $points,
                 'remaining' => -$uncovered,
+                'point_value' => $shop->loyaltyPointValue(),
                 'note' => $note,
             ]);
         });
@@ -312,7 +327,9 @@ class LoyaltyLedger
         $total = 0;
 
         foreach ($owners as $owner) {
-            $total += DB::transaction(function () use ($owner) {
+            $shop = Shop::findOrFail($owner->shop_id);
+
+            $total += DB::transaction(function () use ($owner, $shop) {
                 $lots = $this->entries($owner->shop_id, $owner->email)
                     ->where('remaining', '>', 0)
                     ->whereNotNull('expires_at')
@@ -336,6 +353,7 @@ class LoyaltyLedger
                         'type' => LoyaltyEntryType::Expired,
                         'points' => -$lot->remaining,
                         'remaining' => 0,
+                        'point_value' => $shop->loyaltyPointValue(),
                     ]);
 
                     $expired += $lot->remaining;
@@ -347,6 +365,91 @@ class LoyaltyLedger
         }
 
         return $total;
+    }
+
+    /**
+     * Zmienia wartość punktu sklepu i przelicza salda klientów z zachowaniem
+     * wartości w złotych: 300 pkt × 1 gr → 30 pkt × 10 gr. Przeliczamy każdą
+     * porcję z resztą (także oczekującą), dług i zapis wykorzystań (żeby
+     * anulowanie oddało właściwą liczbę). Reszty zaokrąglamy na korzyść
+     * klienta: porcje w górę, dług w stronę zera. Każdy klient, któremu
+     * zmieniło się saldo, dostaje w historii wpis „Przeliczenie".
+     *
+     * Zwraca liczbę przeliczonych klientów.
+     */
+    public function revalue(Shop $shop, float $newValue): int
+    {
+        $allowed = array_map(fn ($value) => $this->grosze($value), (array) config('loyalty.point_values'));
+        $new = $this->grosze($newValue);
+
+        if (! in_array($new, $allowed, true)) {
+            throw new InvalidArgumentException('Niedozwolona wartość punktu.');
+        }
+
+        $old = $this->grosze($shop->loyaltyPointValue());
+
+        if ($new === $old) {
+            return 0;
+        }
+
+        return DB::transaction(function () use ($shop, $old, $new, $newValue) {
+            $entries = LoyaltyEntry::query()
+                ->where('shop_id', $shop->id)
+                ->where('remaining', '!=', 0)
+                ->lockForUpdate()
+                ->get();
+
+            $before = [];
+            $after = [];
+
+            foreach ($entries as $entry) {
+                $converted = $entry->remaining > 0
+                    ? intdiv($entry->remaining * $old + $new - 1, $new)
+                    : -intdiv(-$entry->remaining * $old, $new);
+
+                $before[$entry->email] = ($before[$entry->email] ?? 0) + $entry->remaining;
+                $after[$entry->email] = ($after[$entry->email] ?? 0) + $converted;
+
+                $entry->update(['remaining' => $converted]);
+            }
+
+            LoyaltyEntryUsage::query()
+                ->whereIn('entry_id', LoyaltyEntry::query()->where('shop_id', $shop->id)->select('id'))
+                ->lockForUpdate()
+                ->get()
+                ->each(fn (LoyaltyEntryUsage $usage) => $usage->update([
+                    'points' => intdiv($usage->points * $old + $new - 1, $new),
+                ]));
+
+            $note = sprintf(
+                'Nowa wartość punktu: %s zł zamiast %s zł',
+                number_format($new / 100, 2, ',', ''),
+                number_format($old / 100, 2, ',', ''),
+            );
+            $changed = 0;
+
+            foreach ($before as $email => $total) {
+                if ($after[$email] === $total) {
+                    continue;
+                }
+
+                LoyaltyEntry::create([
+                    'shop_id' => $shop->id,
+                    'email' => $email,
+                    'type' => LoyaltyEntryType::Revaluation,
+                    'points' => $after[$email] - $total,
+                    'remaining' => 0,
+                    'point_value' => $newValue,
+                    'note' => $note,
+                ]);
+
+                $changed++;
+            }
+
+            $shop->update(['loyalty_point_value' => $newValue]);
+
+            return $changed;
+        });
     }
 
     /** Spłaca dług klienta z dostępnych porcji. */
@@ -452,6 +555,12 @@ class LoyaltyLedger
     private function orderEntries(Order $order, LoyaltyEntryType $type): Builder
     {
         return LoyaltyEntry::query()->where('order_id', $order->id)->where('type', $type);
+    }
+
+    /** Wartość punktu w groszach; wpis sprzed zapisywania wartości liczy się po 1 gr. */
+    private function grosze(mixed $value): int
+    {
+        return (int) round((float) ($value ?? 0.01) * 100);
     }
 
     private function expiryFrom(Shop $shop, CarbonInterface $from): ?CarbonInterface

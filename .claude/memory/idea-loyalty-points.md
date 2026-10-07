@@ -5,12 +5,21 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 7092e827-f5de-4490-9ede-6b446045c5b5
-  modified: 2026-10-07T08:21:53.370Z
+  modified: 2026-10-07T09:23:21.827Z
 ---
 
 **Stan 2026-10-07: SILNIK WDROŻONY, NIEPODPIĘTY.** Rafał chciał krok, który „sam w sobie nic nie zepsuje”. Zrobione: `config/loyalty.php`, kolumny `shops.loyalty_*` (wszystko domyślnie wyłączone), tabele `loyalty_entries` + `loyalty_entry_usages`, `App\Services\LoyaltyLedger` (award / reconcile / spend / restore / adjust / balance / pending / expire), `LoyaltyEntryType`, `LoyaltyException`, testy `tests/Feature/Loyalty/LoyaltyLedgerTest.php` (15). Migracja ODPALONA na produkcji (0/12 sklepów z punktami). Suita 1852→1867.
 **07.10 (krok 2) PODPIĘCIA WDROŻONE:** `App\Observers\OrderObserver` (`#[ObservedBy]` na Order). Zrealizowane → `award`, Anulowane → `restore` + `reconcile`, spadek `items_total`/`discount_amount` (zwrot, edycja) → `reconcile`. Wszystko po commicie (`DB::afterCommit`), błąd tylko przez `report()`, NIGDY nie blokuje zamówienia. Komenda `loyalty:expire` codziennie o 06:30. Suita 1867→1874. W testach silnika zamówienie zapisywać `updateQuietly()`, inaczej obserwator wyprzedza jawne wywołanie.
 **Lemoniady (demo) mają punkty WŁĄCZONE** na prośbę Rafała: 5%, 1 pkt = 1 gr. Stare zamówienia NIE dostają punktów wstecz; porcja powstaje dopiero przy nowym przejściu w Zrealizowane (to wysyła klientowi maila o statusie, więc statusów nie ruszałem bez pytania).
+**07.10 pytanie Rafała o regulamin — FAKTY Z KODU:** wzór regulaminu NIE ma paragrafu o punktach. Regulamin sklepu to zamrożony HTML w `pages.content` (zapis z kreatora, `PageController::update`), NIE odświeża się po zmianie ustawień, nie ma wersji. Akceptacja w kasie (`Checkout::$accept_terms`) jest wymagana, ale NIGDZIE niezapisywana. Brak maili do klientów sklepu o zmianie regulaminu.
+**DECYZJE Rafała 07.10:**
+- **Regulaminu sklepu NIE ruszamy.** Aktualność to obowiązek właściciela sklepu; dajemy wzór bez gwarancji. Paragraf o punktach we wzorze ODPADA.
+- **Po wyłączeniu punktów** naliczanie staje, zebrane punkty można wydać do końca ważności („dokładnie tak”).
+- **Strona „Zasady punktów”** działa jak systemowa strona Regulaminu: nie da się jej usunąć przy włączonych punktach, tylko edytować. Domyślną treść generujemy z ustawień sklepu; Rafał prosi, żebym napisał „fajną treść domyślną”.
+- **Zmiana wartości punktu przy istniejących saldach:** dozwolona po zaznaczeniu potwierdzenia, że salda klientów zostaną przeliczone (scenariusz: sprzedawca najpierw powiadamia klientów, potem zmienia). USTALONE: przeliczenie ZACHOWUJE WARTOŚĆ W ZŁ, zmienia się liczba punktów (300 pkt × 1 gr → 30 pkt × 10 gr). W historii klienta wpis „Przeliczenie”. Zaokrąglamy na korzyść klienta (porcje w górę, dług w stronę zera).
+  **WDROŻONE 07.10 (krok 3):** `LoyaltyLedger::revalue(Shop, float)` + typ `Revaluation` + kolumna `loyalty_entries.point_value` (wartość punktu z chwili wpisu). `reconcile` liczy w GROSZACH, bo historia trzyma liczby w jednostkach ze swojego dnia; przeliczenie skaluje też `loyalty_entry_usages`, żeby `restore` oddał właściwą liczbę. Suita 1874→1880, migracja na produkcji. Checkbox „rozumiem, że salda zostaną przeliczone” to już UI (krok Ustawień).
+- **Maili do klientów o zmianie zasad NIE robimy**, to obowiązek sprzedawcy.
+- **Akceptacja dokumentów:** Rafał myślał, że klient akceptuje regulamin przy logowaniu. NIEPRAWDA: okno `/zgody` (`EnsureConsentsAreCurrent`, `legal_documents` + `user_consents`) dotyczy WYŁĄCZNIE sprzedawców i dokumentów platformy. Klienci sklepu przy rejestracji nie akceptują niczego; w kasie zaznaczają regulamin i politykę przy KAŻDYM zamówieniu, ale bez zapisu wersji. Pomysł Rafała „checkboxy w kasie tylko po zmianie dokumentów” wymaga wersjonowania stron sklepu, a tego dziś nie ma. Osobny temat, poza punktami.
 Dalej brak: klucza uprawnienia i widoków. Następny krok = P1 widoki (uprawnienie + sekcja w Ustawieniach) albo paragraf regulaminu.
 Decyzje z implementacji (do potwierdzenia przez Rafała przy P1): ważność liczona od DOSTĘPNOŚCI, do końca dnia; ułamek punktu przepada (floor); zwrot odbiera proporcjonalnie do spadku `base_amount` (nie od bieżącego %); wygasające punkty najpierw spłacają dług; dodatnia korekta dostępna od razu.
 

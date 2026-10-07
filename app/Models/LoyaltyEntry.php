@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * wygasania mieszka w `LoyaltyLedger`; model jest tylko nośnikiem danych.
  */
 #[Fillable([
-    'shop_id', 'email', 'order_id', 'type', 'points', 'remaining',
+    'shop_id', 'email', 'order_id', 'type', 'points', 'remaining', 'point_value',
     'base_amount', 'available_at', 'expires_at', 'note',
 ])]
 class LoyaltyEntry extends Model
@@ -28,6 +28,7 @@ class LoyaltyEntry extends Model
             'type' => LoyaltyEntryType::class,
             'points' => 'integer',
             'remaining' => 'integer',
+            'point_value' => 'decimal:2',
             'base_amount' => 'decimal:2',
             'available_at' => 'datetime',
             'expires_at' => 'datetime',
