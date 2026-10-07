@@ -4,7 +4,7 @@
     <div class="grid gap-6 lg:grid-cols-12">
         {{-- Główna kolumna: formularz --}}
         <div class="lg:col-span-8">
-            <form method="POST" action="{{ route('seller.settings.update') }}" class="space-y-6" novalidate data-validate>
+            <form id="ustawienia" method="POST" action="{{ route('seller.settings.update') }}" class="space-y-6" novalidate data-validate>
                 @csrf
 
                 {{-- Sprzedaż --}}
@@ -533,7 +533,11 @@
                  nie ma: punkty włącza na razie zespół Kramio (decyzja Rafała 07.10). --}}
             @if ($shop->entitlement('loyalty_points'))
                 @php($inputClass = 'block w-full rounded-2xl border border-stone-200 bg-white/80 px-4 py-3 text-sm shadow-sm transition focus:border-amber-500 focus:outline-none focus:ring-4 focus:ring-amber-500/15')
-                <form id="punkty" method="POST" action="{{ route('seller.settings.loyalty') }}" class="mt-6 space-y-6" novalidate data-validate>
+                @php($percentValue = old('loyalty_earn_percent', $shop->loyalty_earn_percent !== null ? \App\Support\LoyaltyRules::percent((float) $shop->loyalty_earn_percent) : ''))
+                @php($pointValue = old('loyalty_point_value', number_format($shop->loyaltyPointValue(), 2, ',', '')))
+                @php($previewPoints = app(\App\Services\LoyaltyLedger::class)->pointsFromBase($shop, 100))
+                <form id="punkty" method="POST" action="{{ route('seller.settings.loyalty') }}" class="mt-6 space-y-6" novalidate data-validate
+                    x-data="loyaltyPreview(@js(['percent' => rtrim((string) $percentValue, '%'), 'value' => (string) $pointValue]))">
                     @csrf
 
                     <div class="rounded-3xl border border-white/60 bg-white/70 p-6 backdrop-blur">
@@ -551,12 +555,26 @@
                             <p class="mt-4 rounded-2xl bg-white px-4 py-3 text-sm text-stone-700">Punkty są wyłączone. Ustawienia możesz przygotować już teraz.</p>
                         @endif
 
+                        {{-- Przelicznik na żywo (Alpine): to samo liczenie co LoyaltyLedger::pointsFromBase —
+                             grosze na liczbach całkowitych, ułamek punktu przepada. Bez JS zostaje
+                             wartość policzona na serwerze dla 100 zł. --}}
+                        <div class="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-stone-700">
+                            <span class="font-medium text-stone-900">Podgląd:</span>
+                            za zakupy za
+                            <input type="text" inputmode="decimal" x-model="amount" value="100" aria-label="Przykładowa kwota zakupów"
+                                class="inline-block w-24 rounded-xl border border-stone-200 bg-white px-2 py-1 text-right tabular-nums">
+                            zł klient dostanie
+                            <strong class="text-stone-900" x-text="points() + ' pkt'">{{ $previewPoints }} pkt</strong>,
+                            czyli <strong class="text-stone-900" x-text="money(points() * grosze(value))">{{ \App\Support\Money::pln($previewPoints * $shop->loyaltyPointValue()) }}</strong> na kolejne zakupy.
+                            <span x-show="ready() && points() === 0" style="display: none" class="mt-1 block text-xs text-amber-700">Przy takiej kwocie klient nie dostanie ani jednego punktu — obniż wartość punktu albo podnieś zwrot.</span>
+                        </div>
+
                         <div class="mt-6 grid grid-cols-12 gap-5">
                             <div class="col-span-6 sm:col-span-4">
                                 <label for="loyalty_earn_percent" class="block text-sm font-medium text-stone-700">Zwrot w punktach</label>
                                 <div class="relative mt-1.5">
                                     <input id="loyalty_earn_percent" name="loyalty_earn_percent" type="text" inputmode="decimal" placeholder="5" required
-                                        value="{{ old('loyalty_earn_percent', $shop->loyalty_earn_percent !== null ? \App\Support\LoyaltyRules::percent((float) $shop->loyalty_earn_percent) : '') }}"
+                                        value="{{ rtrim((string) $percentValue, '%') }}" x-model="percent"
                                         data-msg-required="Podaj, ile procent wraca w punktach, np. 5."
                                         class="{{ $inputClass }} pr-10">
                                     <span class="pointer-events-none absolute inset-y-0 right-4 flex items-center text-sm text-stone-400">%</span>
@@ -569,16 +587,17 @@
 
                             <div class="col-span-6 sm:col-span-4">
                                 <label for="loyalty_point_value" class="block text-sm font-medium text-stone-700">Wartość punktu</label>
-                                @php($selectedValue = old('loyalty_point_value', number_format($shop->loyaltyPointValue(), 2, '.', '')))
-                                <select id="loyalty_point_value" name="loyalty_point_value" required class="mt-1.5 {{ $inputClass }}">
-                                    @foreach ($loyaltyPointValues as $value)
-                                        @php($key = number_format((float) $value, 2, '.', ''))
-                                        <option value="{{ $key }}" @selected($selectedValue === $key)>1 pkt = {{ \App\Support\Money::pln($value) }}</option>
-                                    @endforeach
-                                </select>
+                                <div class="relative mt-1.5">
+                                    <input id="loyalty_point_value" name="loyalty_point_value" type="text" inputmode="decimal" placeholder="0,01" required
+                                        value="{{ $pointValue }}" x-model="value"
+                                        data-msg-required="Podaj, ile wart jest jeden punkt, np. 0,01."
+                                        class="{{ $inputClass }} pr-10">
+                                    <span class="pointer-events-none absolute inset-y-0 right-4 flex items-center text-sm text-stone-400">zł</span>
+                                </div>
                                 @error('loyalty_point_value')
                                     <p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p>
                                 @enderror
+                                <p class="mt-1.5 text-xs text-stone-400">Ile złotych rabatu daje jeden punkt — od 0,01 do 10,00 zł.</p>
                             </div>
 
                             <div class="col-span-6 sm:col-span-4">
@@ -689,4 +708,96 @@
             </div>
         </aside>
     </div>
+
+    <script>
+        // Przelicznik punktów: odbicie LoyaltyLedger::pointsFromBase() — grosze na
+        // liczbach całkowitych, ułamek punktu przepada. Zmieniasz silnik, zmieniaj i to.
+        window.loyaltyPreview = (initial) => ({
+            percent: initial.percent,
+            value: initial.value,
+            amount: '100',
+            number(raw) {
+                return parseFloat(String(raw ?? '').replace(/\s/g, '').replace(',', '.')) || 0;
+            },
+            grosze(raw) {
+                return Math.round(this.number(raw) * 100);
+            },
+            ready() {
+                return this.grosze(this.amount) > 0 && this.number(this.percent) > 0 && this.grosze(this.value) > 0;
+            },
+            points() {
+                if (! this.ready()) {
+                    return 0;
+                }
+
+                return Math.floor(this.grosze(this.amount) * Math.round(this.number(this.percent) * 100) / (10000 * this.grosze(this.value)));
+            },
+            money(grosze) {
+                return (grosze / 100).toFixed(2).replace('.', ',') + ' zł';
+            },
+        });
+
+        // Dwa formularze na jednej stronie: zapis jednego przeładowuje stronę i gubi
+        // niezapisane zmiany w drugim. Bez okienka przeglądarki (zasada panelu):
+        // pierwsze kliknięcie zatrzymuje zapis i pokazuje ostrzeżenie nad
+        // przyciskiem, drugie świadomie zapisuje. Przed wyjściem ze strony pyta
+        // sama przeglądarka (beforeunload).
+        (() => {
+            const forms = [
+                [document.getElementById('ustawienia'), 'Ustawienia sklepu'],
+                [document.getElementById('punkty'), 'Punkty za zakupy'],
+            ].filter(([form]) => form);
+            const dirty = new Set();
+            const warned = new Set();
+            let submitting = false;
+
+            const warn = (form, otherName) => {
+                let notice = form.querySelector('[data-unsaved-notice]');
+
+                if (! notice) {
+                    notice = document.createElement('p');
+                    notice.dataset.unsavedNotice = '';
+                    notice.className = 'rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900';
+                    form.lastElementChild.before(notice);
+                }
+
+                notice.textContent = 'Masz niezapisane zmiany w sekcji „' + otherName + '”. Zapisz najpierw tamtą sekcję albo kliknij ten przycisk jeszcze raz — wtedy tamte zmiany przepadną.';
+            };
+
+            forms.forEach(([form]) => {
+                const mark = (event) => {
+                    if (event.target.name) {
+                        dirty.add(form);
+                    }
+                };
+                form.addEventListener('input', mark);
+                form.addEventListener('change', mark);
+                form.addEventListener('submit', (event) => {
+                    const other = forms.find(([candidate]) => candidate !== form && dirty.has(candidate));
+
+                    if (other && ! warned.has(form)) {
+                        event.preventDefault();
+                        warned.add(form);
+                        warn(form, other[1]);
+                        return;
+                    }
+
+                    submitting = true;
+                    // Walidacja w przeglądarce (forms.js) może jeszcze zatrzymać wysyłkę.
+                    setTimeout(() => {
+                        if (event.defaultPrevented) {
+                            submitting = false;
+                        }
+                    });
+                });
+            });
+
+            window.addEventListener('beforeunload', (event) => {
+                if (dirty.size > 0 && ! submitting) {
+                    event.preventDefault();
+                    event.returnValue = '';
+                }
+            });
+        })();
+    </script>
 </x-layouts.panel>

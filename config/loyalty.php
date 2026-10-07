@@ -8,12 +8,13 @@ return [
     |--------------------------------------------------------------------------
     |
     | Sprzedawca ustawia JEDEN parametr ekonomiczny — „ile % wartości zakupu
-    | wraca w punktach" — i wybiera wartość punktu z listy poniżej. Dwa wolne
+    | wraca w punktach" — i wartość punktu z zakresu poniżej. Dwa wolne
     | kursy (zł za punkt przy zakupie i przy wydawaniu) pozwalały niechcący dać
     | 50% zwrotu; procent sprzedawca od razu przeliczy na marżę.
     |
-    | `point_values` = dozwolone wartości jednego punktu w złotych. Lista, nie
-    | dowolna liczba: klient ma rozumieć saldo („300 pkt = 3,00 zł").
+    | `point_value_min` / `point_value_max` = zakres wartości jednego punktu
+    | w złotych. Sprzedawca wpisuje dowolną kwotę z groszami (np. 0,05 zł) —
+    | pod polem widzi na żywo, ile punktów dostanie klient (Rafał 07.10).
     |
     | `validity_months` = domyślna ważność punktów, liczona od chwili, gdy
     | punkty stają się DOSTĘPNE (po karencji) — klient ma pełny okres na ich
@@ -26,7 +27,9 @@ return [
     |
     */
 
-    'point_values' => [0.01, 0.10, 1.00],
+    'point_value_min' => 0.01,
+
+    'point_value_max' => 10.00,
 
     'default_point_value' => 0.01,
 

@@ -46,7 +46,6 @@ class ShopSettingsController extends Controller
             'shipxConfigured' => $shop->shipxConfigured(),
             'shipxEnabled' => (bool) $shop->integration(IntegrationType::Shipping)?->enabled,
             'sendingMethods' => SendingMethod::cases(),
-            'loyaltyPointValues' => (array) config('loyalty.point_values'),
             'loyaltyHasBalances' => app(LoyaltyLedger::class)->hasOutstanding($shop),
             'loyaltyRulesPage' => $shop->pages()->where('system_key', Page::LOYALTY_RULES)->first(),
         ]);

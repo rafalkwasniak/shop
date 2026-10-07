@@ -80,6 +80,17 @@ class LoyaltyRevaluationTest extends TestCase
         $this->assertSame(-30, $this->ledger->balance($shop, 'dlug@example.com'));
     }
 
+    public function test_any_value_in_range_converts_in_favour_of_the_customer(): void
+    {
+        $shop = $this->shop();
+        $this->ledger->adjust($shop, 'ewa@example.com', 301);
+
+        // 3,01 zł po 0,05 zł = 60,2 pkt → 61 na korzyść klienta.
+        $this->ledger->revalue($shop, 0.05);
+
+        $this->assertSame(61, $this->balance($shop->fresh()));
+    }
+
     public function test_pending_points_are_converted_too(): void
     {
         $shop = $this->shop();
@@ -118,7 +129,7 @@ class LoyaltyRevaluationTest extends TestCase
         $this->assertSame(25, $this->ledger->pending($shop->fresh(), 'ewa@example.com'));
     }
 
-    public function test_same_value_changes_nothing_and_unknown_value_is_refused(): void
+    public function test_same_value_changes_nothing_and_value_out_of_range_is_refused(): void
     {
         $shop = $this->shop();
         $this->ledger->adjust($shop, 'ewa@example.com', 300);
@@ -127,6 +138,6 @@ class LoyaltyRevaluationTest extends TestCase
         $this->assertSame(300, $this->balance($shop));
 
         $this->expectException(InvalidArgumentException::class);
-        $this->ledger->revalue($shop, 0.05);
+        $this->ledger->revalue($shop, 10.01);
     }
 }

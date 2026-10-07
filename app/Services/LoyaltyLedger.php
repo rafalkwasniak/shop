@@ -385,10 +385,9 @@ class LoyaltyLedger
      */
     public function revalue(Shop $shop, float $newValue): int
     {
-        $allowed = array_map(fn ($value) => $this->grosze($value), (array) config('loyalty.point_values'));
         $new = $this->grosze($newValue);
 
-        if (! in_array($new, $allowed, true)) {
+        if ($new < $this->grosze(config('loyalty.point_value_min')) || $new > $this->grosze(config('loyalty.point_value_max'))) {
             throw new InvalidArgumentException('Niedozwolona wartość punktu.');
         }
 

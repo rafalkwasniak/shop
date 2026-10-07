@@ -54,9 +54,10 @@ class LoyaltySettingsTest extends TestCase
 
         [$other] = $this->seller(loyalty: false);
 
+        // Nazwa sekcji pada też w skrypcie ostrzeżenia, więc sprawdzamy sam formularz.
         $this->actingAs($other)->get(route('seller.settings.edit'))
             ->assertOk()
-            ->assertDontSee('Punkty za zakupy');
+            ->assertDontSee('name="loyalty_earn_percent"', false);
     }
 
     public function test_shop_without_entitlement_cannot_save_loyalty_settings(): void
@@ -123,13 +124,36 @@ class LoyaltySettingsTest extends TestCase
         $this->assertSame(30, app(LoyaltyLedger::class)->balance($shop, 'klient@example.com'));
     }
 
-    public function test_point_value_outside_the_list_is_refused(): void
+    public function test_any_point_value_in_range_is_accepted_with_comma(): void
+    {
+        [$seller, $shop] = $this->seller();
+
+        $this->actingAs($seller)
+            ->post(route('seller.settings.loyalty'), $this->form(['loyalty_point_value' => '0,05']))
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('0.05', $shop->fresh()->loyalty_point_value);
+    }
+
+    public function test_point_value_outside_range_or_below_a_grosz_is_refused(): void
     {
         [$seller] = $this->seller();
 
-        $this->actingAs($seller)
-            ->post(route('seller.settings.loyalty'), $this->form(['loyalty_point_value' => '0.05']))
-            ->assertSessionHasErrors('loyalty_point_value');
+        foreach (['0', '0,005', '10,01', 'abc'] as $value) {
+            $this->actingAs($seller)
+                ->post(route('seller.settings.loyalty'), $this->form(['loyalty_point_value' => $value]))
+                ->assertSessionHasErrors('loyalty_point_value');
+        }
+    }
+
+    public function test_preview_shows_points_for_one_hundred_zloty(): void
+    {
+        [$seller] = $this->seller(settings: ['loyalty_earn_percent' => 5, 'loyalty_point_value' => 0.05]);
+
+        $this->actingAs($seller)->get(route('seller.settings.edit'))
+            ->assertOk()
+            ->assertSee('100 pkt')
+            ->assertSee('5,00 zł');
     }
 
     public function test_rules_page_cannot_be_deleted_while_points_are_on(): void
