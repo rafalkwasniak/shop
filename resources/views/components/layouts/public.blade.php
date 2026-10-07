@@ -46,12 +46,15 @@
             {{ $slot }}
 
             {{-- Zmiana decyzji o ciasteczkach — te layouty nie mają stopki,
-                 więc link stoi dyskretnie pod treścią. --}}
-            <p class="mt-10 text-center text-xs text-stone-400">
+                 więc link stoi dyskretnie pod treścią. Kontener blokowy, nie
+                 akapit: „Ciasteczka" to formularz, a formularz w akapicie
+                 przeglądarka wyrzuca poza niego — linki traciły wtedy
+                 wyśrodkowanie (zgłosił Rafał 07.10). --}}
+            <div class="mt-10 text-center text-xs text-stone-400">
                 <x-cookie-settings-link class="inline" />
                 <span class="px-1">·</span>
                 <x-report-content-link class="inline" />
-            </p>
+            </div>
 
         </div>
     </div>
