@@ -3,15 +3,18 @@
     ['label' => 'Moje konto', 'url' => '/moje-konto'],
     ['label' => 'Zamówienia'],
 ]">
-    <x-storefront.order-stats class="mb-6" :count="$ordersCount" :total="$totalSpent" />
+    <x-storefront.order-stats :count="$ordersCount" :total="$totalSpent" />
+
+    {{-- Nagłówek „Historia" jak w zakładce Punkty: kafelki → nagłówek → lista. --}}
+    <h2 class="st-brand st-box-title mt-8">Historia</h2>
 
     @if ($orders->isEmpty())
-        <div class="st-card st-border rounded-3xl border p-10 text-center">
+        <div class="st-card st-border mt-3 rounded-3xl border p-10 text-center">
             <p class="opacity-70">Nie masz jeszcze zamówień.</p>
             <a href="/produkty" wire:navigate class="st-brand mt-2 inline-block text-sm underline underline-offset-2">Przejdź do produktów</a>
         </div>
     @else
-        <ul class="space-y-3">
+        <ul class="mt-3 space-y-3">
             @foreach ($orders as $order)
                 <li>
                     <a href="/moje-konto/zamowienia/{{ $order->id }}?powrot={{ urlencode(request()->getRequestUri()) }}" wire:navigate

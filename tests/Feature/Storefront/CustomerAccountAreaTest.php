@@ -61,6 +61,7 @@ class CustomerAccountAreaTest extends TestCase
             ->get($this->host($shop).'/moje-konto/zamowienia')
             ->assertOk()
             ->assertSee('Złożone zamówienia')
+            ->assertSee('Historia')
             ->assertSee('120,50 zł')
             ->assertDontSee('1 119,50 zł');
     }
