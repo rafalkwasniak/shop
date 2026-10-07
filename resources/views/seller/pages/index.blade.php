@@ -46,7 +46,8 @@
                                     </a>
                                     {{-- Wiersz ma kilkadziesiąt pikseli, więc pytanie staje
                                          W NIM, a nie na nakładce, która by się nie zmieściła. --}}
-                                    @unless ($page->is_system)
+                                    {{-- Regulaminu nie usuniesz nigdy, Zasad punktów — dopóki punkty działają. --}}
+                                    @if ($page->isDeletable())
                                         <livewire:confirm-action
                                             :key="'usun-strone-'.$page->id"
                                             :action="route('seller.pages.destroy', $page)"
@@ -57,7 +58,7 @@
                                             icon="none"
                                             :inline="true"
                                             trigger-class="text-sm font-medium text-rose-700 transition hover:text-rose-800" />
-                                    @endunless
+                                    @endif
                                 </div>
                             </li>
                         @endforeach

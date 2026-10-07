@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Seller\PageRequest;
 use App\Http\Requests\Seller\SellerTermsRequest;
 use App\Models\Page;
+use App\Support\LoyaltyRules;
 use App\Support\SellerTerms;
 use Illuminate\Contracts\Support\Renderable;
 use Illuminate\Http\JsonResponse;
@@ -72,8 +73,8 @@ class PageController extends Controller
     {
         $this->authorizePage($request, $page);
 
-        if ($page->is_system) {
-            // Regulamin: wolno wypełnić treść, ale tytuł jest stały, strona zostaje
+        if ($page->isLocked()) {
+            // Regulamin i Zasady punktów: wolno wypełnić treść, ale tytuł jest stały, strona zostaje
             // opublikowana i nie da się jej wyróżnić na głównej (regulamin jako
             // zajawka-witryna nie ma sensu). Formularz nie pokazuje tych pól, a tu
             // i tak ich nie przyjmujemy — dwie zapory, nie jedna.
@@ -89,8 +90,8 @@ class PageController extends Controller
     {
         $this->authorizePage($request, $page);
 
-        // Strona systemowa (Regulamin) jest nieusuwalna.
-        abort_if($page->is_system, 403);
+        // Regulamin jest nieusuwalny, Zasady punktów — dopóki punkty są włączone.
+        abort_unless($page->isDeletable(), 403);
 
         $page->delete();
 
@@ -190,6 +191,22 @@ class PageController extends Controller
                 'terms_template_version' => SellerTerms::VERSION,
             ])
             ->with('success', 'Wzór wstawiony do edytora. Przeczytaj go i zapisz — dopiero zapis publikuje regulamin w Twoim sklepie.');
+    }
+
+    /**
+     * Wstawia do EDYTORA domyślną treść zasad punktów z bieżących ustawień —
+     * bez zapisu, z tego samego powodu co wzór regulaminu: strona jest zawsze
+     * opublikowana, więc publikuje dopiero „Zapisz", po przeczytaniu.
+     */
+    public function insertLoyaltyRules(Request $request, Page $page): RedirectResponse
+    {
+        $this->authorizePage($request, $page);
+        abort_unless($page->isLoyaltyRules(), 404);
+
+        return redirect()
+            ->route('seller.pages.edit', $page)
+            ->withInput(['content' => LoyaltyRules::render($request->user()->currentShop())])
+            ->with('success', 'Treść domyślna wstawiona do edytora. Przeczytaj ją i zapisz — dopiero zapis publikuje zmiany w Twoim sklepie.');
     }
 
     /**

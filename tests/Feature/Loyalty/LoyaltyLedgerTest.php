@@ -36,12 +36,7 @@ class LoyaltyLedgerTest extends TestCase
 
     private function shop(array $attributes = []): Shop
     {
-        return Shop::factory()->create(array_merge([
-            'loyalty_enabled' => true,
-            'loyalty_earn_percent' => 3,
-            'loyalty_point_value' => 0.01,
-            'loyalty_validity_months' => 12,
-        ], $attributes));
+        return Shop::factory()->withLoyalty(array_merge(['loyalty_earn_percent' => 3], $attributes))->create();
     }
 
     private function order(Shop $shop, float $itemsTotal = 100, array $attributes = []): Order

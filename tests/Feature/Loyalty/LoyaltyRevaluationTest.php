@@ -33,11 +33,7 @@ class LoyaltyRevaluationTest extends TestCase
 
     private function shop(): Shop
     {
-        return Shop::factory()->create([
-            'loyalty_enabled' => true,
-            'loyalty_earn_percent' => 5,
-            'loyalty_point_value' => 0.01,
-        ]);
+        return Shop::factory()->withLoyalty()->create();
     }
 
     private function order(Shop $shop, float $itemsTotal = 100, OrderStatus $status = OrderStatus::Completed): Order

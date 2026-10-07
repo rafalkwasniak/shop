@@ -382,6 +382,7 @@ Route::middleware(['auth', 'role:seller,employee', 'ensure.consents'])
             // Ustawienia sklepu (sprzedaz/VAT, dostawa, platnosci, wlaczniki integracji).
             Route::get('/ustawienia', [ShopSettingsController::class, 'edit'])->name('settings.edit');
             Route::post('/ustawienia', [ShopSettingsController::class, 'update'])->name('settings.update');
+            Route::post('/ustawienia/punkty', [ShopSettingsController::class, 'updateLoyalty'])->name('settings.loyalty');
 
             // Integracje (klucze uslug: Paynow, Fakturownia, Google Analytics).
             Route::get('/integracje', [IntegrationController::class, 'edit'])->name('integrations.edit');
@@ -489,6 +490,7 @@ Route::middleware(['auth', 'role:seller,employee', 'ensure.consents'])
             // publikację w jego imieniu.
             Route::post('/informacje/{page}/wzor', [PageController::class, 'termsWizard'])->name('pages.terms');
             Route::post('/informacje/{page}/wzor/wstaw', [PageController::class, 'insertTerms'])->name('pages.terms.insert');
+            Route::post('/informacje/{page}/zasady-punktow/wstaw', [PageController::class, 'insertLoyaltyRules'])->name('pages.loyalty.insert');
         });
 
         // Produkty (edycja/usuwanie przez POST — FOUNDATION sek. 5).

@@ -27,6 +27,9 @@ class Page extends Model
     /** @use HasFactory<\Database\Factories\PageFactory> */
     use HasFactory;
 
+    /** `system_key` strony z zasadami punktów za zakupy. */
+    public const LOYALTY_RULES = 'loyalty_rules';
+
     /**
      * @return array<string, string>
      */
@@ -47,6 +50,34 @@ class Page extends Model
     public function shop(): BelongsTo
     {
         return $this->belongsTo(Shop::class);
+    }
+
+    /** Czy to strona „Zasady punktów" (zakładana przez system, nie przez sprzedawcę). */
+    public function isLoyaltyRules(): bool
+    {
+        return $this->system_key === self::LOYALTY_RULES;
+    }
+
+    /**
+     * Czy tytuł i widoczność są stałe — Regulamin oraz Zasady punktów. Obie
+     * strony sprzedawca może tylko wypełnić treścią i przestawić w kolejności.
+     */
+    public function isLocked(): bool
+    {
+        return $this->is_system || $this->isLoyaltyRules();
+    }
+
+    /**
+     * Czy stronę wolno usunąć. Regulaminu nigdy; Zasad punktów — dopiero gdy
+     * sklep punkty wyłączy (decyzja Rafała 07.10).
+     */
+    public function isDeletable(): bool
+    {
+        if ($this->is_system) {
+            return false;
+        }
+
+        return ! ($this->isLoyaltyRules() && $this->shop->loyalty_enabled);
     }
 
     /**

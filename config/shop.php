@@ -241,6 +241,9 @@ return [
                 'order_editing' => false,
                 'discount_codes' => false,
                 'bulk_mail' => false,
+                // Punkty za zakupy — WYŁĄCZONE wszędzie do czasu startu funkcji (decyzja
+                // Rafała 07.10); na razie nadawane ręcznie z konsoli admina (Lemoniady).
+                'loyalty_points' => false,
             ],
         ],
         'booth' => [
@@ -259,6 +262,9 @@ return [
                 'order_editing' => false,
                 'discount_codes' => false,
                 'bulk_mail' => false,
+                // Punkty za zakupy — WYŁĄCZONE wszędzie do czasu startu funkcji (decyzja
+                // Rafała 07.10); na razie nadawane ręcznie z konsoli admina (Lemoniady).
+                'loyalty_points' => false,
             ],
         ],
         'pavilion' => [
@@ -277,6 +283,9 @@ return [
                 'order_editing' => true,
                 'discount_codes' => true,
                 'bulk_mail' => true,
+                // Punkty za zakupy — WYŁĄCZONE wszędzie do czasu startu funkcji (decyzja
+                // Rafała 07.10); na razie nadawane ręcznie z konsoli admina (Lemoniady).
+                'loyalty_points' => false,
             ],
         ],
 
@@ -315,6 +324,9 @@ return [
                 'order_editing' => true,
                 'discount_codes' => true,
                 'bulk_mail' => true,
+                // Punkty za zakupy — WYŁĄCZONE wszędzie do czasu startu funkcji (decyzja
+                // Rafała 07.10); na razie nadawane ręcznie z konsoli admina (Lemoniady).
+                'loyalty_points' => false,
             ],
         ],
     ],

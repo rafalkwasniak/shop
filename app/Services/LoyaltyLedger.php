@@ -78,7 +78,7 @@ class LoyaltyLedger
     {
         $shop = $order->shop;
 
-        if (! $shop->loyalty_enabled || $order->status === OrderStatus::Cancelled) {
+        if (! $shop->loyaltyActive() || $order->status === OrderStatus::Cancelled) {
             return null;
         }
 
@@ -298,6 +298,12 @@ class LoyaltyLedger
         $debt = (int) $this->entries($shop, $email)->where('remaining', '<', 0)->sum('remaining');
 
         return $available + $debt;
+    }
+
+    /** Czy którykolwiek klient sklepu ma punkty albo dług — wtedy zmiana wartości punktu przelicza salda. */
+    public function hasOutstanding(Shop $shop): bool
+    {
+        return LoyaltyEntry::query()->where('shop_id', $shop->id)->where('remaining', '!=', 0)->exists();
     }
 
     /** Punkty naliczone, ale jeszcze w karencji. */

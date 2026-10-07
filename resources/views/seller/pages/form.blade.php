@@ -15,8 +15,8 @@
                     <div class="mt-6 space-y-5">
                         <div>
                             <label for="title" class="block text-sm font-medium text-stone-700">Tytuł</label>
-                            @if ($page->is_system)
-                                {{-- Regulamin: tytuł jest stały (strona systemowa). --}}
+                            @if ($page->isLocked())
+                                {{-- Regulamin i Zasady punktów: tytuł jest stały (strona systemowa). --}}
                                 <input id="title" type="text" value="{{ $page->title }}" disabled
                                     class="mt-1.5 block w-full cursor-not-allowed rounded-2xl border border-stone-200 bg-stone-100 px-4 py-3 text-sm text-stone-500 shadow-sm">
                                 <p class="mt-1.5 text-xs text-stone-400">Tytuł strony systemowej jest stały — możesz zmienić tylko treść i kolejność.</p>
@@ -54,6 +54,8 @@
                     <h2 class="font-semibold text-stone-900">Widoczność</h2>
                     @if ($page->is_system)
                         <p class="mt-3 text-sm text-stone-500">Regulamin jest zawsze widoczny w sklepie — nie można go ukryć.</p>
+                    @elseif ($page->isLoyaltyRules())
+                        <p class="mt-3 text-sm text-stone-500">Zasady punktów są zawsze widoczne w sklepie, dopóki punkty są włączone — klient ma prawo wiedzieć, na jakich warunkach je zbiera.</p>
                     @else
                         <div class="mt-4 space-y-4">
                             <label class="flex items-start gap-3 text-sm text-stone-600">
@@ -103,6 +105,27 @@
         </div>
 
         <aside class="lg:col-span-4 space-y-6">
+            {{-- Zasady punktów: świeży wzór z bieżących ustawień, wstawiany do
+                 edytora BEZ zapisu (jak wzór regulaminu). Aktualność treści po
+                 zmianie ustawień to obowiązek sprzedawcy — dajemy mu narzędzie. --}}
+            @if ($page->exists && $page->isLoyaltyRules())
+                <div class="rounded-3xl border border-amber-200 bg-amber-50 p-6">
+                    <h2 class="font-semibold text-stone-900">Treść domyślna</h2>
+                    <p class="mt-2 text-sm leading-relaxed text-stone-600">
+                        Po zmianie ustawień punktów wstaw do edytora zasady opisane na nowo z tego, co jest teraz ustawione.
+                        <span class="font-medium text-stone-700">Nic nie zostanie zapisane</span>, dopóki nie klikniesz „Zapisz zmiany".
+                    </p>
+                    <form method="POST" action="{{ route('seller.pages.loyalty.insert', $page) }}" class="mt-4">
+                        @csrf
+                        <button type="submit"
+                            class="rounded-2xl border border-amber-300 bg-white px-4 py-2.5 text-sm font-semibold text-amber-900 transition hover:bg-amber-100">
+                            Wstaw treść domyślną
+                        </button>
+                    </form>
+                    <p class="mt-3 text-xs text-stone-500">Ustawienia punktów znajdziesz w <a href="{{ route('seller.settings.edit') }}#punkty" class="font-medium underline decoration-amber-300 underline-offset-2">Ustawieniach</a>.</p>
+                </div>
+            @endif
+
             {{-- Kreator regulaminu — OSOBNY formularz, bo celuje w inną trasę niż
                  zapis strony. Tylko przy stronie systemowej: pozostałe podstrony
                  sprzedawca pisze sam.
@@ -232,8 +255,8 @@
                         <span class="mt-0.5 shrink-0 text-amber-500">🔗</span>
                         <span>Adres strony powstaje z tytułu automatycznie — nie musisz się nim zajmować.</span>
                     </li>
-                    {{-- Regulaminu nie da się wyróżnić, więc nie kuśmy go tą wskazówką. --}}
-                    @unless ($page->is_system)
+                    {{-- Stron systemowych nie da się wyróżnić, więc nie kuśmy ich tą wskazówką. --}}
+                    @unless ($page->isLocked())
                         <li class="flex gap-3">
                             <span class="mt-0.5 shrink-0 text-amber-500">⭐</span>
                             <span>Stronę, która opowiada o Tobie — wywiad, spotkanie autorskie, słowo o sobie — <span class="font-medium text-stone-700">wyróżnij na stronie głównej</span>. Zajawka stanie pod ofertą.</span>

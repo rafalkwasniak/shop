@@ -26,11 +26,11 @@ class PageRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
-        // Strona systemowa (Regulamin) ma tytuł stały — pole jest w formularzu
-        // zablokowane i nie leci w żądaniu, więc bierzemy tytuł z istniejącej
+        // Strona systemowa (Regulamin, Zasady punktów) ma tytuł stały — pole jest
+        // w formularzu zablokowane i nie leci w żądaniu, więc bierzemy tytuł z istniejącej
         // strony (inaczej `title` byłby pusty i walidacja odrzucałaby zapis).
         $page = $this->route('page');
-        $title = $page instanceof Page && $page->is_system
+        $title = $page instanceof Page && $page->isLocked()
             ? $page->title
             : (string) $this->input('title');
 

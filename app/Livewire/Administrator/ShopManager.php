@@ -50,6 +50,8 @@ class ShopManager extends Component
 
     public bool $bulk_mail = false;
 
+    public bool $loyalty_points = false;
+
     /** Cena roczna BRUTTO (zł). */
     public string $price_yearly = '0';
 
@@ -125,6 +127,7 @@ class ShopManager extends Component
             'order_editing' => 'Edycja zamówienia',
             'discount_codes' => 'Kody rabatowe',
             'bulk_mail' => 'Korespondencja seryjna',
+            'loyalty_points' => 'Punkty za zakupy',
         ];
     }
 

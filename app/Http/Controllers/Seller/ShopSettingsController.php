@@ -7,10 +7,15 @@ use App\Enums\SaleUnit;
 use App\Enums\SendingMethod;
 use App\Enums\VatRate;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Seller\LoyaltySettingsRequest;
 use App\Http\Requests\Seller\ShopSettingsRequest;
+use App\Models\Page;
+use App\Services\LoyaltyLedger;
+use App\Support\LoyaltyRules;
 use Illuminate\Contracts\Support\Renderable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Ustawienia sklepu — typowane pola (domyślny VAT), fiszki metod (przelew) oraz
@@ -41,6 +46,9 @@ class ShopSettingsController extends Controller
             'shipxConfigured' => $shop->shipxConfigured(),
             'shipxEnabled' => (bool) $shop->integration(IntegrationType::Shipping)?->enabled,
             'sendingMethods' => SendingMethod::cases(),
+            'loyaltyPointValues' => (array) config('loyalty.point_values'),
+            'loyaltyHasBalances' => app(LoyaltyLedger::class)->hasOutstanding($shop),
+            'loyaltyRulesPage' => $shop->pages()->where('system_key', Page::LOYALTY_RULES)->first(),
         ]);
     }
 
@@ -85,5 +93,37 @@ class ShopSettingsController extends Controller
         return redirect()
             ->route('seller.settings.edit')
             ->with('success', 'Zapisano ustawienia sklepu.');
+    }
+
+    /**
+     * Ustawienia punktów za zakupy. Zmiana wartości punktu idzie przez
+     * `LoyaltyLedger::revalue()`, które przelicza salda klientów w tej samej
+     * transakcji — nigdy przez zwykły zapis kolumny, bo ten zmieniłby wartość
+     * cudzych punktów po cichu.
+     */
+    public function updateLoyalty(LoyaltySettingsRequest $request, LoyaltyLedger $ledger): RedirectResponse
+    {
+        $shop = $request->user()->currentShop();
+        $data = $request->validated();
+
+        DB::transaction(function () use ($shop, $data, $ledger): void {
+            $shop->fill([
+                'loyalty_earn_percent' => $data['loyalty_earn_percent'],
+                'loyalty_delay_days' => $data['loyalty_delay_days'],
+                'loyalty_validity_months' => $data['loyalty_validity_months'],
+                'loyalty_max_redeem_percent' => $data['loyalty_max_redeem_percent'],
+                'loyalty_min_redeem_points' => $data['loyalty_min_redeem_points'],
+            ])->save();
+
+            $ledger->revalue($shop, (float) $data['loyalty_point_value']);
+
+            if ($shop->loyalty_enabled) {
+                LoyaltyRules::ensurePage($shop);
+            }
+        });
+
+        return redirect()
+            ->to(route('seller.settings.edit').'#punkty')
+            ->with('success', 'Zapisano ustawienia punktów. Jeśli zmieniły się zasady, zajrzyj na stronę „Zasady punktów" i wstaw treść domyślną od nowa.');
     }
 }

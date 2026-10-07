@@ -29,11 +29,7 @@ class LoyaltyOrderHooksTest extends TestCase
 
     private function shop(bool $enabled = true): Shop
     {
-        return Shop::factory()->create([
-            'loyalty_enabled' => $enabled,
-            'loyalty_earn_percent' => 5,
-            'loyalty_point_value' => 0.01,
-        ]);
+        return Shop::factory()->withLoyalty(['loyalty_enabled' => $enabled])->create();
     }
 
     /** Zamówienie na 2 × 50 zł z prawdziwą pozycją, policzone jak przy składaniu. */

@@ -1652,6 +1652,16 @@ class Shop extends Model
             ?? (int) config('legal.withdrawal.days') + (int) config('legal.withdrawal.delivery_buffer_days');
     }
 
+    /**
+     * Czy sklep NALICZA punkty za zakupy: sprzedawca je włączył i pakiet daje
+     * uprawnienie. Po zejściu z pakietu albo wyłączeniu naliczanie staje, ale
+     * zebrane punkty dalej da się wydać do końca ich ważności (decyzja Rafała).
+     */
+    public function loyaltyActive(): bool
+    {
+        return $this->loyalty_enabled && (bool) $this->entitlement('loyalty_points');
+    }
+
     /** Wartość jednego punktu w złotych. */
     public function loyaltyPointValue(): float
     {

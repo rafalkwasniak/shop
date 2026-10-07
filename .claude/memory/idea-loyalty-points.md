@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 7092e827-f5de-4490-9ede-6b446045c5b5
-  modified: 2026-10-07T09:23:21.827Z
+  modified: 2026-10-07T10:33:47.281Z
 ---
 
 **Stan 2026-10-07: SILNIK WDROŻONY, NIEPODPIĘTY.** Rafał chciał krok, który „sam w sobie nic nie zepsuje”. Zrobione: `config/loyalty.php`, kolumny `shops.loyalty_*` (wszystko domyślnie wyłączone), tabele `loyalty_entries` + `loyalty_entry_usages`, `App\Services\LoyaltyLedger` (award / reconcile / spend / restore / adjust / balance / pending / expire), `LoyaltyEntryType`, `LoyaltyException`, testy `tests/Feature/Loyalty/LoyaltyLedgerTest.php` (15). Migracja ODPALONA na produkcji (0/12 sklepów z punktami). Suita 1852→1867.
@@ -20,7 +20,15 @@ metadata:
   **WDROŻONE 07.10 (krok 3):** `LoyaltyLedger::revalue(Shop, float)` + typ `Revaluation` + kolumna `loyalty_entries.point_value` (wartość punktu z chwili wpisu). `reconcile` liczy w GROSZACH, bo historia trzyma liczby w jednostkach ze swojego dnia; przeliczenie skaluje też `loyalty_entry_usages`, żeby `restore` oddał właściwą liczbę. Suita 1874→1880, migracja na produkcji. Checkbox „rozumiem, że salda zostaną przeliczone” to już UI (krok Ustawień).
 - **Maili do klientów o zmianie zasad NIE robimy**, to obowiązek sprzedawcy.
 - **Akceptacja dokumentów:** Rafał myślał, że klient akceptuje regulamin przy logowaniu. NIEPRAWDA: okno `/zgody` (`EnsureConsentsAreCurrent`, `legal_documents` + `user_consents`) dotyczy WYŁĄCZNIE sprzedawców i dokumentów platformy. Klienci sklepu przy rejestracji nie akceptują niczego; w kasie zaznaczają regulamin i politykę przy KAŻDYM zamówieniu, ale bez zapisu wersji. Pomysł Rafała „checkboxy w kasie tylko po zmianie dokumentów” wymaga wersjonowania stron sklepu, a tego dziś nie ma. Osobny temat, poza punktami.
-Dalej brak: klucza uprawnienia i widoków. Następny krok = P1 widoki (uprawnienie + sekcja w Ustawieniach) albo paragraf regulaminu.
+**07.10 Rafał: „wdrażamy całość”, ALE BEZ włącznika w panelu sprzedawcy; punkty tylko w Lemoniadach.** Lemoniady dostały punkty WSTECZ (jednorazowo, tylko do podglądu): #1 bez punktów (celowo), #2 anulowane, #3–#8 z datą realizacji → saldo 1094 pkt. Uprawnienie `loyalty_points` nadane Lemoniadom w snapshocie.
+- **Krok A ZROBIONY:** `Shop::loyaltyActive()` (włącznik + uprawnienie; bramka w `award`), `ShopFactory::withLoyalty()`, sekcja „Punkty za zakupy” w Ustawieniach (osobny formularz `seller.settings.loyalty`, `LoyaltySettingsRequest`, checkbox `confirm_revaluation` tylko przy saldach, zmiana wartości przez `revalue()`), strona zasad: `pages.system_key = loyalty_rules` (NIE `is_system`, bo ta flaga = Regulamin w kreatorze i kasie), `Page::isLocked()/isDeletable()`, `App\Support\LoyaltyRules` + szablon `seller/legal/templates/zasady-punktow.blade.php`, przycisk „Wstaw treść domyślną” (`pages.loyalty.insert`). Strona Lemoniad: `/informacje/27-zasady-punktow`.
+
+**PLAN DALSZY (zaproponowany 07.10, czeka na start):** uprawnienie `loyalty_points` dodane od razu, ale FALSE we WSZYSTKICH pakietach (także Pawilonie); Rafał włącza je ręcznie tylko Lemoniadom. Funkcja rośnie po cichu, sprzedawcy zobaczą ją dopiero kompletną.
+- **A** (1 sesja): uprawnienie w ShopManager (+ PackageFeatures, SyncPackageEntitlements) + sekcja „Punkty” w Ustawieniach (z checkboxem przeliczenia przy zmianie wartości) + strona „Zasady punktów” (domyślna treść z ustawień, edytowalna, nieusuwalna przy włączonych). Włączenie wymaga zasad.
+- **B** (1): karta produktu „dostaniesz X pkt”, zakładka Punkty w Moim koncie, mail o realizacji z punktami i zachętą do konta dla gościa. Potem Rafał składa prawdziwe zamówienie w Lemoniadach.
+- **C** (1–2): wydawanie w koszyku i kasie, VAT przez `DiscountAllocation`, faktura, maile, panel zamówienia.
+- **D** (1): saldo i korekta w kartotece klientów; Pawilon = true + `packages:sync-entitlements --apply`; opis w pakietach i na landingu DOPIERO TERAZ.
+Dalej brak: widoków. Następny krok = P1 widoki (uprawnienie + sekcja w Ustawieniach) albo paragraf regulaminu.
 Decyzje z implementacji (do potwierdzenia przez Rafała przy P1): ważność liczona od DOSTĘPNOŚCI, do końca dnia; ułamek punktu przepada (floor); zwrot odbiera proporcjonalnie do spadku `base_amount` (nie od bieżącego %); wygasające punkty najpierw spłacają dług; dodatnia korekta dostępna od razu.
 
 **Kontekst:** funkcja jest dla Kramio ogólnie. Impulsem był klient ze starym sklepem z punktami, ale gdyby kupił, dostanie osobną kopię jak Magellan Bay ([[plan-magellan-bay-separate-project]]) i tam robimy jego ustępstwa. **Nie projektować pod tego klienta.**

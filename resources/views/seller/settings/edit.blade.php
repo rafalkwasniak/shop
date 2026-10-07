@@ -527,6 +527,141 @@
                     </button>
                 </div>
             </form>
+
+            {{-- Punkty za zakupy — OSOBNY formularz (inna trasa, własna walidacja),
+                 widoczny tylko z uprawnieniem `loyalty_points`. Włącznika celowo
+                 nie ma: punkty włącza na razie zespół Kramio (decyzja Rafała 07.10). --}}
+            @if ($shop->entitlement('loyalty_points'))
+                @php($inputClass = 'block w-full rounded-2xl border border-stone-200 bg-white/80 px-4 py-3 text-sm shadow-sm transition focus:border-amber-500 focus:outline-none focus:ring-4 focus:ring-amber-500/15')
+                <form id="punkty" method="POST" action="{{ route('seller.settings.loyalty') }}" class="mt-6 space-y-6" novalidate data-validate>
+                    @csrf
+
+                    <div class="rounded-3xl border border-white/60 bg-white/70 p-6 backdrop-blur">
+                        <h2 class="font-semibold text-stone-900">Punkty za zakupy</h2>
+                        <p class="mt-1 text-sm text-stone-500">Klienci zbierają punkty za zrealizowane zamówienia i wymieniają je na rabat przy kolejnych zakupach.</p>
+
+                        @if ($shop->loyalty_enabled)
+                            <p class="mt-4 rounded-2xl bg-white px-4 py-3 text-sm text-stone-700">
+                                <span class="font-medium text-stone-900">Punkty są włączone.</span>
+                                @if ($loyaltyRulesPage)
+                                    Klienci widzą je opisane na stronie <a href="{{ route('seller.pages.edit', $loyaltyRulesPage) }}" class="font-medium underline decoration-amber-300 underline-offset-2">Zasady punktów</a>.
+                                @endif
+                            </p>
+                        @else
+                            <p class="mt-4 rounded-2xl bg-white px-4 py-3 text-sm text-stone-700">Punkty są wyłączone. Ustawienia możesz przygotować już teraz.</p>
+                        @endif
+
+                        <div class="mt-6 grid grid-cols-12 gap-5">
+                            <div class="col-span-6 sm:col-span-4">
+                                <label for="loyalty_earn_percent" class="block text-sm font-medium text-stone-700">Zwrot w punktach</label>
+                                <div class="relative mt-1.5">
+                                    <input id="loyalty_earn_percent" name="loyalty_earn_percent" type="text" inputmode="decimal" placeholder="5" required
+                                        value="{{ old('loyalty_earn_percent', $shop->loyalty_earn_percent !== null ? \App\Support\LoyaltyRules::percent((float) $shop->loyalty_earn_percent) : '') }}"
+                                        data-msg-required="Podaj, ile procent wraca w punktach, np. 5."
+                                        class="{{ $inputClass }} pr-10">
+                                    <span class="pointer-events-none absolute inset-y-0 right-4 flex items-center text-sm text-stone-400">%</span>
+                                </div>
+                                @error('loyalty_earn_percent')
+                                    <p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p>
+                                @enderror
+                                <p class="mt-1.5 text-xs text-stone-400">Tyle procent zapłaconej wartości produktów (bez dostawy) wraca do klienta.</p>
+                            </div>
+
+                            <div class="col-span-6 sm:col-span-4">
+                                <label for="loyalty_point_value" class="block text-sm font-medium text-stone-700">Wartość punktu</label>
+                                @php($selectedValue = old('loyalty_point_value', number_format($shop->loyaltyPointValue(), 2, '.', '')))
+                                <select id="loyalty_point_value" name="loyalty_point_value" required class="mt-1.5 {{ $inputClass }}">
+                                    @foreach ($loyaltyPointValues as $value)
+                                        @php($key = number_format((float) $value, 2, '.', ''))
+                                        <option value="{{ $key }}" @selected($selectedValue === $key)>1 pkt = {{ \App\Support\Money::pln($value) }}</option>
+                                    @endforeach
+                                </select>
+                                @error('loyalty_point_value')
+                                    <p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div class="col-span-6 sm:col-span-4">
+                                <label for="loyalty_delay_days" class="block text-sm font-medium text-stone-700">Karencja</label>
+                                <div class="relative mt-1.5">
+                                    <input id="loyalty_delay_days" name="loyalty_delay_days" type="text" inputmode="numeric"
+                                        placeholder="{{ (int) config('legal.withdrawal.days') + (int) config('legal.withdrawal.delivery_buffer_days') }}"
+                                        value="{{ old('loyalty_delay_days', $shop->loyalty_delay_days) }}"
+                                        class="{{ $inputClass }} pr-12">
+                                    <span class="pointer-events-none absolute inset-y-0 right-4 flex items-center text-sm text-stone-400">dni</span>
+                                </div>
+                                @error('loyalty_delay_days')
+                                    <p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p>
+                                @enderror
+                                <p class="mt-1.5 text-xs text-stone-400">Po tylu dniach od realizacji punkty są do wykorzystania. Puste = tyle, ile trwa okno zwrotu.</p>
+                            </div>
+
+                            <div class="col-span-6 sm:col-span-4">
+                                <label for="loyalty_validity_months" class="block text-sm font-medium text-stone-700">Ważność <span class="font-normal text-stone-400">(opcjonalnie)</span></label>
+                                <div class="relative mt-1.5">
+                                    <input id="loyalty_validity_months" name="loyalty_validity_months" type="text" inputmode="numeric" placeholder="bez terminu"
+                                        value="{{ old('loyalty_validity_months', $shop->loyalty_validity_months) }}"
+                                        class="{{ $inputClass }} pr-12">
+                                    <span class="pointer-events-none absolute inset-y-0 right-4 flex items-center text-sm text-stone-400">mies.</span>
+                                </div>
+                                @error('loyalty_validity_months')
+                                    <p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p>
+                                @enderror
+                                <p class="mt-1.5 text-xs text-stone-400">Liczona od dnia, w którym punkty są dostępne. Puste = punkty nie wygasają.</p>
+                            </div>
+
+                            <div class="col-span-6 sm:col-span-4">
+                                <label for="loyalty_max_redeem_percent" class="block text-sm font-medium text-stone-700">Limit płatności punktami <span class="font-normal text-stone-400">(opcjonalnie)</span></label>
+                                <div class="relative mt-1.5">
+                                    <input id="loyalty_max_redeem_percent" name="loyalty_max_redeem_percent" type="text" inputmode="numeric" placeholder="bez limitu"
+                                        value="{{ old('loyalty_max_redeem_percent', $shop->loyalty_max_redeem_percent) }}"
+                                        class="{{ $inputClass }} pr-10">
+                                    <span class="pointer-events-none absolute inset-y-0 right-4 flex items-center text-sm text-stone-400">%</span>
+                                </div>
+                                @error('loyalty_max_redeem_percent')
+                                    <p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p>
+                                @enderror
+                                <p class="mt-1.5 text-xs text-stone-400">Najwyższa część wartości produktów, którą klient zapłaci punktami.</p>
+                            </div>
+
+                            <div class="col-span-6 sm:col-span-4">
+                                <label for="loyalty_min_redeem_points" class="block text-sm font-medium text-stone-700">Minimum do wydania <span class="font-normal text-stone-400">(opcjonalnie)</span></label>
+                                <div class="relative mt-1.5">
+                                    <input id="loyalty_min_redeem_points" name="loyalty_min_redeem_points" type="text" inputmode="numeric" placeholder="bez minimum"
+                                        value="{{ old('loyalty_min_redeem_points', $shop->loyalty_min_redeem_points) }}"
+                                        class="{{ $inputClass }} pr-12">
+                                    <span class="pointer-events-none absolute inset-y-0 right-4 flex items-center text-sm text-stone-400">pkt</span>
+                                </div>
+                                @error('loyalty_min_redeem_points')
+                                    <p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p>
+                                @enderror
+                                <p class="mt-1.5 text-xs text-stone-400">Od tylu punktów klient może z nich skorzystać.</p>
+                            </div>
+                        </div>
+
+                        @if ($loyaltyHasBalances)
+                            <label class="mt-6 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-stone-700">
+                                <input type="checkbox" name="confirm_revaluation" value="1" class="mt-0.5 shrink-0"
+                                    @checked(old('confirm_revaluation'))>
+                                <span>
+                                    <span class="font-medium text-stone-900">Zmieniam wartość punktu i rozumiem, że salda klientów zostaną przeliczone.</span>
+                                    Wartość w złotych zostanie ta sama, zmieni się liczba punktów — np. 300 pkt po 0,01 zł to 30 pkt po 0,10 zł. Zaznacz tylko przy zmianie wartości punktu, najlepiej po uprzedzeniu klientów.
+                                </span>
+                            </label>
+                            @error('confirm_revaluation')
+                                <p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p>
+                            @enderror
+                        @endif
+                    </div>
+
+                    <div class="flex justify-end">
+                        <button type="submit"
+                            class="rounded-2xl bg-gradient-to-br from-amber-500 to-rose-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-rose-500/20 transition hover:brightness-105 focus:outline-none focus:ring-4 focus:ring-amber-500/25">
+                            Zapisz ustawienia punktów
+                        </button>
+                    </div>
+                </form>
+            @endif
         </div>
 
         {{-- Kolumna pomocnicza: wskazówki --}}

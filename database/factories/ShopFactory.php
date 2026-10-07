@@ -152,6 +152,26 @@ class ShopFactory extends Factory
      * Sklep z uprawnieniem do kodów rabatowych — funkcja TYLKO Pawilonu
      * (`discount_codes`). Dokłada `discount_codes=true` bez zmiany pakietu.
      */
+    /**
+     * Sklep naliczający punkty za zakupy: uprawnienie (dziś wyłączone we
+     * wszystkich pakietach) + włącznik i domyślne ustawienia programu.
+     *
+     * @param  array<string, mixed>  $settings
+     */
+    public function withLoyalty(array $settings = []): static
+    {
+        return $this->state(fn (array $attributes) => array_merge([
+            'entitlements' => array_merge(
+                $attributes['entitlements'] ?? config('shop.packages.'.config('shop.default_package').'.entitlements'),
+                ['loyalty_points' => true],
+            ),
+            'loyalty_enabled' => true,
+            'loyalty_earn_percent' => 5,
+            'loyalty_point_value' => 0.01,
+            'loyalty_validity_months' => 12,
+        ], $settings));
+    }
+
     public function withDiscountCodes(): static
     {
         return $this->state(fn (array $attributes) => [
