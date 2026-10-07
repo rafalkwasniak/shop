@@ -47,11 +47,11 @@ class LoyaltyExpiryReminderTest extends TestCase
         return json_encode([$mail->subject, $mail->preheader, $mail->intro_lines, $mail->outro_lines, $mail->action_url], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 
-    public function test_one_mail_per_customer_sums_lots_and_names_the_nearest_date(): void
+    public function test_lots_expiring_the_same_day_make_one_mail_with_the_sum(): void
     {
         $shop = $this->shop();
-        $this->lot($shop, 199, 10);
-        $this->lot($shop, 99, 12);
+        $this->lot($shop, 199, 14);
+        $this->lot($shop, 99, 14);
         $this->lot($shop, 500, 40); // poza oknem 14 dni
 
         $this->artisan('loyalty:remind')->expectsOutput('Wysłane przypomnienia: 1.')->assertSuccessful();
@@ -59,8 +59,36 @@ class LoyaltyExpiryReminderTest extends TestCase
         $mail = EmailMessage::sole();
         $this->assertSame('anna@example.com', $mail->to_email);
         $this->assertStringContainsString('298 pkt', $this->body($mail));
-        $this->assertStringContainsString(now()->addDays(10)->format('d.m.Y'), $this->body($mail));
+        $this->assertStringContainsString(now()->addDays(14)->format('d.m.Y'), $this->body($mail));
         $this->assertStringNotContainsString('zł', $this->body($mail));
+    }
+
+    public function test_different_expiry_days_get_separate_mails_even_in_one_run(): void
+    {
+        $shop = $this->shop();
+        $this->lot($shop, 199, 10);
+        $this->lot($shop, 99, 12);
+
+        $this->artisan('loyalty:remind')->expectsOutput('Wysłane przypomnienia: 2.');
+
+        $bodies = EmailMessage::orderBy('id')->get()->map(fn (EmailMessage $mail): string => $this->body($mail))->implode(' ');
+        $this->assertStringContainsString('199 pkt** wygaśnie **'.now()->addDays(10)->format('d.m.Y'), $bodies);
+        $this->assertStringContainsString('99 pkt** wygaśnie **'.now()->addDays(12)->format('d.m.Y'), $bodies);
+    }
+
+    public function test_daily_runs_remind_each_day_as_it_reaches_fourteen_days(): void
+    {
+        $shop = $this->shop();
+        $this->lot($shop, 199, 15);
+        $this->lot($shop, 99, 16);
+
+        $this->artisan('loyalty:remind')->expectsOutput('Wysłane przypomnienia: 0.');
+        $this->travel(1)->days();
+        $this->artisan('loyalty:remind')->expectsOutput('Wysłane przypomnienia: 1.');
+        $this->travel(1)->days();
+        $this->artisan('loyalty:remind')->expectsOutput('Wysłane przypomnienia: 1.');
+
+        $this->assertSame(2, EmailMessage::count());
     }
 
     public function test_each_lot_is_reminded_only_once(): void

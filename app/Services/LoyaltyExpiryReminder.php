@@ -13,8 +13,10 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Przypomnienie „punkty wkrótce wygasną" — raz dziennie z crona
- * (`loyalty:remind`). Jeden mail na klienta: suma punktów z porcji, które
- * wygasają w ciągu `loyalty.reminder_days`, i najbliższa data. Porcje
+ * (`loyalty:remind`). Jeden mail na klienta i na DZIEŃ WYGAŚNIĘCIA (reguła
+ * Rafała 07.10): porcje wygasające tego samego dnia sumujemy w jedną
+ * wiadomość, różne dni dostają osobne maile — także wtedy, gdy złapią się
+ * w tym samym przebiegu (przerwa crona, pierwsze uruchomienie). Porcje
  * oznaczamy jako przypomniane w tej samej transakcji co mail, więc powtórka
  * komendy nikomu nie wyśle drugiego.
  *
@@ -34,12 +36,17 @@ class LoyaltyExpiryReminder
             ->whereNull('expiry_notified_at')
             ->where('available_at', '<=', now())
             ->where('expires_at', '>', now())
-            ->where('expires_at', '<=', now()->addDays((int) config('loyalty.reminder_days')))
+            // Dni kalendarzowe, nie sekundy: porcja wygasa o 23:59:59 swojego dnia,
+            // więc porównanie z „teraz + 14 dni" co do sekundy przesuwałoby
+            // przypomnienie na 13. dzień przed terminem.
+            ->where('expires_at', '<=', now()->addDays((int) config('loyalty.reminder_days'))->endOfDay())
             ->get();
 
         $sent = 0;
 
-        foreach ($lots->groupBy(fn (LoyaltyEntry $lot): string => $lot->shop_id.'|'.$lot->email) as $group) {
+        $groups = $lots->groupBy(fn (LoyaltyEntry $lot): string => $lot->shop_id.'|'.$lot->email.'|'.$lot->expires_at->toDateString());
+
+        foreach ($groups as $group) {
             $sent += $this->remind($group) ? 1 : 0;
         }
 
@@ -47,7 +54,7 @@ class LoyaltyExpiryReminder
     }
 
     /**
-     * @param  Collection<int, LoyaltyEntry>  $lots  porcje jednego klienta w jednym sklepie
+     * @param  Collection<int, LoyaltyEntry>  $lots  porcje jednego klienta, jednego sklepu, jednego dnia
      */
     private function remind(Collection $lots): bool
     {
