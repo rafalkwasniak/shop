@@ -146,9 +146,9 @@
                 </div>
                 @endif
 
-                {{-- Punkty za zakupy: osobna karta, jak kod rabatowy. TU klient pierwszy
-                     raz widzi wartość punktów w zł — i tylko tu, bo musi znać cenę
-                     końcową (decyzja Rafała 07.10: poza koszykiem same punkty). Ile
+                {{-- Punkty za zakupy: osobna karta, jak kod rabatowy. Wartość w zł klient
+                     widzi dopiero w PODSUMOWANIU, po kliknięciu „Użyj" — bo musi znać
+                     cenę końcową (decyzja Rafała 07.10: poza tym same punkty). Ile
                      punktów, liczy LoyaltyLedger::redeemable() — saldo, minimum i limit
                      sklepu, a po punktach zostaje co najmniej loyalty.min_payable. --}}
                 @if ($loyalty !== null)
@@ -166,7 +166,9 @@
                             @else
                                 <button type="button" wire:click="usePoints"
                                     class="st-border mt-4 w-full rounded-full border px-4 py-2.5 text-sm font-semibold transition hover:brightness-95">
-                                    Użyj {{ $loyalty->points }} pkt (−{{ \App\Support\Money::pln($loyalty->amount) }})
+                                    {{-- Bez kwoty w zł (decyzja Rafała 07.10) — pokazuje się
+                                         w podsumowaniu dopiero po kliknięciu. --}}
+                                    Użyj {{ $loyalty->points }} pkt
                                 </button>
                             @endif
                             @if ($loyalty->points < $loyalty->balance)
