@@ -47,6 +47,8 @@ metadata:
 
 - **START 07.10 wieczór:** włącznik `loyalty_enabled` w sekcji Ustawień (wyłączenie zatrzymuje naliczanie, strona zasad zostaje); sklep bez uprawnienia widzi w Ustawieniach `x-seller.locked-feature` („Punkty za zakupy w pakiecie Pawilon”); `config/shop.php`: **pavilion + dedicated = true**, stall/booth false; `PackageFeatures`: klucz w `forShop`, etykieta „Punkty za zakupy dla klientów” (z `?? false` dla starych snapshotów), kafelek 🪙 w `highlights()`. **Na produkcji WSZYSTKIE 12 sklepów są na Kramie** → realnie punkty ma tylko Lemoniady (ręcznie). `packages:sync-entitlements` w podglądzie chce dopisać 11 sklepom `false` (efekt zerowy) → NIE uruchamiane, za zgodą Rafała do decyzji. Suita 1941.
 
+- **Karta „Punkty” na stronie zamówienia w panelu sprzedawcy (07.10):** te same wpisy co u klienta (`LoyaltyLedger::forOrder`) + „Saldo klienta: X pkt” z odnośnikiem do kartoteki; tylko gdy zamówienie ma wpisy. Statyczny Blade — po zmianie statusu w Livewire odświeży się dopiero po przeładowaniu strony.
+
 **PLAN (historyczny, wykonany):** uprawnienie `loyalty_points` dodane od razu, ale FALSE we WSZYSTKICH pakietach (także Pawilonie); Rafał włącza je ręcznie tylko Lemoniadom. Funkcja rośnie po cichu, sprzedawcy zobaczą ją dopiero kompletną.
 - **A** (1 sesja): uprawnienie w ShopManager (+ PackageFeatures, SyncPackageEntitlements) + sekcja „Punkty” w Ustawieniach (z checkboxem przeliczenia przy zmianie wartości) + strona „Zasady punktów” (domyślna treść z ustawień, edytowalna, nieusuwalna przy włączonych). Włączenie wymaga zasad.
 - **B** (1): karta produktu „dostaniesz X pkt”, zakładka Punkty w Moim koncie, mail o realizacji z punktami i zachętą do konta dla gościa. Potem Rafał składa prawdziwe zamówienie w Lemoniadach.

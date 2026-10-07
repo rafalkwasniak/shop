@@ -10,6 +10,42 @@
                  są niższe niż pierwotnie. Karta sama się chowa, gdy zwrotów nie ma. --}}
             <livewire:seller.order-returns :order="$order" />
 
+            {{-- Punkty tego zamówienia — te same wpisy, które klient widzi przy
+                 zamówieniu w „Moim koncie". Panel pokazuje też bieżące saldo
+                 klienta z odnośnikiem do kartoteki (historia i korekta). --}}
+            @if ($loyaltyEntries->isNotEmpty())
+                <div class="rounded-3xl border border-white/60 bg-white/70 p-6 backdrop-blur">
+                    <div class="flex flex-wrap items-baseline justify-between gap-3">
+                        <h2 class="font-semibold text-stone-900">Punkty</h2>
+                        <a href="{{ route('seller.customers.show', ['email' => mb_strtolower(trim($order->buyer_email))]) }}"
+                            class="text-sm font-medium text-stone-500 underline decoration-amber-300 underline-offset-2 hover:text-stone-800">
+                            Saldo klienta: <span class="tabular-nums">{{ $customerPoints }} pkt</span>
+                        </a>
+                    </div>
+                    <ul class="mt-4 space-y-2">
+                        @foreach ($loyaltyEntries as $entry)
+                            <li class="flex items-start justify-between gap-3 text-sm">
+                                <div class="min-w-0">
+                                    <p class="text-stone-700">{{ $entry->type->label() }}</p>
+                                    <p class="text-xs text-stone-400">
+                                        {{ $entry->created_at->format('d.m.Y') }}
+                                        @if ($entry->points > 0 && $entry->available_at)
+                                            @if ($entry->available_at->isFuture())
+                                                · dostępne od {{ $entry->available_at->format('d.m.Y') }}
+                                            @endif
+                                            @if ($entry->expires_at)
+                                                · ważne do {{ $entry->expires_at->format('d.m.Y') }}
+                                            @endif
+                                        @endif
+                                    </p>
+                                </div>
+                                <span class="shrink-0 font-semibold tabular-nums {{ $entry->points >= 0 ? 'text-emerald-700' : 'text-rose-700' }}">{{ $entry->points > 0 ? '+' : '' }}{{ $entry->points }} pkt</span>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
             @if (filled($order->note))
                 <div class="rounded-3xl border border-white/60 bg-white/70 p-6 backdrop-blur">
                     <h2 class="font-semibold text-stone-900">Uwagi klienta</h2>

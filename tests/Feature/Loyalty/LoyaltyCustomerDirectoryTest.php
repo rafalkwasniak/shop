@@ -3,6 +3,7 @@
 namespace Tests\Feature\Loyalty;
 
 use App\Enums\LoyaltyEntryType;
+use App\Enums\OrderStatus;
 use App\Models\LoyaltyEntry;
 use App\Models\Order;
 use App\Models\Shop;
@@ -126,6 +127,34 @@ class LoyaltyCustomerDirectoryTest extends TestCase
         $this->actingAs($other)
             ->post(route('seller.customers.points', ['email' => 'anna@example.com']), ['points' => '100', 'note' => 'x'])
             ->assertNotFound();
+    }
+
+    public function test_seller_order_page_shows_points_of_that_order(): void
+    {
+        [$seller, $shop] = $this->seller();
+        $order = Order::factory()->create([
+            'shop_id' => $shop->id, 'buyer_email' => 'Anna@Example.com',
+            'status' => OrderStatus::Completed, 'items_total' => 100,
+        ]);
+        $this->ledger->award($order);
+
+        $this->actingAs($seller)->get(route('seller.orders.show', $order))
+            ->assertOk()
+            ->assertSee('Za zakup')
+            ->assertSee('+500 pkt')
+            ->assertSee('dostępne od')
+            ->assertSee('Saldo klienta')
+            ->assertSee(route('seller.customers.show', ['email' => 'anna@example.com']), false);
+    }
+
+    public function test_seller_order_page_without_points_has_no_points_card(): void
+    {
+        [$seller, $shop] = $this->seller();
+        $order = Order::factory()->create(['shop_id' => $shop->id, 'buyer_email' => 'anna@example.com']);
+
+        $this->actingAs($seller)->get(route('seller.orders.show', $order))
+            ->assertOk()
+            ->assertDontSee('Saldo klienta');
     }
 
     public function test_bulk_balances_match_single_balance(): void

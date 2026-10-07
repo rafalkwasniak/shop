@@ -6,6 +6,7 @@ use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Shop;
+use App\Services\LoyaltyLedger;
 use App\Services\Shipping\CourierPickup;
 use App\Services\Shipping\ShipxClient;
 use Illuminate\Contracts\Support\Renderable;
@@ -96,12 +97,18 @@ class OrderController extends Controller
         ]);
     }
 
-    public function show(Request $request, Order $order): Renderable
+    public function show(Request $request, Order $order, LoyaltyLedger $ledger): Renderable
     {
         $this->authorizeOrder($request, $order);
+        $loyaltyEntries = $ledger->forOrder($order);
 
         return view('seller.orders.show', [
             'order' => $order->load('items'),
+            // Punkty tego zamówienia + bieżące saldo klienta (karta tylko, gdy są wpisy).
+            'loyaltyEntries' => $loyaltyEntries,
+            'customerPoints' => $loyaltyEntries->isNotEmpty()
+                ? $ledger->balance($order->shop, $order->buyer_email)
+                : null,
             // Kontekst listy (filtry + sort + strona) z query stringa — do „Wróć do listy".
             'listQuery' => $this->listQuery($request),
         ]);
