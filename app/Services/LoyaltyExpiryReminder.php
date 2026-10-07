@@ -115,7 +115,7 @@ class LoyaltyExpiryReminder
         }
 
         if ($collectsMore) {
-            $intro[] = 'A przy okazji zbierzesz nowe punkty: za część zamówienia zapłaconą pieniędzmi dostaniesz kolejne — na następne zakupy.';
+            $intro[] = 'A przy okazji zbierzesz nowe punkty: za opłaconą część zamówienia dostaniesz kolejne — na następne zakupy.';
         }
 
         $outro = $activated
