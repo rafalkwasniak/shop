@@ -28,7 +28,7 @@
 - [BACKUP Etap 1+3 wdrożone](open-no-file-backups.md) — kopie 2×/dobę, odtworzenie przećwiczone. Etap 2 (poza serwerem) otwarty.
 - [ZROBIONE: crony ursalogic](disabled-ursalogic-queue-crons.md) — fix `low --max-time=55` WSTRZYMANY do nowego serwera.
 - [ROZEZNANE: Przelewy24](plan-przelewy24-payments.md) — ZERO kodu; obowiązkowy `verify` po webhooku.
-- [W TOKU: punkty za zakupy](idea-loyalty-points.md) — 07.10 kroki silnik/A/B/C wdrożone, działa TYLKO w Lemoniadach (bez włącznika dla sprzedawcy). Zostaje D + start. **Klientowi same punkty, bez zł.**
+- [WDROŻONE: punkty za zakupy](idea-loyalty-points.md) — 07.10 start w Pawilonie (włącznik, landing, mail o wygasaniu, kartoteka). **Klientowi same punkty, bez zł.** Zostało: przeklikanie + księgowy.
 - [ODŁOŻONE: sklep na cudzej stronie](plan-embed-shop-on-external-site.md) — ZERO kodu; iframe odpada.
 - [DZIAŁA: zakup pakietu online](plan-package-payments.md) — **NIE planować jako „do zrobienia".**
 - [Panel admina — KOMPLETNY](plan-admin-panel-and-landing.md) · [Wiadomości do sprzedawców](plan-platform-mailing.md) — adresaci TYLKO przez `User::activeMarketingConsent()`.
@@ -120,7 +120,7 @@
 - [Shipping aggregator](shipping-aggregator-idea.md) — **ZAMKNIĘTE: Furgonetka WYPADA.**
 
 ## Handoffy (najnowsze u góry)
-- [10-07 punkty za zakupy A–C](handoff-2026-10-07.md) — 1852→1924. **Tylko Lemoniady; został krok D + start. `confirm()` w panelu zakazany; mail nie może zależeć od punktów.**
+- [10-07 punkty za zakupy — od szkicu do startu](handoff-2026-10-07.md) — 1852→1943. **Temat zamknięty; wszystkie sklepy na Kramie, więc punkty realnie tylko w Lemoniadach. `confirm()` w panelu zakazany; mail nie może zależeć od punktów.**
 - [10-03 2FA kodem z maila](handoff-2026-10-03.md) — 1834→1852. **Safari podstawia kod. `Artisan::call` z WWW = exec() zablokowany.**
 - [10-01 mail o kopiowaniu + AI u admina](handoff-2026-10-01.md) — 1832→1834. **„Chwilowo niedostępna” maskowało 403 (admin bez sklepu); front pokazuje teraz treść 4xx.**
 - [09-30 pakiet spoza oferty + szum testów w logach](handoff-2026-09-30.md) — 1824→1832. **Gardy weryfikować przez WYŁĄCZENIE.** Przegląd kodu pracowników wciąż wisi.
