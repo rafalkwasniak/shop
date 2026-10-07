@@ -28,6 +28,7 @@
 - [BACKUP Etap 1+3 wdrożone](open-no-file-backups.md) — kopie 2×/dobę, odtworzenie przećwiczone. Etap 2 (poza serwerem) otwarty.
 - [ZROBIONE: crony ursalogic](disabled-ursalogic-queue-crons.md) — fix `low --max-time=55` WSTRZYMANY do nowego serwera.
 - [ROZEZNANE: Przelewy24](plan-przelewy24-payments.md) — ZERO kodu; obowiązkowy `verify` po webhooku.
+- [W TOKU: punkty za zakupy](idea-loyalty-points.md) — 07.10 silnik `LoyaltyLedger` wdrożony, ale NIC go nie wywołuje. Dalej: P1 widoki. Dla Kramio, NIE pod klienta.
 - [ODŁOŻONE: sklep na cudzej stronie](plan-embed-shop-on-external-site.md) — ZERO kodu; iframe odpada.
 - [DZIAŁA: zakup pakietu online](plan-package-payments.md) — **NIE planować jako „do zrobienia".**
 - [Panel admina — KOMPLETNY](plan-admin-panel-and-landing.md) · [Wiadomości do sprzedawców](plan-platform-mailing.md) — adresaci TYLKO przez `User::activeMarketingConsent()`.

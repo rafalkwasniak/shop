@@ -45,6 +45,8 @@ use Illuminate\Support\Facades\DB;
     'shipment_sending_method',
     'courier_parcel_length_cm', 'courier_parcel_width_cm', 'courier_parcel_height_cm', 'courier_parcel_weight_kg',
     'package', 'entitlements', 'price_yearly', 'subscription_ends_at', 'comped',
+    'loyalty_enabled', 'loyalty_earn_percent', 'loyalty_point_value', 'loyalty_validity_months',
+    'loyalty_delay_days', 'loyalty_max_redeem_percent', 'loyalty_min_redeem_points',
 ])]
 class Shop extends Model
 {
@@ -85,6 +87,13 @@ class Shop extends Model
             'comped' => 'boolean',
             'deletion_scheduled_at' => 'datetime',
             'unseen_orders_count' => 'integer',
+            'loyalty_enabled' => 'boolean',
+            'loyalty_earn_percent' => 'decimal:2',
+            'loyalty_point_value' => 'decimal:2',
+            'loyalty_validity_months' => 'integer',
+            'loyalty_delay_days' => 'integer',
+            'loyalty_max_redeem_percent' => 'integer',
+            'loyalty_min_redeem_points' => 'integer',
         ];
     }
 
@@ -1630,5 +1639,22 @@ class Shop extends Model
     public function packageName(): string
     {
         return config("shop.packages.{$this->package}.name", $this->package);
+    }
+
+    /**
+     * Po ilu dniach od realizacji zamówienia punkty stają się dostępne. Bez
+     * własnego ustawienia sprzedawcy — tyle, ile trwa okno zwrotu (14 dni +
+     * zapas na dostawę), żeby punkty za zwrócony towar nie zdążyły zostać wydane.
+     */
+    public function loyaltyDelayDays(): int
+    {
+        return $this->loyalty_delay_days
+            ?? (int) config('legal.withdrawal.days') + (int) config('legal.withdrawal.delivery_buffer_days');
+    }
+
+    /** Wartość jednego punktu w złotych. */
+    public function loyaltyPointValue(): float
+    {
+        return (float) ($this->loyalty_point_value ?? config('loyalty.default_point_value'));
     }
 }
