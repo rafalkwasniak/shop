@@ -10,8 +10,9 @@ use Illuminate\Foundation\Http\FormRequest;
  * sekcję widzi tylko sklep z uprawnieniem, a jej reguły nie mają prawa
  * blokować zapisu dostawy czy płatności.
  *
- * Włącznika tu NIE MA (decyzja Rafała 07.10) — punkty włącza na razie zespół
- * Kramio. Zmiana wartości punktu przy istniejących saldach wymaga wyraźnego
+ * Włącznik `loyalty_enabled` zatrzymuje albo wznawia NALICZANIE — zebrane
+ * punkty klienci wykorzystają do końca ważności także po wyłączeniu.
+ * Zmiana wartości punktu przy istniejących saldach wymaga wyraźnego
  * potwierdzenia, bo przelicza punkty wszystkich klientów sklepu.
  */
 class LoyaltySettingsRequest extends FormRequest
@@ -31,6 +32,7 @@ class LoyaltySettingsRequest extends FormRequest
             'loyalty_max_redeem_percent' => $this->normalize($this->input('loyalty_max_redeem_percent')),
             'loyalty_min_redeem_points' => $this->normalize($this->input('loyalty_min_redeem_points')),
             'confirm_revaluation' => $this->boolean('confirm_revaluation'),
+            'loyalty_enabled' => $this->boolean('loyalty_enabled'),
         ]);
     }
 
@@ -57,6 +59,7 @@ class LoyaltySettingsRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'loyalty_enabled' => ['boolean'],
             'loyalty_earn_percent' => ['required', 'numeric', 'min:0.1', 'max:50'],
             'loyalty_point_value' => ['required', 'numeric', 'decimal:0,2', 'min:'.config('loyalty.point_value_min'), 'max:'.config('loyalty.point_value_max')],
             'loyalty_delay_days' => ['nullable', 'integer', 'min:0', 'max:365'],

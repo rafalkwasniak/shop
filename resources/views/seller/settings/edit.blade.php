@@ -529,9 +529,18 @@
             </form>
 
             {{-- Punkty za zakupy — OSOBNY formularz (inna trasa, własna walidacja),
-                 widoczny tylko z uprawnieniem `loyalty_points`. Włącznika celowo
-                 nie ma: punkty włącza na razie zespół Kramio (decyzja Rafała 07.10). --}}
-            @if ($shop->entitlement('loyalty_points'))
+                 widoczny tylko z uprawnieniem `loyalty_points`. Bez uprawnienia —
+                 zachęta z nazwą pakietu, jak przy kodach rabatowych. --}}
+            @if (! $shop->entitlement('loyalty_points'))
+                <div class="mt-6 rounded-3xl border border-white/60 bg-white/70 p-6 backdrop-blur">
+                    <h2 class="font-semibold text-stone-900">Punkty za zakupy</h2>
+                    <div class="mt-4">
+                        <x-seller.locked-feature feature="loyalty_points" icon="🪙" title="Punkty za zakupy" :shop="$shop">
+                            Klienci zbierają punkty za każde zamówienie i wymieniają je na rabat przy kolejnych zakupach — powód, żeby wrócili właśnie do Ciebie.
+                        </x-seller.locked-feature>
+                    </div>
+                </div>
+            @else
                 @php($inputClass = 'block w-full rounded-2xl border border-stone-200 bg-white/80 px-4 py-3 text-sm shadow-sm transition focus:border-amber-500 focus:outline-none focus:ring-4 focus:ring-amber-500/15')
                 @php($percentValue = old('loyalty_earn_percent', $shop->loyalty_earn_percent !== null ? \App\Support\LoyaltyRules::percent((float) $shop->loyalty_earn_percent) : ''))
                 @php($pointValue = old('loyalty_point_value', number_format($shop->loyaltyPointValue(), 2, ',', '')))
@@ -544,16 +553,23 @@
                         <h2 class="font-semibold text-stone-900">Punkty za zakupy</h2>
                         <p class="mt-1 text-sm text-stone-500">Klienci zbierają punkty za zrealizowane zamówienia i wymieniają je na rabat przy kolejnych zakupach.</p>
 
-                        @if ($shop->loyalty_enabled)
-                            <p class="mt-4 rounded-2xl bg-white px-4 py-3 text-sm text-stone-700">
-                                <span class="font-medium text-stone-900">Punkty są włączone.</span>
+                        {{-- Włącznik — ten sam wzór co przełączniki dostawy i płatności.
+                             Wyłączenie zatrzymuje NALICZANIE; zebrane punkty klienci
+                             wykorzystają do końca ważności (decyzja Rafała 06.10). --}}
+                        <div class="mt-6 flex items-start gap-4 rounded-2xl border border-stone-200 bg-white/60 p-5 sm:p-6">
+                            <input type="hidden" name="loyalty_enabled" value="0">
+                            <input type="checkbox" id="loyalty_enabled" name="loyalty_enabled" value="1"
+                                @checked(old('loyalty_enabled', $shop->loyalty_enabled))
+                                class="mt-0.5 h-5 w-5 shrink-0 rounded-md border-stone-300 text-amber-600 focus:ring-4 focus:ring-amber-500/20">
+                            <label for="loyalty_enabled" class="flex-1 cursor-pointer">
+                                <span class="block text-sm font-medium text-stone-800">Włącz punkty za zakupy</span>
+                                <span class="mt-0.5 block text-sm text-stone-500">Po włączeniu klienci dostają punkty za zrealizowane zamówienia, a w sklepie pojawia się strona „Zasady punktów".</span>
                                 @if ($loyaltyRulesPage)
-                                    Klienci widzą je opisane na stronie <a href="{{ route('seller.pages.edit', $loyaltyRulesPage) }}" class="font-medium underline decoration-amber-300 underline-offset-2">Zasady punktów</a>.
+                                    <a href="{{ route('seller.pages.edit', $loyaltyRulesPage) }}" class="mt-1 inline-block text-sm font-medium text-stone-700 underline decoration-amber-300 underline-offset-2">Edytuj zasady punktów</a>
                                 @endif
-                            </p>
-                        @else
-                            <p class="mt-4 rounded-2xl bg-white px-4 py-3 text-sm text-stone-700">Punkty są wyłączone. Ustawienia możesz przygotować już teraz.</p>
-                        @endif
+                                <span class="mt-1.5 block text-xs text-stone-400">Wyłączenie zatrzymuje naliczanie nowych punktów. Zebrane klienci wykorzystają do końca ich ważności.</span>
+                            </label>
+                        </div>
 
                         {{-- Przelicznik na żywo (Alpine): to samo liczenie co LoyaltyLedger::pointsFromBase —
                              grosze na liczbach całkowitych, ułamek punktu przepada. Bez JS zostaje

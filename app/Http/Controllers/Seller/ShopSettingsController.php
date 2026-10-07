@@ -107,6 +107,7 @@ class ShopSettingsController extends Controller
 
         DB::transaction(function () use ($shop, $data, $ledger): void {
             $shop->fill([
+                'loyalty_enabled' => $data['loyalty_enabled'],
                 'loyalty_earn_percent' => $data['loyalty_earn_percent'],
                 'loyalty_delay_days' => $data['loyalty_delay_days'],
                 'loyalty_validity_months' => $data['loyalty_validity_months'],

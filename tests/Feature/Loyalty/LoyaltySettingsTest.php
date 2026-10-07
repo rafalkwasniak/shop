@@ -7,6 +7,7 @@ use App\Models\Shop;
 use App\Models\User;
 use App\Services\LoyaltyLedger;
 use App\Support\LoyaltyRules;
+use App\Support\PackageFeatures;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -33,6 +34,7 @@ class LoyaltySettingsTest extends TestCase
     private function form(array $overrides = []): array
     {
         return array_merge([
+            'loyalty_enabled' => '1',
             'loyalty_earn_percent' => '3,5',
             'loyalty_point_value' => '0.01',
             'loyalty_delay_days' => '30',
@@ -42,22 +44,49 @@ class LoyaltySettingsTest extends TestCase
         ], $overrides);
     }
 
-    public function test_section_is_shown_only_with_the_entitlement_and_has_no_switch(): void
+    public function test_section_has_a_switch_and_shop_without_entitlement_sees_the_upsell(): void
     {
         [$seller] = $this->seller();
 
         $this->actingAs($seller)->get(route('seller.settings.edit'))
             ->assertOk()
-            ->assertSee('Punkty za zakupy')
-            ->assertSee('Punkty są włączone.')
-            ->assertDontSee('name="loyalty_enabled"', false);
+            ->assertSee('Włącz punkty za zakupy')
+            ->assertSee('name="loyalty_enabled"', false)
+            ->assertSee('name="loyalty_earn_percent"', false);
 
         [$other] = $this->seller(loyalty: false);
 
-        // Nazwa sekcji pada też w skrypcie ostrzeżenia, więc sprawdzamy sam formularz.
+        // Bez uprawnienia: zachęta z nazwą pakietu zamiast formularza.
         $this->actingAs($other)->get(route('seller.settings.edit'))
             ->assertOk()
+            ->assertSee('Punkty za zakupy w pakiecie Pawilon')
             ->assertDontSee('name="loyalty_earn_percent"', false);
+    }
+
+    public function test_turning_points_on_creates_rules_page_and_off_stops_earning(): void
+    {
+        [$seller, $shop] = $this->seller(settings: ['loyalty_enabled' => false]);
+
+        $this->actingAs($seller)->post(route('seller.settings.loyalty'), $this->form())->assertSessionHasNoErrors();
+        $this->assertTrue($shop->fresh()->loyaltyActive());
+        $this->assertSame(1, $shop->pages()->where('system_key', Page::LOYALTY_RULES)->count());
+
+        $this->actingAs($seller)->post(route('seller.settings.loyalty'), $this->form(['loyalty_enabled' => '0']))->assertSessionHasNoErrors();
+        $this->assertFalse($shop->fresh()->loyaltyActive());
+        // Strona zostaje — klienci dalej mają punkty do wykorzystania.
+        $this->assertSame(1, $shop->pages()->where('system_key', Page::LOYALTY_RULES)->count());
+    }
+
+    public function test_pavilion_grants_points_and_landing_describes_them(): void
+    {
+        $this->assertTrue(config('shop.packages.pavilion.entitlements.loyalty_points'));
+        $this->assertFalse(config('shop.packages.booth.entitlements.loyalty_points'));
+
+        $tile = collect(PackageFeatures::highlights())->firstWhere('requires', 'loyalty_points');
+        $this->assertSame('Punkty za zakupy', $tile['title']);
+
+        $pavilion = Shop::factory()->create(['package' => 'pavilion', 'entitlements' => config('shop.packages.pavilion.entitlements')]);
+        $this->assertContains('Punkty za zakupy dla klientów', PackageFeatures::forShop($pavilion));
     }
 
     public function test_shop_without_entitlement_cannot_save_loyalty_settings(): void

@@ -248,6 +248,13 @@ class PackageFeatures
                 'requires' => 'discount_codes',
             ],
             [
+                // Dopisane w dniu startu funkcji (07.10), nie na zapas.
+                'icon' => '🪙',
+                'title' => 'Punkty za zakupy',
+                'description' => 'Daj klientom powód, żeby wracali właśnie do Ciebie. Za każde zamówienie zbierają punkty i wymieniają je na rabat przy kolejnych zakupach — Ty decydujesz, ile wraca, jak długo punkty są ważne i ile można wykorzystać naraz.',
+                'requires' => 'loyalty_points',
+            ],
+            [
                 'icon' => '📣',
                 'title' => 'Wiadomości do klientów',
                 'description' => 'Napisz o nowościach do klientów, którzy się zgodzili — z kartą produktu w mailu i linkiem wypisu.',
@@ -286,7 +293,7 @@ class PackageFeatures
      */
     public static function forShop(Shop $shop, bool $raw = false): array
     {
-        $keys = ['max_products', 'ai_weekly_limit', 'online_payments', 'courier_shipping', 'invoices', 'ga_analytics', 'order_editing', 'discount_codes', 'bulk_mail'];
+        $keys = ['max_products', 'ai_weekly_limit', 'online_payments', 'courier_shipping', 'invoices', 'ga_analytics', 'order_editing', 'discount_codes', 'loyalty_points', 'bulk_mail'];
 
         $entitlements = array_combine(
             $keys,
@@ -331,6 +338,8 @@ class PackageFeatures
             'analytics' => $entitlements['ga_analytics'] ? 'Google Analytics i Tag Manager' : null,
             'order_editing' => $entitlements['order_editing'] ? 'Edycja zamówień' : null,
             'discount_codes' => $entitlements['discount_codes'] ? 'Kody rabatowe w koszyku' : null,
+            // `?? false` — sklep ze starym snapshotem uprawnień może nie mieć klucza.
+            'loyalty_points' => ($entitlements['loyalty_points'] ?? false) ? 'Punkty za zakupy dla klientów' : null,
             'bulk_mail' => $entitlements['bulk_mail'] ? 'Wiadomości do klientów' : null,
             // Liczba miejsc jest w etykiecie z tego samego powodu co przy puli
             // AI: „Konta pracowników" bez liczby nie mówi kupującemu, czy
