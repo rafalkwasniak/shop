@@ -79,6 +79,7 @@
 - [Blade: blok @php psuje @php(...)](blade-php-block-breaks-inline-php.md) — rozwala CAŁY widok.
 - [Blade: `@if` przyklejone do słowa](blade-directive-glued-to-word-not-compiled.md) — cały widok 500. **Trafione 2×.**
 - [NIGDY zmiennej widoku `$errors`](blade-never-name-view-variable-errors.md) — nadpisuje worek walidacji.
+- [`<form>` w `<p>` rozbija układ](gotcha-form-inside-paragraph.md) — przeglądarka wyrzuca formularz z akapitu. **„Ciasteczka” to formularz → kontener `div`.**
 - [Test: post() + get() gubi flash](gotcha-test-flash-lost-between-requests.md) — `from()` + `followingRedirects()`.
 - [InPost pobranie: `company_data_missing`](gotcha-inpost-cod-requires-company-data.md) — patrzeć na transakcje, nie na status.
 - [Klucz `stall` to Kram, nie Stragan](gotcha-package-key-stall-is-kram.md) — Stragan to `booth`.
@@ -120,7 +121,7 @@
 - [Shipping aggregator](shipping-aggregator-idea.md) — **ZAMKNIĘTE: Furgonetka WYPADA.**
 
 ## Handoffy (najnowsze u góry)
-- [10-07 punkty za zakupy — od szkicu do startu](handoff-2026-10-07.md) — 1852→1948. **Temat zamknięty (z własną liczbą punktów w koszyku); wszystkie sklepy na Kramie, więc punkty realnie tylko w Lemoniadach. `confirm()` w panelu zakazany; mail nie może zależeć od punktów.**
+- [10-07 punkty za zakupy — od szkicu do startu](handoff-2026-10-07.md) — 1852→1950. **Temat zamknięty (z własną liczbą punktów w koszyku); wszystkie sklepy na Kramie, więc punkty realnie tylko w Lemoniadach. `confirm()` w panelu zakazany; mail nie może zależeć od punktów.**
 - [10-03 2FA kodem z maila](handoff-2026-10-03.md) — 1834→1852. **Safari podstawia kod. `Artisan::call` z WWW = exec() zablokowany.**
 - [10-01 mail o kopiowaniu + AI u admina](handoff-2026-10-01.md) — 1832→1834. **„Chwilowo niedostępna” maskowało 403 (admin bez sklepu); front pokazuje teraz treść 4xx.**
 - [09-30 pakiet spoza oferty + szum testów w logach](handoff-2026-09-30.md) — 1824→1832. **Gardy weryfikować przez WYŁĄCZENIE.** Przegląd kodu pracowników wciąż wisi.
