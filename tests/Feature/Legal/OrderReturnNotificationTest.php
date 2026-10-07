@@ -167,6 +167,22 @@ class OrderReturnNotificationTest extends TestCase
             ->assertSee('/zwrot/', false);
     }
 
+    public function test_account_order_page_hides_empty_return_card_after_deadline(): void
+    {
+        $item = $this->orderWithItem();
+        $order = $item->order;
+        $customer = Customer::factory()->create(['shop_id' => $order->shop_id, 'email' => $order->buyer_email]);
+        $order->update(['customer_id' => $customer->id]);
+
+        // Towar wydany, termin minął, nic nie zgłoszono — karta nie miałaby treści.
+        $this->travel(60)->days();
+
+        $this->actingAs($customer, 'customer')
+            ->get($this->base($order->shop).'/moje-konto/zamowienia/'.$order->id)
+            ->assertOk()
+            ->assertDontSee('st-box-title">Zwrot</h2>', false);
+    }
+
     public function test_account_order_page_lists_reported_returns(): void
     {
         $item = $this->orderWithItem();

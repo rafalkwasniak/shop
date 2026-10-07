@@ -140,8 +140,12 @@
 
              Karta pokazuje się TAKŻE przed wydaniem towaru (gdy w zamówieniu jest
              cokolwiek objętego prawem odstąpienia): klient ma wiedzieć, że taka
-             droga istnieje i kiedy się otworzy, zamiast szukać jej na próżno. --}}
-        @php($returnsAhead = $order->hasWithdrawableItems() && ! $order->status->isTerminal())
+             droga istnieje i kiedy się otworzy, zamiast szukać jej na próżno.
+
+             Po wydaniu towaru i upływie terminu, bez zgłoszonych zwrotów, karty
+             NIE MA — nie miałaby żadnej treści (pusta ramka, zgłosił Rafał 07.10).
+             Dlatego „przed wydaniem" wymaga wprost, by towaru jeszcze nie wydano. --}}
+        @php($returnsAhead = $order->hasWithdrawableItems() && ! $order->status->isTerminal() && ! $order->hasBeenHandedOver())
         @if ($order->acceptsReturns() || $order->returns->isNotEmpty() || $returnsAhead)
             <div class="st-card st-border rounded-3xl border p-6">
                 <h2 class="st-brand st-box-title">Zwrot</h2>
