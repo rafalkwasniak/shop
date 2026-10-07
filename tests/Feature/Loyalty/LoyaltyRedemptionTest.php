@@ -151,10 +151,10 @@ class LoyaltyRedemptionTest extends TestCase
 
         Livewire::test(Cart::class, ['shopId' => $shop->id])
             ->assertSee('Masz')
-            ->assertSee('Użyj 1094 pkt')
+            ->assertSee('Wykorzystaj 1094 pkt')
             ->assertDontSee('−10,94 zł')
             ->call('usePoints')
-            ->assertSee('Używasz')
+            ->assertSee('Wykorzystujesz')
             ->assertSee('−10,94 zł')
             ->assertSee('28,86 zł')
             ->call('stopUsingPoints')
@@ -168,7 +168,7 @@ class LoyaltyRedemptionTest extends TestCase
 
         Livewire::test(Cart::class, ['shopId' => $shop->id])
             ->assertSee('Masz punkty?')
-            ->assertDontSee('Użyj');
+            ->assertDontSee('Wykorzystaj');
     }
 
     // ── Zamówienie ─────────────────────────────────────────────────────────

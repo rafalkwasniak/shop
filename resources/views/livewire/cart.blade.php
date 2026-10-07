@@ -147,7 +147,7 @@
                 @endif
 
                 {{-- Punkty za zakupy: osobna karta, jak kod rabatowy. Wartość w zł klient
-                     widzi dopiero w PODSUMOWANIU, po kliknięciu „Użyj" — bo musi znać
+                     widzi dopiero w PODSUMOWANIU, po kliknięciu „Wykorzystaj" — bo musi znać
                      cenę końcową (decyzja Rafała 07.10: poza tym same punkty). Ile
                      punktów, liczy LoyaltyLedger::redeemable() — saldo, minimum i limit
                      sklepu, a po punktach zostaje co najmniej loyalty.min_payable. --}}
@@ -159,20 +159,20 @@
                         @if ($loyalty->usable())
                             @if ($pointsApplied)
                                 <div class="mt-4 flex items-baseline justify-between gap-3">
-                                    <span class="min-w-0 text-sm">Używasz <strong>{{ $loyalty->points }} pkt</strong></span>
+                                    <span class="min-w-0 text-sm">Wykorzystujesz <strong>{{ $loyalty->points }} pkt</strong></span>
                                     <button type="button" wire:click="stopUsingPoints"
-                                        class="shrink-0 text-sm underline opacity-70 transition hover:opacity-100">Nie używaj</button>
+                                        class="shrink-0 text-sm underline opacity-70 transition hover:opacity-100">Nie wykorzystuj</button>
                                 </div>
                             @else
                                 <button type="button" wire:click="usePoints"
                                     class="st-border mt-4 w-full rounded-full border px-4 py-2.5 text-sm font-semibold transition hover:brightness-95">
                                     {{-- Bez kwoty w zł (decyzja Rafała 07.10) — pokazuje się
                                          w podsumowaniu dopiero po kliknięciu. --}}
-                                    Użyj {{ $loyalty->points }} pkt
+                                    Wykorzystaj {{ $loyalty->points }} pkt
                                 </button>
                             @endif
                             @if ($loyalty->points < $loyalty->balance)
-                                <p class="mt-3 text-xs opacity-60">W tym zamówieniu możesz użyć {{ $loyalty->points }} z {{ $loyalty->balance }} pkt — reszta zostanie na kolejne zakupy.</p>
+                                <p class="mt-3 text-xs opacity-60">W tym zamówieniu możesz wykorzystać {{ $loyalty->points }} z {{ $loyalty->balance }} pkt — reszta zostanie na kolejne zakupy.</p>
                             @endif
                         @else
                             <p class="mt-3 text-sm opacity-70">

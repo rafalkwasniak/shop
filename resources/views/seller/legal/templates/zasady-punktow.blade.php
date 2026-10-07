@@ -35,7 +35,7 @@
 
 <h2>Jak wykorzystać punkty</h2>
 <ol>
-    <li>Zaloguj się na swoje konto w sklepie i w koszyku zaznacz „Użyj punktów" — ich wartość odejmiemy od ceny produktów.</li>
+    <li>Zaloguj się na swoje konto w sklepie i w koszyku kliknij „Wykorzystaj" — ich wartość odejmiemy od ceny produktów.</li>
     <li>Przy zakupie punkty zamieniamy na rabat: {{ $redeemPhrase }}.</li>
     @if ($maxRedeem)
         <li>Punktami zapłacisz najwyżej {{ $maxRedeem }}% wartości produktów w zamówieniu.</li>
