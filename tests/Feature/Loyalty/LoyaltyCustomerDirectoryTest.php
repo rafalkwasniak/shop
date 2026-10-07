@@ -62,7 +62,21 @@ class LoyaltyCustomerDirectoryTest extends TestCase
             ->assertSee('300 pkt')
             ->assertSee('3,00 zł')
             ->assertSee('Powitanie')
-            ->assertSee('Korekta punktów');
+            ->assertSee('Korekta punktów')
+            ->assertSee('wygasa');
+    }
+
+    public function test_customer_without_points_sees_only_zero_without_rows(): void
+    {
+        [$seller, $shop] = $this->seller();
+        $this->ledger->adjust($shop, 'anna@example.com', 100);
+        $this->ledger->adjust($shop, 'anna@example.com', -100);
+
+        $this->actingAs($seller)->get(route('seller.customers.show', ['email' => 'anna@example.com']))
+            ->assertOk()
+            ->assertSee('0 pkt')
+            ->assertDontSee('Oczekujące')
+            ->assertDontSee('wygasa</dt>', false);
     }
 
     public function test_seller_can_add_and_subtract_points_with_a_note(): void

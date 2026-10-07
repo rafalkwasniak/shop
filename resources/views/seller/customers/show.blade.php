@@ -153,19 +153,28 @@
                 <div class="rounded-3xl border border-white/60 bg-white/70 p-6 backdrop-blur">
                     <h2 class="font-semibold text-stone-900">Punkty</h2>
                     <p class="mt-3 text-3xl font-semibold tracking-tight tabular-nums {{ $loyalty['balance'] < 0 ? 'text-rose-700' : 'text-stone-900' }}">{{ $loyalty['balance'] }} pkt</p>
-                    <p class="mt-1 text-sm text-stone-500">do wykorzystania</p>
-
-                    {{-- Wiersze jak w boxie „Podsumowanie": opis po lewej, wartość po prawej. --}}
-                    <dl class="mt-4 space-y-2 text-sm">
-                        <div class="flex justify-between gap-3">
-                            <dt class="text-stone-500">Wartość</dt>
-                            <dd class="font-medium tabular-nums text-stone-800">{{ \App\Support\Money::pln(max(0, $loyalty['balance']) * $shop->loyaltyPointValue()) }}</dd>
-                        </div>
-                        <div class="flex justify-between gap-3">
-                            <dt class="text-stone-500">Oczekujące</dt>
-                            <dd class="font-medium tabular-nums text-stone-800">{{ $loyalty['pending'] }} pkt</dd>
-                        </div>
-                    </dl>
+                    {{-- Wiersze jak w boxie „Podsumowanie": opis po lewej, wartość po prawej.
+                         Klient bez żadnych punktów — sam tytuł i „0 pkt", bez wierszy
+                         z zerami (Rafał 07.10). --}}
+                    @if ($loyalty['balance'] !== 0 || $loyalty['pending'] > 0)
+                        <p class="mt-1 text-sm text-stone-500">do wykorzystania</p>
+                        <dl class="mt-4 space-y-2 text-sm">
+                            <div class="flex justify-between gap-3">
+                                <dt class="text-stone-500">Wartość</dt>
+                                <dd class="font-medium tabular-nums text-stone-800">{{ \App\Support\Money::pln(max(0, $loyalty['balance']) * $shop->loyaltyPointValue()) }}</dd>
+                            </div>
+                            <div class="flex justify-between gap-3">
+                                <dt class="text-stone-500">Oczekujące</dt>
+                                <dd class="font-medium tabular-nums text-stone-800">{{ $loyalty['pending'] }} pkt</dd>
+                            </div>
+                            @if ($loyalty['nextExpiring'])
+                                <div class="flex justify-between gap-3">
+                                    <dt class="text-stone-500">{{ $loyalty['nextExpiring']->expires_at->format('d.m.Y') }} wygasa</dt>
+                                    <dd class="font-medium tabular-nums text-stone-800">{{ $loyalty['nextExpiring']->remaining }} pkt</dd>
+                                </div>
+                            @endif
+                        </dl>
+                    @endif
 
                     <form method="POST" action="{{ route('seller.customers.points', ['email' => $customer['email']]) }}" class="mt-5 space-y-3 border-t border-stone-100 pt-4" novalidate data-validate>
                         @csrf

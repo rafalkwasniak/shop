@@ -97,6 +97,7 @@ class CustomerController extends Controller
             'loyalty' => $ledger->visibleFor($shop, $profile['email']) ? [
                 'balance' => $ledger->balance($shop, $profile['email']),
                 'pending' => $ledger->pending($shop, $profile['email']),
+                'nextExpiring' => $ledger->nextExpiring($shop, $profile['email']),
                 'history' => $ledger->history($shop, $profile['email']),
             ] : null,
         ]);
