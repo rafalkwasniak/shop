@@ -5,10 +5,12 @@ namespace App\Models;
 use App\Enums\DeliveryMethod;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
+use App\Observers\OrderObserver;
 use App\Support\OrderFlow;
 use Carbon\CarbonInterface;
 use Database\Factories\OrderFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -24,6 +26,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * per-sklep prezentowany klientom; `shop_id` nie jest mass-assignable (tworzymy
  * przez relację sklepu). Usuwanie wyłącznie logiczne (SoftDeletes).
  */
+#[ObservedBy(OrderObserver::class)]
 #[Fillable([
     'number', 'customer_id', 'status',
     'buyer_name', 'buyer_surname', 'buyer_email', 'buyer_phone',

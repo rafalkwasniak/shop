@@ -5,11 +5,13 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 7092e827-f5de-4490-9ede-6b446045c5b5
-  modified: 2026-10-07T06:04:34.156Z
+  modified: 2026-10-07T08:21:53.370Z
 ---
 
 **Stan 2026-10-07: SILNIK WDROŻONY, NIEPODPIĘTY.** Rafał chciał krok, który „sam w sobie nic nie zepsuje”. Zrobione: `config/loyalty.php`, kolumny `shops.loyalty_*` (wszystko domyślnie wyłączone), tabele `loyalty_entries` + `loyalty_entry_usages`, `App\Services\LoyaltyLedger` (award / reconcile / spend / restore / adjust / balance / pending / expire), `LoyaltyEntryType`, `LoyaltyException`, testy `tests/Feature/Loyalty/LoyaltyLedgerTest.php` (15). Migracja ODPALONA na produkcji (0/12 sklepów z punktami). Suita 1852→1867.
-**NIC tego jeszcze nie wywołuje:** brak klucza uprawnienia, brak widoków, brak podpięcia pod `changeStatus`/`OrderReturnService`/cron. Następny krok = P1 widoki (uprawnienie + sekcja w Ustawieniach), potem podpięcia z P2.
+**07.10 (krok 2) PODPIĘCIA WDROŻONE:** `App\Observers\OrderObserver` (`#[ObservedBy]` na Order). Zrealizowane → `award`, Anulowane → `restore` + `reconcile`, spadek `items_total`/`discount_amount` (zwrot, edycja) → `reconcile`. Wszystko po commicie (`DB::afterCommit`), błąd tylko przez `report()`, NIGDY nie blokuje zamówienia. Komenda `loyalty:expire` codziennie o 06:30. Suita 1867→1874. W testach silnika zamówienie zapisywać `updateQuietly()`, inaczej obserwator wyprzedza jawne wywołanie.
+**Lemoniady (demo) mają punkty WŁĄCZONE** na prośbę Rafała: 5%, 1 pkt = 1 gr. Stare zamówienia NIE dostają punktów wstecz; porcja powstaje dopiero przy nowym przejściu w Zrealizowane (to wysyła klientowi maila o statusie, więc statusów nie ruszałem bez pytania).
+Dalej brak: klucza uprawnienia i widoków. Następny krok = P1 widoki (uprawnienie + sekcja w Ustawieniach) albo paragraf regulaminu.
 Decyzje z implementacji (do potwierdzenia przez Rafała przy P1): ważność liczona od DOSTĘPNOŚCI, do końca dnia; ułamek punktu przepada (floor); zwrot odbiera proporcjonalnie do spadku `base_amount` (nie od bieżącego %); wygasające punkty najpierw spłacają dług; dodatnia korekta dostępna od razu.
 
 **Kontekst:** funkcja jest dla Kramio ogólnie. Impulsem był klient ze starym sklepem z punktami, ale gdyby kupił, dostanie osobną kopię jak Magellan Bay ([[plan-magellan-bay-separate-project]]) i tam robimy jego ustępstwa. **Nie projektować pod tego klienta.**

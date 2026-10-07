@@ -94,3 +94,8 @@ if (config('backup.enabled')) {
 if (Mode::saas()) {
     Schedule::command('shops:purge')->dailyAt('06:20')->withoutOverlapping();
 }
+
+// Punkty za zakupy: wygaszanie przeterminowanych porcji. Rejestrowane w obu
+// trybach — punkty to funkcja sklepu, nie abonamentu. Gdy żaden sklep ich nie
+// używa, przebieg to jedno puste zapytanie.
+Schedule::command('loyalty:expire')->dailyAt('06:30')->withoutOverlapping();

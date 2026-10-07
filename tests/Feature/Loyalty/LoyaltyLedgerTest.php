@@ -17,6 +17,9 @@ use Tests\TestCase;
  * karencja, wydawanie od najwcześniej wygasających, oddawanie po anulowaniu,
  * odbieranie po zwrocie (z długiem), wygasanie. Tu pilnujemy liczb, na których
  * staną koszyk, konto klienta i panel sprzedawcy.
+ *
+ * Zmiany zamówienia zapisujemy `updateQuietly()`: inaczej `OrderObserver` sam
+ * wywołałby księgę i test nie sprawdzałby już tego, co woła jawnie.
  */
 class LoyaltyLedgerTest extends TestCase
 {
@@ -204,7 +207,7 @@ class LoyaltyLedgerTest extends TestCase
         $lot = $this->ledger->award($order);
 
         // Zwrot połowy: `items_total` maleje tak, jak po OrderTotals::recalculate().
-        $order->update(['items_total' => 50]);
+        $order->updateQuietly(['items_total' => 50]);
         // Sprzedawca zmienił procent w międzyczasie — odbieramy od kwoty, nie od nowego procentu.
         $shop->update(['loyalty_earn_percent' => 10]);
 
@@ -222,7 +225,7 @@ class LoyaltyLedgerTest extends TestCase
         $order = $this->order($shop);
         $this->ledger->award($order);
 
-        $order->update(['status' => OrderStatus::Cancelled]);
+        $order->updateQuietly(['status' => OrderStatus::Cancelled]);
 
         $this->assertSame(300, $this->ledger->reconcile($order));
         $this->assertSame(0, $this->ledger->pending($shop, 'jan@example.com'));
@@ -235,7 +238,7 @@ class LoyaltyLedgerTest extends TestCase
         $this->ledger->award($order, now()->subDays(30));
         $this->ledger->spend($this->order($shop, 10, ['status' => OrderStatus::New]), 'jan@example.com', 300);
 
-        $order->update(['items_total' => 0]);
+        $order->updateQuietly(['items_total' => 0]);
         $this->ledger->reconcile($order);
 
         $this->assertSame(-300, $this->ledger->balance($shop, 'jan@example.com'));
