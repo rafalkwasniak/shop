@@ -434,6 +434,31 @@ class LoyaltyLedger
         return LoyaltyEntry::query()->where('shop_id', $shop->id)->where('remaining', '!=', 0)->exists();
     }
 
+    /**
+     * Salda wszystkich klientów sklepu jednym zapytaniem — do listy kartoteki
+     * (pętla `balance()` po kliencie to zapytanie na wiersz). Ta sama definicja
+     * co `balance()`: dostępne, niewygasłe porcje plus dług. Klucz = e-mail.
+     *
+     * @return array<string, int>
+     */
+    public function balances(Shop $shop): array
+    {
+        $now = now();
+
+        return LoyaltyEntry::query()
+            ->where('shop_id', $shop->id)
+            ->where('remaining', '!=', 0)
+            ->groupBy('email')
+            ->selectRaw(
+                'email, SUM(CASE WHEN remaining < 0 THEN remaining'
+                .' WHEN available_at <= ? AND (expires_at IS NULL OR expires_at > ?) THEN remaining ELSE 0 END) AS balance',
+                [$now, $now],
+            )
+            ->pluck('balance', 'email')
+            ->map(fn ($balance): int => (int) $balance)
+            ->all();
+    }
+
     /** Punkty naliczone, ale jeszcze w karencji. */
     public function pending(Shop|int $shop, string $email): int
     {

@@ -58,6 +58,9 @@
                                             @if ($row['has_consent'])
                                                 <span class="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-800">zgoda</span>
                                             @endif
+                                            @if (($pointBalances[$row['email']] ?? 0) !== 0)
+                                                <span class="rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-medium tabular-nums text-stone-600">{{ $pointBalances[$row['email']] }} pkt</span>
+                                            @endif
                                         </p>
                                         <p class="mt-0.5 truncate text-sm font-medium text-stone-700">{{ $row['email'] }}</p>
                                         <p class="text-xs text-stone-400">

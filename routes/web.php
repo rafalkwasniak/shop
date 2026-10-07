@@ -450,6 +450,8 @@ Route::middleware(['auth', 'role:seller,employee', 'ensure.consents'])
             Route::get('/klienci', [CustomerController::class, 'index'])->name('customers.index');
             Route::get('/klienci/{email}', [CustomerController::class, 'show'])
                 ->where('email', '.*')->name('customers.show');
+            Route::post('/klienci/{email}/punkty', [CustomerController::class, 'adjustPoints'])
+                ->where('email', '.*')->name('customers.points');
         });
 
         // Kody rabatowe (funkcja płatna — uprawnienie `discount_codes`, Pawilon).

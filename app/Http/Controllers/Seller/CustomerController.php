@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\Seller;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Seller\LoyaltyAdjustmentRequest;
 use App\Services\CustomerDirectory;
+use App\Services\LoyaltyLedger;
 use Illuminate\Contracts\Support\Renderable;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -34,7 +37,7 @@ class CustomerController extends Controller
     /** Zamówień na stronę na karcie klienta — wiersz jest niski, więc mieści się więcej. */
     private const ORDERS_PER_PAGE = 15;
 
-    public function index(Request $request, CustomerDirectory $directory): Renderable
+    public function index(Request $request, CustomerDirectory $directory, LoyaltyLedger $ledger): Renderable
     {
         $shop = $request->user()->currentShop();
 
@@ -55,6 +58,9 @@ class CustomerController extends Controller
             // od „nic nie pasuje do filtrów", a to dwa różne komunikaty.
             'total' => $shop !== null ? $directory->all($shop)->count() : 0,
             'customers' => $this->paginate($request, $rows),
+            // Salda punktów całej listy jednym zapytaniem; pusta tablica, gdy
+            // sklep punktów nie ma — wtedy plakietek po prostu nie ma.
+            'pointBalances' => $shop !== null ? $ledger->balances($shop) : [],
             'sort' => $sort,
             'sorts' => self::SORTS,
             'search' => $search,
@@ -71,7 +77,7 @@ class CustomerController extends Controller
         ]);
     }
 
-    public function show(Request $request, string $email, CustomerDirectory $directory): Renderable
+    public function show(Request $request, string $email, CustomerDirectory $directory, LoyaltyLedger $ledger): Renderable
     {
         $shop = $request->user()->currentShop();
         $profile = $shop !== null ? $directory->profile($shop, $email) : null;
@@ -87,7 +93,34 @@ class CustomerController extends Controller
             // Zamówienia stronicowane osobno — stały klient może ich mieć
             // dziesiątki, a karta ma pozostać czytelna.
             'orders' => $this->paginate($request, collect($profile['orders']), self::ORDERS_PER_PAGE),
+            // Punkty klienta (null = sklep ich nie ma, a klient nie ma historii).
+            'loyalty' => $ledger->visibleFor($shop, $profile['email']) ? [
+                'balance' => $ledger->balance($shop, $profile['email']),
+                'pending' => $ledger->pending($shop, $profile['email']),
+                'history' => $ledger->history($shop, $profile['email']),
+            ] : null,
         ]);
+    }
+
+    /**
+     * Ręczna korekta punktów klienta. Tylko dla klienta z kartoteki tego sklepu
+     * i tylko tam, gdzie punkty są widoczne (sklep je nalicza albo klient ma
+     * historię) — ten sam warunek, co pokazanie karty punktów. Ujemna korekta
+     * może zejść poniżej zera; spłacą ją kolejne punkty klienta.
+     */
+    public function adjustPoints(LoyaltyAdjustmentRequest $request, string $email, CustomerDirectory $directory, LoyaltyLedger $ledger): RedirectResponse
+    {
+        $shop = $request->user()->currentShop();
+        $profile = $directory->profile($shop, $email);
+
+        abort_if($profile === null || ! $ledger->visibleFor($shop, $profile['email']), 404);
+
+        $points = (int) $request->validated('points');
+        $ledger->adjust($shop, $profile['email'], $points, $request->validated('note'));
+
+        return redirect()
+            ->route('seller.customers.show', ['email' => $profile['email']])
+            ->with('success', $points > 0 ? 'Dopisano '.$points.' pkt.' : 'Odjęto '.abs($points).' pkt.');
     }
 
     /**

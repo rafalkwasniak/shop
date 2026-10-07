@@ -40,6 +40,8 @@ metadata:
   - punkty naliczane od części zapłaconej pieniędzmi (`baseAmount` odejmuje `points_discount`).
   Testy `tests/Feature/Loyalty/LoyaltyRedemptionTest.php`. Suita 1909→1924. Do sprawdzenia z księgowym (wspomniane raz): punkty traktujemy jak rabat obniżający podstawę VAT.
 
+- **Krok D ZROBIONY (07.10 wieczór):** kartoteka klientów: plakietka salda na liście (`LoyaltyLedger::balances()`, jedno zapytanie GROUP BY e-mail, ta sama definicja co `balance()`), na karcie klienta box „Punkty” (saldo + wartość w zł dla sprzedawcy, oczekujące) z formularzem korekty (`seller.customers.points`, `LoyaltyAdjustmentRequest`: liczba ze znakiem, akceptuje „+500” i „−200”, opis OBOWIĄZKOWY, bo klient go widzi) + „Historia punktów” pod zamówieniami. Korekta tylko gdy `visibleFor()`, inaczej 404.
+
 **PLAN DALSZY (zaproponowany 07.10, czeka na start):** uprawnienie `loyalty_points` dodane od razu, ale FALSE we WSZYSTKICH pakietach (także Pawilonie); Rafał włącza je ręcznie tylko Lemoniadom. Funkcja rośnie po cichu, sprzedawcy zobaczą ją dopiero kompletną.
 - **A** (1 sesja): uprawnienie w ShopManager (+ PackageFeatures, SyncPackageEntitlements) + sekcja „Punkty” w Ustawieniach (z checkboxem przeliczenia przy zmianie wartości) + strona „Zasady punktów” (domyślna treść z ustawień, edytowalna, nieusuwalna przy włączonych). Włączenie wymaga zasad.
 - **B** (1): karta produktu „dostaniesz X pkt”, zakładka Punkty w Moim koncie, mail o realizacji z punktami i zachętą do konta dla gościa. Potem Rafał składa prawdziwe zamówienie w Lemoniadach.

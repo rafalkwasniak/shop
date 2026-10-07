@@ -42,6 +42,43 @@
                 @endif
             </div>
 
+            {{-- Historia punktów — te same wpisy, które klient widzi w „Moim koncie". --}}
+            @if ($loyalty !== null && $loyalty['history']->isNotEmpty())
+                <div class="rounded-3xl border border-white/60 bg-white/70 p-6 backdrop-blur">
+                    <h2 class="font-semibold text-stone-900">Historia punktów</h2>
+                    <p class="mt-1 text-sm text-stone-500">Od najnowszych. Klient widzi te same wpisy na swoim koncie.</p>
+                    <ul class="mt-5 space-y-2">
+                        @foreach ($loyalty['history'] as $entry)
+                            <li class="flex items-start justify-between gap-3 rounded-2xl border border-stone-200 bg-white/70 px-4 py-3 text-sm">
+                                <div class="min-w-0">
+                                    <p class="font-medium text-stone-800">
+                                        {{ $entry->type->label() }}
+                                        @if ($entry->order)
+                                            · <a href="{{ route('seller.orders.show', $entry->order) }}" class="underline decoration-amber-300 underline-offset-2">#{{ $entry->order->number }}</a>
+                                        @endif
+                                    </p>
+                                    <p class="mt-0.5 text-xs text-stone-400">
+                                        {{ $entry->created_at->format('d.m.Y') }}
+                                        @if ($entry->note)
+                                            · {{ $entry->note }}
+                                        @endif
+                                        @if ($entry->points > 0 && $entry->available_at)
+                                            @if ($entry->available_at->isFuture())
+                                                · dostępne od {{ $entry->available_at->format('d.m.Y') }}
+                                            @endif
+                                            @if ($entry->expires_at)
+                                                · ważne do {{ $entry->expires_at->format('d.m.Y') }}
+                                            @endif
+                                        @endif
+                                    </p>
+                                </div>
+                                <span class="shrink-0 font-semibold tabular-nums {{ $entry->points >= 0 ? 'text-emerald-700' : 'text-rose-700' }}">{{ $entry->points > 0 ? '+' : '' }}{{ $entry->points }} pkt</span>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
             <div class="pt-2">
                 {{-- „Wróć do listy" — ta sama formuła co na szczególe zamówienia. --}}
                 <a href="{{ route('seller.customers.index') }}" class="text-sm font-medium text-stone-500 transition hover:text-stone-800">← Wróć do listy</a>
@@ -109,6 +146,47 @@
                     </div>
                 </dl>
             </div>
+
+            {{-- Punkty: saldo + ręczna korekta. Sprzedawca widzi też wartość w zł —
+                 zasada „same punkty" dotyczy klienta, nie panelu. --}}
+            @if ($loyalty !== null)
+                <div class="rounded-3xl border border-white/60 bg-white/70 p-6 backdrop-blur">
+                    <h2 class="font-semibold text-stone-900">Punkty</h2>
+                    <p class="mt-3 text-3xl font-semibold tracking-tight tabular-nums {{ $loyalty['balance'] < 0 ? 'text-rose-700' : 'text-stone-900' }}">{{ $loyalty['balance'] }} pkt</p>
+                    <p class="mt-1 text-sm text-stone-500">do wykorzystania · {{ \App\Support\Money::pln(max(0, $loyalty['balance']) * $shop->loyaltyPointValue()) }}</p>
+                    @if ($loyalty['pending'] > 0)
+                        <p class="mt-2 text-sm text-stone-500">Oczekujące: <span class="font-medium tabular-nums text-stone-700">{{ $loyalty['pending'] }} pkt</span></p>
+                    @endif
+
+                    <form method="POST" action="{{ route('seller.customers.points', ['email' => $customer['email']]) }}" class="mt-5 space-y-3 border-t border-stone-100 pt-4" novalidate data-validate>
+                        @csrf
+                        <p class="text-sm font-medium text-stone-700">Korekta punktów</p>
+                        <div>
+                            <label for="points" class="block text-xs text-stone-500">Liczba punktów — ujemna odejmuje</label>
+                            <input id="points" name="points" type="text" inputmode="numeric" placeholder="np. 500 albo -200" required
+                                value="{{ old('points') }}" data-msg-required="Podaj liczbę punktów, np. 500 albo -200."
+                                class="mt-1 block w-full rounded-2xl border border-stone-200 bg-white/80 px-4 py-2.5 text-sm shadow-sm transition focus:border-amber-500 focus:outline-none focus:ring-4 focus:ring-amber-500/15">
+                            @error('points')
+                                <p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+                        <div>
+                            <label for="note" class="block text-xs text-stone-500">Za co — klient zobaczy to w historii</label>
+                            <input id="note" name="note" type="text" maxlength="120" placeholder="np. przeprosiny za opóźnienie" required
+                                value="{{ old('note') }}" data-msg-required="Napisz krótko, za co ta korekta."
+                                class="mt-1 block w-full rounded-2xl border border-stone-200 bg-white/80 px-4 py-2.5 text-sm shadow-sm transition focus:border-amber-500 focus:outline-none focus:ring-4 focus:ring-amber-500/15">
+                            @error('note')
+                                <p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+                        <button type="submit"
+                            class="inline-flex rounded-2xl border border-stone-200 bg-white px-5 py-2.5 text-sm font-semibold text-stone-700 transition hover:bg-stone-100">
+                            Zapisz korektę
+                        </button>
+                        <p class="text-xs text-stone-400">Dopisane punkty są do wykorzystania od razu. Odjęcie więcej niż saldo da saldo ujemne — wyrówna się kolejnymi punktami klienta.</p>
+                    </form>
+                </div>
+            @endif
 
             @if ($shop->entitlement('discount_codes'))
                 <div class="rounded-3xl border border-white/60 bg-white/70 p-6 backdrop-blur">
