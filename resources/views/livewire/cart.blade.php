@@ -163,6 +163,7 @@
                                     <button type="button" wire:click="stopUsingPoints"
                                         class="shrink-0 text-sm underline opacity-70 transition hover:opacity-100">Nie wykorzystuj</button>
                                 </div>
+                                <p class="mt-2 text-sm opacity-70">Pozostanie: {{ $loyalty->balance - $loyalty->points }} pkt.</p>
                             @else
                                 <button type="button" wire:click="usePoints"
                                     class="st-border mt-4 w-full rounded-full border px-4 py-2.5 text-sm font-semibold transition hover:brightness-95">
@@ -171,7 +172,7 @@
                                     Wykorzystaj {{ $loyalty->points }} pkt
                                 </button>
                             @endif
-                            @if ($loyalty->points < $loyalty->balance)
+                            @if (! $pointsApplied && $loyalty->points < $loyalty->balance)
                                 <p class="mt-3 text-xs opacity-60">W tym zamówieniu możesz wykorzystać {{ $loyalty->points }} z {{ $loyalty->balance }} pkt — reszta zostanie na kolejne zakupy.</p>
                             @endif
                         @else
