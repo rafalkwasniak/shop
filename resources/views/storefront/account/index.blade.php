@@ -38,6 +38,18 @@
         </div>
     </div>
 
+    {{-- Punkty za zakupy — skrót do zakładki „Punkty". --}}
+    @if ($loyaltyBalance !== null)
+        <a href="/moje-konto/punkty" wire:navigate
+            class="st-card st-border mt-4 flex flex-wrap items-center justify-between gap-4 rounded-2xl border p-5 transition hover:brightness-[0.98]">
+            <div>
+                <p class="text-xs uppercase tracking-wide opacity-50">Punkty do wykorzystania</p>
+                <p class="mt-1 text-3xl font-bold tabular-nums">{{ $loyaltyBalance }} pkt</p>
+            </div>
+            <span class="st-brand text-sm font-medium">Historia punktów →</span>
+        </a>
+    @endif
+
     {{-- Ostatnie zamówienie --}}
     @if ($lastOrder)
         <div class="mt-8">

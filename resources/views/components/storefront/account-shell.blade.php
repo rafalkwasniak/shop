@@ -4,12 +4,17 @@
      nagłówek strony (breadcrumbs → H1 → linia), a pod linią dwie kolumny: lewe
      submenu (sticky) i prawą treść z `$slot`. Konwencja „tytuł = końcówka
      breadcrumbs" — `$heading` powinno równać się etykiecie ostatniego okruszka.
-     `$active`: 'overview' | 'orders' | 'data'. Na mobile menu składa się nad
+     `$active`: 'overview' | 'orders' | 'points' | 'data'. Na mobile menu składa się nad
      treść. Flash `session('status')` renderujemy raz, tutaj. --}}
 @php
     $menu = [
         ['key' => 'overview', 'label' => 'Moje konto', 'url' => '/moje-konto'],
         ['key' => 'orders', 'label' => 'Zamówienia', 'url' => '/moje-konto/zamowienia'],
+        // Punkty tylko, gdy sklep je nalicza albo klient ma historię (po wyłączeniu
+        // zebrane punkty dalej da się wydać, więc saldo musi być widoczne).
+        ...(($customer = auth('customer')->user()) && app(\App\Services\LoyaltyLedger::class)->visibleFor($shop, $customer->email)
+            ? [['key' => 'points', 'label' => 'Punkty', 'url' => '/moje-konto/punkty']]
+            : []),
         ['key' => 'data', 'label' => 'Edycja danych', 'url' => '/moje-konto/dane'],
     ];
     // Offset przyklejenia lewego menu = wysokość nagłówka-winiety (sticky top-0) +

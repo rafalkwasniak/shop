@@ -300,6 +300,43 @@ class LoyaltyLedger
         return $available + $debt;
     }
 
+    /** Porcja naliczona za zamówienie (jeśli już jest). */
+    public function earnedFor(Order $order): ?LoyaltyEntry
+    {
+        return $this->orderEntries($order, LoyaltyEntryType::Earned)->first();
+    }
+
+    /**
+     * Czy pokazywać klientowi punkty: sklep je nalicza ALBO klient ma jakąkolwiek
+     * historię. Po wyłączeniu punktów zebrane dalej da się wydać, więc klient
+     * musi dalej widzieć saldo i daty wygaśnięcia.
+     */
+    public function visibleFor(Shop $shop, string $email): bool
+    {
+        return $shop->loyaltyActive() || $this->entries($shop, $email)->exists();
+    }
+
+    /**
+     * Historia klienta, od najnowszych, z zamówieniem do podpisu.
+     *
+     * @return Collection<int, LoyaltyEntry>
+     */
+    public function history(Shop $shop, string $email): Collection
+    {
+        return $this->entries($shop, $email)->with('order')->latest('id')->get();
+    }
+
+    /** Porcja z resztą, która wygaśnie najwcześniej (także jeszcze oczekująca). */
+    public function nextExpiring(Shop $shop, string $email): ?LoyaltyEntry
+    {
+        return $this->entries($shop, $email)
+            ->where('remaining', '>', 0)
+            ->whereNotNull('expires_at')
+            ->where('expires_at', '>', now())
+            ->orderBy('expires_at')
+            ->first();
+    }
+
     /** Czy którykolwiek klient sklepu ma punkty albo dług — wtedy zmiana wartości punktu przelicza salda. */
     public function hasOutstanding(Shop $shop): bool
     {

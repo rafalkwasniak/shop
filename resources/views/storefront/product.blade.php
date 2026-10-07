@@ -56,6 +56,23 @@
                     <p class="mt-1 text-sm opacity-70">Najniższa cena z 30 dni: {{ \App\Support\Money::pln($lowest) }}</p>
                 @endif
 
+                {{-- Punkty za zakupy: liczone od ceny brutto, tą samą formułą co
+                     naliczenie (LoyaltyLedger::pointsFromBase). Przy produkcie na
+                     wagę — za 1 kg, jak cena obok. Tylko gdy sklep punkty NALICZA. --}}
+                @if ($shop->loyaltyActive())
+                    @php($productPoints = app(\App\Services\LoyaltyLedger::class)->pointsFromBase($shop, (float) $product->price_gross))
+                    @if ($productPoints > 0)
+                        @php($rulesPage = \App\Support\LoyaltyRules::publishedPage($shop))
+                        <p class="mt-2 text-sm">
+                            Za ten zakup dostaniesz <strong class="st-brand">{{ $productPoints }} pkt</strong>@if ($product->sale_unit->isWeight()) za 1 {{ $product->sale_unit->abbreviation() }}@endif
+                            <span class="opacity-70">({{ \App\Support\Money::pln($productPoints * $shop->loyaltyPointValue()) }} na kolejne zakupy)</span>
+                            @if ($rulesPage)
+                                · <a href="{{ $rulesPage->storefrontPath() }}" wire:navigate class="underline underline-offset-2 opacity-70 hover:opacity-100">zasady</a>
+                            @endif
+                        </p>
+                    @endif
+                @endif
+
                 {{-- Dostępność jako dana produktu (statyczna); realny limit i tak pilnuje komponent koszyka. --}}
                 @if ($product->track_stock && $product->stock !== null)
                     <p class="mt-3 text-sm opacity-70">Dostępne: {{ $product->sale_unit->formatAmount((float) $product->stock) }} {{ $product->sale_unit->abbreviation() }}</p>

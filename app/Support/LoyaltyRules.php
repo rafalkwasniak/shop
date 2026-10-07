@@ -41,6 +41,12 @@ class LoyaltyRules
         return $page;
     }
 
+    /** Opublikowana strona zasad sklepu — do odnośników na storefroncie. */
+    public static function publishedPage(Shop $shop): ?Page
+    {
+        return $shop->pages()->where('system_key', Page::LOYALTY_RULES)->where('published', true)->first();
+    }
+
     /** Domyślna treść zasad z bieżących ustawień sklepu (HTML w konwencji podstron). */
     public static function render(Shop $shop): string
     {

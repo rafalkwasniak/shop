@@ -651,6 +651,7 @@ $storefrontRoutes = function () {
         Route::get('/', [StorefrontAccount::class, 'index'])->name('index');
         Route::get('/zamowienia', [StorefrontAccount::class, 'orders'])->name('orders');
         Route::get('/zamowienia/{order}', [StorefrontAccount::class, 'order'])->name('order');
+        Route::get('/punkty', [StorefrontAccount::class, 'points'])->name('points');
         Route::get('/dane', [StorefrontAccount::class, 'edit'])->name('edit');
         Route::post('/dane', [StorefrontAccount::class, 'update'])->name('update');
         Route::post('/zgody', [StorefrontAccount::class, 'consents'])->name('consents');

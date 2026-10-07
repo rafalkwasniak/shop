@@ -14,6 +14,7 @@ use App\Models\OrderStatusEvent;
 use App\Models\Shop;
 use App\Support\Money;
 use App\Support\Vocative;
+use Throwable;
 
 /**
  * Kolejkuje maile zamówienia (outbox → cron): potwierdzenie dla klienta,
@@ -261,6 +262,7 @@ class OrderMailer
                     $this->productLines($order),
                     $this->amountLines($order, 'Razem'),
                 ),
+                $status === OrderStatus::Completed ? $this->loyaltyBlock($order, $shop) : [],
                 // Pełne dane do przelewu tylko wtedy, gdy pieniądze wciąż są
                 // oczekiwane — w mailu o „Zrealizowane" numer konta to szum.
                 $status === OrderStatus::AwaitingPayment
@@ -721,6 +723,61 @@ class OrderMailer
                 'Masz pytania? Odpowiedz na tego e-maila — trafi wprost do sklepu.',
             ],
         ]);
+    }
+
+    /**
+     * Punkty za zrealizowane zamówienie. Porcja jest już naliczona — obserwator
+     * zamówienia działa przy zatwierdzeniu zmiany statusu, a mail powstaje po
+     * nim. Bez porcji (sklep bez punktów, zamówienie za 0 zł) bloku nie ma.
+     *
+     * Klient z aktywnym kontem dostaje odnośnik do salda. Gość — łączną liczbę
+     * punktów i zaproszenie do konta: punkty są zapisane na jego adres e-mail
+     * i czekają, ale wydać je można dopiero po rejestracji (decyzja Rafała).
+     *
+     * @return list<string>
+     */
+    private function loyaltyBlock(Order $order, Shop $shop): array
+    {
+        // Mail o statusie jest ważniejszy niż wzmianka o punktach: awaria
+        // punktów trafia do raportu, a mail wychodzi bez tego bloku.
+        try {
+            return $this->loyaltyLines($order, $shop);
+        } catch (Throwable $e) {
+            report($e);
+
+            return [];
+        }
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function loyaltyLines(Order $order, Shop $shop): array
+    {
+        $ledger = app(LoyaltyLedger::class);
+        $entry = $ledger->earnedFor($order);
+
+        if ($entry === null || $entry->points <= 0) {
+            return [];
+        }
+
+        $lines = [
+            '**Punkty za to zamówienie: '.$entry->points.' pkt** ('.Money::pln($entry->points * $shop->loyaltyPointValue()).' na kolejne zakupy).',
+            $entry->available_at->isFuture()
+                ? 'Będą do wykorzystania od '.$entry->available_at->format('d.m.Y').' — wcześniej trwa czas na ewentualny zwrot.'
+                : 'Możesz z nich skorzystać już teraz.',
+        ];
+
+        $account = $shop->customers()->whereRaw('LOWER(email) = ?', [$entry->email])->first();
+
+        if ($account?->isActivated()) {
+            $lines[] = 'Saldo i historię znajdziesz w [**Moim koncie**](https://'.$shop->host().'/moje-konto/punkty).';
+        } else {
+            $total = $ledger->balance($shop, $entry->email) + $ledger->pending($shop, $entry->email);
+            $lines[] = 'Masz już łącznie **'.$total.' pkt**. [**Załóż konto w sklepie**](https://'.$shop->host().'/rejestracja) na ten adres e-mail, żeby z nich skorzystać — punkty na Ciebie czekają.';
+        }
+
+        return $lines;
     }
 
     /**
