@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 #[Fillable([
     'shop_id', 'email', 'order_id', 'type', 'points', 'remaining', 'point_value',
-    'base_amount', 'available_at', 'expires_at', 'note',
+    'base_amount', 'available_at', 'expires_at', 'expiry_notified_at', 'note',
 ])]
 class LoyaltyEntry extends Model
 {
@@ -32,6 +32,7 @@ class LoyaltyEntry extends Model
             'base_amount' => 'decimal:2',
             'available_at' => 'datetime',
             'expires_at' => 'datetime',
+            'expiry_notified_at' => 'datetime',
         ];
     }
 

@@ -45,4 +45,13 @@ return [
 
     'min_payable' => 1.00,
 
+    /*
+    | `reminder_days` = z jakim wyprzedzeniem przypominamy klientowi, że
+    | porcja punktów wygaśnie (14 dni — propozycja przyjęta przez Rafała 07.10:
+    | czas na zakupy, a nie mail co tydzień). Każda porcja dostaje przypomnienie
+    | najwyżej raz.
+    */
+
+    'reminder_days' => 14,
+
 ];

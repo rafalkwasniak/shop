@@ -99,3 +99,7 @@ if (Mode::saas()) {
 // trybach — punkty to funkcja sklepu, nie abonamentu. Gdy żaden sklep ich nie
 // używa, przebieg to jedno puste zapytanie.
 Schedule::command('loyalty:expire')->dailyAt('06:30')->withoutOverlapping();
+
+// Przypomnienie „punkty wkrótce wygasną" — o 10:00, bo o tej porze ludzie
+// czytają pocztę, a mail ma skłonić do działania. Maile idą przez outbox.
+Schedule::command('loyalty:remind')->dailyAt('10:00')->withoutOverlapping();
