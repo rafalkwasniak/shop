@@ -117,6 +117,37 @@ class LoyaltyStorefrontTest extends TestCase
             ->assertDontSee('zł rabatu');
     }
 
+    public function test_order_page_shows_points_earned_for_that_order(): void
+    {
+        $shop = $this->shop();
+        $customer = Customer::factory()->for($shop)->create(['email' => 'anna@example.com']);
+        $order = $this->completedOrder($shop, 'anna@example.com');
+        $order->update(['customer_id' => $customer->id]);
+        $other = $this->completedOrder($shop, 'anna@example.com', 20);
+        $other->update(['customer_id' => $customer->id]);
+
+        $this->actingAs($customer, 'customer')
+            ->get($this->host($shop).'/moje-konto/zamowienia/'.$order->id)
+            ->assertOk()
+            ->assertSee('st-box-title">Punkty</h2>', false)
+            ->assertSee('+500 pkt')
+            ->assertDontSee('+100 pkt')
+            ->assertSee('do wykorzystania od');
+    }
+
+    public function test_order_page_without_points_has_no_points_card(): void
+    {
+        $shop = $this->shop(loyalty: false);
+        $customer = Customer::factory()->for($shop)->create(['email' => 'anna@example.com']);
+        $order = $this->completedOrder($shop, 'anna@example.com');
+        $order->update(['customer_id' => $customer->id]);
+
+        $this->actingAs($customer, 'customer')
+            ->get($this->host($shop).'/moje-konto/zamowienia/'.$order->id)
+            ->assertOk()
+            ->assertDontSee('st-box-title">Punkty</h2>', false);
+    }
+
     public function test_points_collected_as_guest_appear_after_registration(): void
     {
         $shop = $this->shop();

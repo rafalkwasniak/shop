@@ -66,7 +66,7 @@ class AccountController extends Controller
         ]);
     }
 
-    public function order(Order $order, Request $request): Renderable
+    public function order(Order $order, Request $request, LoyaltyLedger $ledger): Renderable
     {
         $this->authorizeOrder($order);
 
@@ -81,6 +81,8 @@ class AccountController extends Controller
             // go z `from_status` pierwszego zdarzenia (zapis historii: co FAKTYCZNIE
             // było), a bez zdarzeń nic się jeszcze nie zmieniło, więc jest nim bieżący.
             'initialStatus' => $order->statusEvents->first()?->from_status ?? $order->status,
+            // Punkty za to zamówienie (pusta kolekcja = karty punktów nie ma).
+            'loyaltyEntries' => $ledger->forOrder($order),
             'back' => $this->safeBack($request->query('powrot')),
         ]);
     }

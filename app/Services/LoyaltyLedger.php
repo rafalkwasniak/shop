@@ -326,6 +326,17 @@ class LoyaltyLedger
         return $this->entries($shop, $email)->with('order')->latest('id')->get();
     }
 
+    /**
+     * Wpisy związane z jednym zamówieniem (naliczenie, odebranie po zwrocie,
+     * wydanie, oddanie), w kolejności zdarzeń — do karty zamówienia klienta.
+     *
+     * @return Collection<int, LoyaltyEntry>
+     */
+    public function forOrder(Order $order): Collection
+    {
+        return LoyaltyEntry::query()->where('order_id', $order->id)->orderBy('id')->get();
+    }
+
     /** Porcja z resztą, która wygaśnie najwcześniej (także jeszcze oczekująca). */
     public function nextExpiring(Shop $shop, string $email): ?LoyaltyEntry
     {

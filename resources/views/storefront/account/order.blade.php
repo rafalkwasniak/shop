@@ -25,6 +25,36 @@
             <x-storefront.order-totals :order="$order" />
         </div>
 
+        {{-- Punkty za to zamówienie — te same wpisy co w zakładce „Punkty",
+             zawężone do tego zamówienia. SAME PUNKTY, bez wartości w zł (decyzja
+             Rafała 07.10). Bez wpisów karty nie ma. --}}
+        @if ($loyaltyEntries->isNotEmpty())
+            <div class="st-card st-border rounded-3xl border p-6">
+                <h2 class="st-brand st-box-title">Punkty</h2>
+                <ul class="mt-4 space-y-3">
+                    @foreach ($loyaltyEntries as $entry)
+                        <li class="flex justify-between gap-3 text-sm">
+                            <span class="min-w-0">
+                                <span class="opacity-80">{{ $entry->type->label() }}</span>
+                                <span class="block text-xs opacity-60">
+                                    {{ $entry->created_at->format('d.m.Y') }}
+                                    @if ($entry->points > 0 && $entry->available_at)
+                                        @if ($entry->available_at->isFuture())
+                                            · do wykorzystania od {{ $entry->available_at->format('d.m.Y') }}
+                                        @endif
+                                        @if ($entry->expires_at)
+                                            · ważne do {{ $entry->expires_at->format('d.m.Y') }}
+                                        @endif
+                                    @endif
+                                </span>
+                            </span>
+                            <span class="shrink-0 font-semibold tabular-nums {{ $entry->points >= 0 ? 'text-emerald-700' : 'text-rose-700' }}">{{ $entry->points > 0 ? '+' : '' }}{{ $entry->points }} pkt</span>
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
         {{-- Historia zamówienia: „kiedy co się wydarzyło”. Ten sam układ osi, co
              widzi sprzedawca, ale w klasach motywu — kropki i linia w kolorze
              sklepu. Status początkowy dokładamy ręcznie (nie ma go wśród zdarzeń:
