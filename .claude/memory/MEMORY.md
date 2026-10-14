@@ -22,6 +22,7 @@
 
 ## Otwarte / do decyzji
 - [Pracownicy sklepu: kroki 1-2 WDROŻONE](plan-shop-employees.md) — krok 3 w toku. **Cherry-pick do Magellana jeszcze NIE zrobiony.**
+- [Sklep demo Aracaffee](demo-shop-aracaffee.md) — shop 20, Kram + uprawnienia Straganu i punkty. **Zakup Straganu zgasi punkty.** Hasło tymczasowe.
 - [Magellan Bay — osobny projekt](plan-magellan-bay-separate-project.md) — **oferta 6 000 zł wysłana 01.09, czekamy.** NIE część roadmapy Kramio.
 - [OTWARTE: limit 250 procesów](open-hosting-process-limit.md) — **w trakcie pracy testy FILTROWANE**, pełna suita raz przed commitem.
 - [KIERUNEK: NOWY SERWER](plan-dev-environment.md) — przeprowadzka planowana, termin nieustalony.
