@@ -75,4 +75,16 @@ class PhoneService
 
         return '+48 '.substr($core, 0, 3).' '.substr($core, 3, 3).' '.substr($core, 6, 3);
     }
+
+    /**
+     * Wartość do linku `tel:` w formacie międzynarodowym: „+48500600700".
+     * Kanoniczne „48…" BEZ plusa telefon wybrałby jako numer krajowy
+     * zaczynający się od 48 — czyli zupełnie inny numer.
+     */
+    public function href(?string $value): ?string
+    {
+        $normalized = $this->normalize($value);
+
+        return $normalized === null ? null : '+'.$normalized;
+    }
 }

@@ -67,4 +67,12 @@ class PhoneServiceTest extends TestCase
     {
         $this->assertSame('+48 500 600 700', $this->phone->format('500600700'));
     }
+
+    public function test_href_is_international_with_plus(): void
+    {
+        // Regresja: link „tel:48500600700" telefon wybierał jako numer krajowy.
+        $this->assertSame('+48500600700', $this->phone->href('48500600700'));
+        $this->assertSame('+48500600700', $this->phone->href('500 600 700'));
+        $this->assertNull($this->phone->href(null));
+    }
 }

@@ -449,7 +449,7 @@
                             <li><a href="mailto:{{ $shop->contact_email }}" class="transition hover:opacity-100">{{ $shop->contact_email }}</a></li>
                         @endif
                         @if (filled($shop->contact_phone))
-                            <li><a href="tel:{{ $shop->contact_phone }}" class="transition hover:opacity-100">{{ $shop->formattedContactPhone() }}</a></li>
+                            <li><a href="tel:{{ $shop->contactPhoneHref() }}" class="transition hover:opacity-100">{{ $shop->formattedContactPhone() }}</a></li>
                         @endif
                     </ul>
                 </div>

@@ -140,7 +140,8 @@ class NavigationTest extends TestCase
             ->assertOk()
             ->assertSee('Kontakt')
             ->assertSee('kontakt@sklep.test')
-            ->assertSee('mailto:kontakt@sklep.test', false);
+            ->assertSee('mailto:kontakt@sklep.test', false)
+            ->assertSee('href="tel:+48600700800"', false);
     }
 
     public function test_brand_shows_shop_name_without_logo(): void

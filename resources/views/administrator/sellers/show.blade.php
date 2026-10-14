@@ -30,7 +30,7 @@
                         <dt class="text-xs uppercase tracking-wide text-stone-400">Telefon</dt>
                         <dd class="mt-1 text-sm text-stone-800">
                             @if ($seller->phone)
-                                <a href="tel:{{ $seller->phone }}" class="underline decoration-amber-300 underline-offset-2">{{ $seller->phone }}</a>
+                                <a href="tel:{{ app(\App\Services\PhoneService::class)->href($seller->phone) }}" class="underline decoration-amber-300 underline-offset-2">{{ $seller->phone }}</a>
                             @else
                                 <span class="text-stone-400">—</span>
                             @endif
