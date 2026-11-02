@@ -22,7 +22,8 @@
 
 ## Otwarte / do decyzji
 - [Pracownicy sklepu: kroki 1-2 WDROŻONE](plan-shop-employees.md) — krok 3 w toku. **Cherry-pick do Magellana jeszcze NIE zrobiony.**
-- [Sklep demo Aracaffee](demo-shop-aracaffee.md) — shop 20, Kram + uprawnienia Straganu i punkty. **Zakup Straganu zgasi punkty.** Od 15.10 u klienta (login `sklep@aracaffee.com`).
+- [Sklep demo Aracaffee](demo-shop-aracaffee.md) — shop 20, Kram + uprawnienia Straganu i punkty. **Zakup Straganu zgasi punkty.** Od 15.10 u klienta; od 23.10 login `tekawa7@gmail.com`.
+- [Aracaffee — sklep dedykowany](plan-aracaffee-dedicated.md) — 02.11–03.11 **SKLEP STOI**; zrobione: formularz `e60c580`, banery `bb246c4`, zdjęcia w stronach `4c4efe1` — wszystkie 3 gotowe do cherry-picka do Kramio. Zostało: „umowa Tekawa” (czeka na klienta), bramka płatności. Na domenie klienta `SEO_INDEXING=true`. Po akceptacji shop 20 w Kramio kasujemy.
 - [Magellan Bay — osobny projekt](plan-magellan-bay-separate-project.md) — **oferta 6 000 zł wysłana 01.09, czekamy.** NIE część roadmapy Kramio.
 - [OTWARTE: limit 250 procesów](open-hosting-process-limit.md) — **w trakcie pracy testy FILTROWANE**, pełna suita raz przed commitem.
 - [KIERUNEK: NOWY SERWER](plan-dev-environment.md) — przeprowadzka planowana, termin nieustalony.
@@ -122,6 +123,7 @@
 - [Shipping aggregator](shipping-aggregator-idea.md) — **ZAMKNIĘTE: Furgonetka WYPADA.**
 
 ## Handoffy (najnowsze u góry)
+- [11-03 Aracaffee dedykowany + 3 funkcje pod Kramio](handoff-2026-11-03.md) — **NASTĘPNA SESJA: przeniesienie do Kramio + przegląd tekstów o pakietach (najpierw teksty, pokazać Rafałowi). Polityka platformy: nowa wersja OK.** Lekcja: ustalenia > własne pomysły.
 - [10-07 punkty za zakupy — od szkicu do startu](handoff-2026-10-07.md) — 1852→1950. **Temat zamknięty (z własną liczbą punktów w koszyku); wszystkie sklepy na Kramie, więc punkty realnie tylko w Lemoniadach. `confirm()` w panelu zakazany; mail nie może zależeć od punktów.**
 - [10-03 2FA kodem z maila](handoff-2026-10-03.md) — 1834→1852. **Safari podstawia kod. `Artisan::call` z WWW = exec() zablokowany.**
 - [10-01 mail o kopiowaniu + AI u admina](handoff-2026-10-01.md) — 1832→1834. **„Chwilowo niedostępna” maskowało 403 (admin bez sklepu); front pokazuje teraz treść 4xx.**
