@@ -7,7 +7,7 @@
                 <div class="flex flex-wrap items-center justify-between gap-3">
                     <div>
                         <h2 class="font-semibold text-stone-900">Strony sklepu</h2>
-                        <p class="mt-1 text-sm text-stone-500">Regulamin i własne strony (np. dostawa, zwroty, o sklepie). Kolejność ustalasz przeciąganiem — ta sama w menu i w stopce sklepu.</p>
+                        <p class="mt-1 text-sm text-stone-500">Regulamin i własne strony (np. dostawa, zwroty, o sklepie), także ze zdjęciami. Kolejność ustalasz przeciąganiem — ta sama w menu i w stopce sklepu.</p>
                     </div>
                     <a href="{{ route('seller.pages.create') }}"
                         class="shrink-0 rounded-2xl bg-gradient-to-br from-amber-500 to-rose-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-rose-500/20 transition hover:brightness-105">

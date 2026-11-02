@@ -161,7 +161,7 @@ class LandingPackagesTest extends TestCase
         // a nie zostać w kodzie bez słowa dla kupującego.
         $html = $this->get('/')->assertOk()->getContent();
 
-        foreach (['mapa strony', 'Search Console', 'wydrukujesz etykietę', 'szablonów', 'Kody rabatowe', 'kartoteka', 'Edycja zamówień'] as $promise) {
+        foreach (['mapa strony', 'Search Console', 'wydrukujesz etykietę', 'szablonów', 'Kody rabatowe', 'kartoteka', 'Edycja zamówień', 'Baner na stronie głównej', 'Zakładka Kontakt', 'wstawiasz do nich zdjęcia'] as $promise) {
             $this->assertStringContainsString($promise, $html, "Landing nie mówi o: {$promise}");
         }
     }
@@ -216,6 +216,29 @@ class LandingPackagesTest extends TestCase
                 'Zwroty 14 dni zgodne z prawem',
                 $features,
                 "Pakiet {$package} musi mieć obsługę zwrotów — prawo odstąpienia nie zależy od opłaty.",
+            );
+        }
+    }
+
+    /**
+     * Banery i zdjęcia w stronach są w KAŻDYM pakiecie, różni je limit — więc
+     * liczba ma stać w etykiecie (jak produkty i pula AI), a formularz
+     * kontaktowy w każdej karcie, jak zwroty.
+     */
+    public function test_cards_disclose_banner_and_page_image_limits_and_the_contact_form(): void
+    {
+        foreach ($this->featureMap() as $package => $features) {
+            $this->assertArrayHasKey('Zakładka Kontakt z formularzem', $features, "Pakiet {$package} bez zakładki Kontakt.");
+        }
+
+        foreach (PackageFeatures::purchasable() as $package) {
+            $e = $package['entitlements'];
+            $features = $this->featureMap()[$package['name']];
+
+            $this->assertArrayHasKey('Do '.$e['max_page_images'].' zdjęć w stronach informacyjnych', $features);
+            $this->assertArrayHasKey(
+                $e['max_banners'] > 1 ? 'Do '.$e['max_banners'].' banerów na stronie głównej (przewijany pokaz)' : 'Baner na stronie głównej',
+                $features,
             );
         }
     }

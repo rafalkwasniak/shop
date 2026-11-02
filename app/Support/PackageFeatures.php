@@ -184,9 +184,24 @@ class PackageFeatures
                 'requires' => null,
             ],
             [
+                // Dopisane razem z wdrożeniem banerów (11.2026). Limit różni
+                // pakiety (1/6/10), ale baner jest w każdym — stąd bez plakietki;
+                // liczby pokazuje karta pakietu.
+                'icon' => '🖼️',
+                'title' => 'Baner na stronie głównej',
+                'description' => 'Nowość, promocja, sezon — wstaw duży baner z linkiem prosto do produktu. W wyższych pakietach przewijany pokaz kilku banerów, każdy z datami „pokazuj od–do”, więc promocja sama się zaczyna i sama znika.',
+                'requires' => null,
+            ],
+            [
                 'icon' => '📄',
                 'title' => 'Własne strony informacyjne',
-                'description' => 'Dostawa, zwroty, o mnie — dopisujesz podstrony w edytorze i same wchodzą do menu sklepu.',
+                'description' => 'Dostawa, zwroty, o mnie — dopisujesz podstrony w edytorze, wstawiasz do nich zdjęcia, a strony same wchodzą do menu sklepu.',
+                'requires' => null,
+            ],
+            [
+                'icon' => '✉️',
+                'title' => 'Zakładka Kontakt',
+                'description' => 'Dane firmy, link do mapy i formularz, przez który klient zada pytanie przed zakupem. Odpowiadasz zwykłym „Odpowiedz” w poczcie, a formularz sam odsiewa spam.',
                 'requires' => null,
             ],
             [
@@ -318,6 +333,14 @@ class PackageFeatures
         return array_filter([
             'max_products' => 'Do '.$entitlements['max_products'].' produktów',
             'storefront' => 'Własny adres, szablony i kolory sklepu',
+            // Liczba NA POCZĄTKU, jak przy produktach — to ona różni pakiety.
+            // Jeden baner to obrazek, od dwóch robi się przewijany pokaz.
+            'banners' => (int) ($entitlements['max_banners'] ?? 0) > 1
+                ? 'Do '.$entitlements['max_banners'].' banerów na stronie głównej (przewijany pokaz)'
+                : 'Baner na stronie głównej',
+            // Limit na CAŁY sklep, nie na stronę — stąd „łącznie".
+            'page_images' => 'Do '.(int) ($entitlements['max_page_images'] ?? 0).' zdjęć w stronach informacyjnych',
+            'contact' => 'Zakładka Kontakt z formularzem',
             // Tygodniowa pula zadań AI RÓŻNI SIĘ między pakietami (100/400/800),
             // a wcześniejsza etykieta „Opisy z korektą AI" była dla wszystkich
             // identyczna — realne ograniczenie i realna różnica znikały z cennika.

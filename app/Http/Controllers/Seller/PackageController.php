@@ -59,6 +59,10 @@ class PackageController extends Controller
                 'products_limit' => $productLimit,
                 'ai_used' => $quota->used($shop),
                 'ai_limit' => $aiLimit,
+                'banners' => $shop->banners()->count(),
+                'banners_limit' => max(0, (int) $shop->entitlement('max_banners')),
+                'page_images' => \App\Models\PageImage::query()->where('shop_id', $shop->id)->count(),
+                'page_images_limit' => max(0, (int) $shop->entitlement('max_page_images')),
             ],
             'contactEmail' => config('company.email') ?: config('mail.from.address'),
             // Zakup online działa dopiero ze skonfigurowanym kontem platformy —

@@ -28,7 +28,8 @@ class SellerTerms
      * Wersja wzoru. PODBIJAĆ przy każdej zmianie treści szablonu — inaczej po
      * poprawkach prawnika nie ustalimy, kto opublikował starą wersję.
      */
-    public const VERSION = 1;
+    /** v2 (11.2026): formularz kontaktowy w kontakcie i celach przetwarzania (gdy włączony). */
+    public const VERSION = 2;
 
     /**
      * Pola kreatora. Klucz => czy wymagane.

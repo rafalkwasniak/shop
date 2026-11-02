@@ -190,7 +190,7 @@
                     @if ($summary['isDownsize'])
                         <p class="mt-4 rounded-2xl bg-rose-50 px-4 py-3 text-xs text-rose-700">
                             <span class="font-medium">Zejście na tańszy pakiet.</span>
-                            Funkcje droższego zostaną wyłączone, a produkty ponad nowy limit — schowane
+                            Funkcje droższego zostaną wyłączone, a produkty i banery ponad nowy limit — schowane
                             (wrócą, gdy sklep znów pójdzie wyżej).
                         </p>
                     @endif

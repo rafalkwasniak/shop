@@ -44,7 +44,7 @@
                         {{-- Zniżka z RÓŻNICY kwot, żeby rachunek domykał się na ekranie. --}}
                         rok mniejszego pakietu minus {{ \App\Support\Money::pln(\App\Support\PackageUpgrade::discountShown($quote)) }} zniżki za resztę obecnego okresu ·
                     @endif
-                    mniejsze limity wchodzą od razu, produkty ponad limit zostaną ukryte
+                    mniejsze limity wchodzą od razu, produkty i banery ponad limit zostaną ukryte
                 </span>
                 @include('seller.package._immediate-start', ['purchasePackage' => $slug])
             </form>

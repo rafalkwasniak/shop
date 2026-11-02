@@ -53,7 +53,7 @@ enum PanelSection: string
             self::Products => 'Dodawanie i edycja produktów, zdjęcia, ceny i stany magazynowe.',
             self::Orders => 'Podgląd zamówień, zmiana statusów, etykiety i nadawanie paczek. Obejmuje dane adresowe klientów.',
             self::Customers => 'Kartoteka kupujących: adresy e-mail, historia zakupów.',
-            self::Content => 'Strony informacyjne i wygląd sklepu.',
+            self::Content => 'Strony informacyjne, banery i wygląd sklepu.',
             self::Marketing => 'Kody rabatowe i wiadomości do klientów.',
             self::Analytics => 'Odwiedziny, sprzedaż i bestsellery.',
         };

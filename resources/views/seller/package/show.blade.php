@@ -91,7 +91,7 @@
                     <div class="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
                         <p class="font-medium">Pakiet {{ $shop->packageName() }} wygasł {{ $endsAt?->format('d.m.Y') }}</p>
                         <p class="mt-1 text-xs text-rose-800">
-                            Sklep i zamówienia działają dalej — wyłączone są funkcje płatnego pakietu, a produkty ponad limit są
+                            Sklep i zamówienia działają dalej — wyłączone są funkcje płatnego pakietu, a produkty i banery ponad limit są
                             ukryte (nic nie zostało usunięte). Po opłaceniu wszystko wraca takie, jak było, razem z ustawieniami.
                         </p>
                         @include('seller.package._renew')
@@ -105,7 +105,7 @@
                         <p class="mt-1 text-xs text-sky-800">
                             Wszystkie funkcje pakietu są włączone do {{ $shop->subscriptionLocksAt()->format('d.m.Y') }}. Po tym dniu
                             sklep zejdzie na zasady pakietu {{ config('shop.packages.'.config('shop.default_package').'.name') }},
-                            a produkty ponad limit zostaną ukryte — do odwrócenia jedną opłatą.
+                            a produkty i banery ponad limit zostaną ukryte — do odwrócenia jedną opłatą.
                         </p>
                         @include('seller.package._renew')
                     </div>
@@ -278,6 +278,22 @@
                         <div class="h-full min-w-[0.5rem] rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600 transition-all duration-500" style="width: {{ $aiPct }}%"></div>
                     </div>
                     <p class="mt-2 text-xs text-stone-400">Pula odnawia się co tydzień.</p>
+                </div>
+
+                {{-- Banery i zdjęcia w stronach: bez paska, bo to nie zasób, który się
+                     „zużywa" w czasie — wystarczy liczba i informacja, co przy limicie. --}}
+                <div class="mt-5 space-y-2 text-sm">
+                    <div class="flex items-center justify-between gap-3">
+                        <span class="text-stone-500">Banery na stronie głównej</span>
+                        <span class="font-semibold tabular-nums text-stone-900">{{ $usage['banners'] }} / {{ $usage['banners_limit'] }}</span>
+                    </div>
+                    <div class="flex items-center justify-between gap-3">
+                        <span class="text-stone-500">Zdjęcia w stronach informacyjnych</span>
+                        <span class="font-semibold tabular-nums text-stone-900">{{ $usage['page_images'] }} / {{ $usage['page_images_limit'] }}</span>
+                    </div>
+                    @if ($usage['banners'] > $usage['banners_limit'])
+                        <p class="text-xs text-rose-700">Banerów jest więcej, niż pozwala pakiet — sklep pokazuje {{ $usage['banners_limit'] }} pierwszych z listy.</p>
+                    @endif
                 </div>
             </div>
 

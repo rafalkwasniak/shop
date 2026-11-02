@@ -63,7 +63,7 @@
     {{ $sprzedawca }}, prowadząc sprzedaż w ramach działalności nierejestrowanej w rozumieniu ustawy — Prawo przedsiębiorców, z adresem: {{ $adres }}.
 @endif
 </div>
-<div>Kontakt: e-mail {{ $dane['email'] }}{{ $telefon }}. Na wiadomości odpowiadamy w dni robocze.</div>
+<div>Kontakt: e-mail {{ $dane['email'] }}{{ $telefon }}{{ $shop->contactFormEnabled() ? ', a także formularz w zakładce „Kontakt”' : '' }}. Na wiadomości odpowiadamy w dni robocze.</div>
 <div>Regulamin określa zasady zakupów w Sklepie i jest udostępniony nieodpłatnie w sposób umożliwiający jego pobranie, odtworzenie i utrwalenie.</div>
 
 <h2>§2 / Definicje</h2>
@@ -199,7 +199,7 @@
 <h2>§11 / Dane osobowe</h2>
 <ol>
     <li>Administratorem danych osobowych Klientów jest Sprzedawca wskazany w §1.</li>
-    <li>Dane przetwarzane są w celu realizacji Zamówień, obsługi reklamacji i zwrotów, prowadzenia dokumentacji księgowej oraz — jeżeli Klient wyrazi na to zgodę — wysyłki informacji handlowych.</li>
+    <li>Dane przetwarzane są w celu realizacji Zamówień, obsługi reklamacji i zwrotów, prowadzenia dokumentacji księgowej{{ $shop->contactFormEnabled() ? ', odpowiedzi na wiadomości wysłane przez formularz kontaktowy' : '' }} oraz — jeżeli Klient wyrazi na to zgodę — wysyłki informacji handlowych.</li>
     <li>Sklep działa na platformie Kramio, której operator przetwarza dane w imieniu Sprzedawcy jako podmiot przetwarzający. Zasady przetwarzania opisuje Polityka prywatności dostępna w Sklepie.</li>
     <li>Klientowi przysługuje prawo dostępu do danych, ich sprostowania, usunięcia, ograniczenia przetwarzania, przenoszenia, sprzeciwu oraz cofnięcia zgody, a także prawo wniesienia skargi do Prezesa Urzędu Ochrony Danych Osobowych.</li>
 </ol>

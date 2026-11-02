@@ -237,11 +237,9 @@ Każdy sklep posiada stronę polityki cookies generowaną na podstawie ustawień
 
 ### Kontakt
 
-Sklep nie posiada dedykowanej strony kontaktowej.
+Adres e-mail i telefon sprzedawcy prezentowane są w stopce sklepu.
 
-Adres e-mail sprzedawcy prezentowany jest w stopce sklepu.
-
-Kliknięcie adresu powoduje uruchomienie domyślnego klienta pocztowego użytkownika.
+Od 11.2026 sklep może mieć zakładkę **Kontakt** (`/kontakt`, włącznik w Ustawieniach, wszystkie pakiety): dane firmy, link do mapy i formularz (imię, e-mail, treść). Wiadomość idzie do sklepu przez outbox z `Reply-To` na nadawcę; do nadawcy nie wysyłamy nic. Ochrona przed spamem bez captchy — patrz `App\Services\ContactFormGuard`.
 
 ## Ustawienia zaawansowane sklepu
 

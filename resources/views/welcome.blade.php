@@ -133,8 +133,8 @@
                          Okno czytamy z configu, żeby tekst nie zaczął kłamać po
                          zmianie liczby. --}}
                     @php($noticeDays = (int) config('shop.subscription.notice_days'))
-                    <p class="mt-3 text-stone-600">Pakiet Kram jest bezpłatny bez limitu czasu. Płatne pakiety odblokowują integrację płatności online, wysyłkę z nadawaniem paczek i faktury. Wyżej przejdziesz kiedy zechcesz, dopłacając tylko różnicę.</p>
-                    <p class="mt-2 text-stone-600">Obsługa zwrotów konsumenckich jest w <span class="font-medium text-stone-800">każdym</span> pakiecie, także darmowym — razem z pouczeniem w mailu, formularzem odstąpienia dla klienta i rozliczeniem zwrotu w panelu.</p>
+                    <p class="mt-3 text-stone-600">Pakiet Kram jest bezpłatny bez limitu czasu. Płatne pakiety odblokowują integrację płatności online, wysyłkę z nadawaniem paczek i faktury, a do tego więcej produktów, banerów na stronie głównej i zdjęć w stronach informacyjnych. Wyżej przejdziesz kiedy zechcesz, dopłacając tylko różnicę.</p>
+                    <p class="mt-2 text-stone-600">Obsługa zwrotów konsumenckich jest w <span class="font-medium text-stone-800">każdym</span> pakiecie, także darmowym — razem z pouczeniem w mailu, formularzem odstąpienia dla klienta i rozliczeniem zwrotu w panelu. Tak samo zakładka Kontakt z formularzem, przez który klient zada pytanie przed zakupem.</p>
                     {{-- Doprecyzowanie postawione WPROST, bo poprzednia wersja („pakiet
                          odblokowuje płatności online") czytała się tak, jakbyśmy
                          odsprzedawali usługę płatniczą w abonamencie. Nie robimy tego:

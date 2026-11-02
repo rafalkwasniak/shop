@@ -218,6 +218,15 @@ class SubscriptionLifecycle
                 .' w sklepie. Nic nie zostało usunięte — możesz też sam wybrać, które produkty mają być widoczne.';
         }
 
+        // Banery nad limitem nie mają „ukrycia" w bazie — storefront po prostu
+        // pokazuje pierwsze z listy (Shop::storefrontBanners). Liczymy więc
+        // na żywo, ile wypadło, żeby mail mówił to samo co sklep.
+        $banners = $shop->banners()->count();
+        $bannerLimit = max(0, (int) $shop->entitlement('max_banners'));
+        if ($banners > $bannerLimit) {
+            $second[] = 'Na stronie głównej widać teraz '.$bannerLimit.' z '.$banners.' banerów — kolejne z listy wrócą po opłaceniu pakietu.';
+        }
+
         $second[] = 'Po opłaceniu pakietu wszystko wraca takie, jak było, razem z ukrytymi produktami i ustawieniami.';
 
         EmailMessage::create([
