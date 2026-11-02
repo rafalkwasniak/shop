@@ -83,6 +83,10 @@ class SitemapController extends Controller
             $urls[] = ['loc' => $base.$item['url'], 'priority' => '0.3'];
         }
 
+        if ($shop->contactFormEnabled()) {
+            $urls[] = ['loc' => $base.'/kontakt', 'priority' => '0.3'];
+        }
+
         return $this->xml($urls);
     }
 

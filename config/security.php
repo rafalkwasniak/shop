@@ -82,6 +82,34 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Formularz kontaktowy storefrontu — ochrona przed spamem
+    |--------------------------------------------------------------------------
+    |
+    | Warstwy niewidoczne dla człowieka, bez captchy (patrz ContactFormGuard):
+    |
+    | `min_seconds` — podpisany znacznik czasu w formularzu; wysłanie szybciej
+    |   niż w tyle sekund od wyświetlenia to robot, nie człowiek piszący pytanie.
+    | `max_links` — więcej odnośników w treści = spam reklamowy. Pytanie o kawę
+    |   ma zero linków, czasem jeden; limit zostawia zapas.
+    | `per_ip` — limity na adres IP: [liczba, minuty]. Przekroczenie widzi
+    |   człowiek (komunikat), bo to może być ktoś, kto naprawdę pisze dużo.
+    | `per_shop_daily` — sufit wiadomości na sklep na dobę. Chroni skrzynkę
+    |   sprzedawcy i reputację serwera pocztowego: zalew odrzuconych listów
+    |   potrafi zepchnąć do spamu także maile o ZAMÓWIENIACH.
+    |
+    */
+    'contact_form' => [
+        'min_seconds' => 3,
+        'max_links' => 3,
+        'per_ip' => [
+            ['max_attempts' => 3, 'decay_minutes' => 10],
+            ['max_attempts' => 10, 'decay_minutes' => 1440],
+        ],
+        'per_shop_daily' => 50,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Nagłówki bezpieczeństwa odpowiedzi
     |--------------------------------------------------------------------------
     |

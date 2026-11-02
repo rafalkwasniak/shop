@@ -32,4 +32,19 @@ class MailMarkup
 
         return preg_replace('/\*\*(.+?)\*\*/s', '<strong>$1</strong>', $withLinks);
     }
+
+    /**
+     * Tekst wpisany przez OSOBĘ Z ZEWNĄTRZ (np. formularz kontaktowy), który
+     * ma przejść przez `inline()` dosłownie — bez pogrubień i bez odnośników.
+     *
+     * Escapowanie w `inline()` chroni przed HTML-em, ale nie przed naszymi
+     * własnymi znacznikami: `[Twoje zamówienie](https://obcy.adres)` wpisane
+     * w formularz zamieniłoby się w mailu do sprzedawcy w klikalny link
+     * z dowolnym podpisem. Wstawiamy znak zerowej szerokości w środek znaczników
+     * — tekst wygląda identycznie, a wzorce przestają pasować.
+     */
+    public static function literal(string $text): string
+    {
+        return str_replace(['**', ']('], ["*\u{200B}*", "]\u{200B}("], $text);
+    }
 }

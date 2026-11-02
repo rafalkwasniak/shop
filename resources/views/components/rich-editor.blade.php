@@ -3,6 +3,10 @@
     'value' => '',
     'aiField' => null,
     'max' => null,
+    // Zdjęcia w treści: adres wgrywania + licznik [użyte, limit]. Tylko strony
+    // „Informacje" — opisy produktów i sklepu zdjęć w treści nie mają.
+    'imageUploadUrl' => null,
+    'imageUsage' => null,
 ])
 
 @php($toolbarId = $name.'-toolbar')
@@ -40,6 +44,12 @@
             <button type="button" class="trix-button" data-trix-attribute="number" title="Lista numerowana" tabindex="-1">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>
             </button>
+            @if ($imageUploadUrl)
+                {{-- Nie `data-trix-action` — własny przycisk; obsługa w skrypcie niżej. --}}
+                <button type="button" class="trix-button" data-image-button data-for="{{ $name }}" title="Wstaw zdjęcie" tabindex="-1">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"/></svg>
+                </button>
+            @endif
         </span>
         <span class="trix-button-group-spacer"></span>
         <span class="trix-button-group trix-button-group--history-tools" data-trix-button-group="history-tools">
@@ -65,11 +75,74 @@
 </trix-toolbar>
 <trix-editor input="{{ $name }}" toolbar="{{ $toolbarId }}" class="trix-content"></trix-editor>
 
+@if ($imageUploadUrl)
+    <input type="file" accept="image/jpeg,image/png,image/webp" hidden
+        data-image-input data-for="{{ $name }}" data-upload-url="{{ $imageUploadUrl }}">
+
+    {{-- Wstawianie zdjęć: wgranie przez fetch i `<img>` do edytora. Skrypt
+         WBUDOWANY, nie w app.js — bez przebudowy front-endu. app.js blokuje
+         przeciąganie plików do Trixa (`trix-file-accept`) i tak zostaje:
+         jedyna droga to ten przycisk, który pilnuje limitu i zmniejsza zdjęcie. --}}
+    @once
+        <script>
+            document.addEventListener('click', function (event) {
+                var button = event.target.closest('[data-image-button]');
+                if (!button) return;
+                var input = document.querySelector('[data-image-input][data-for="' + button.dataset.for + '"]');
+                if (input) input.click();
+            });
+
+            document.addEventListener('change', function (event) {
+                var input = event.target.closest('[data-image-input]');
+                if (!input || !input.files.length) return;
+
+                var editor = document.querySelector('trix-editor[input="' + input.dataset.for + '"]');
+                var button = document.querySelector('[data-image-button][data-for="' + input.dataset.for + '"]');
+                var body = new FormData();
+                body.append('image', input.files[0]);
+                input.value = '';
+                button.disabled = true;
+
+                fetch(input.dataset.uploadUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    },
+                    body: body,
+                })
+                    .then(function (response) {
+                        return response.json().then(function (data) { return { ok: response.ok, data: data }; });
+                    })
+                    .then(function (result) {
+                        if (!result.ok) {
+                            var errors = result.data.errors && result.data.errors.image;
+                            throw new Error(errors ? errors[0] : (result.data.message || 'Nie udało się wgrać zdjęcia.'));
+                        }
+                        editor.focus();
+                        editor.editor.insertHTML('<img src="' + result.data.src + '" width="' + result.data.width + '" height="' + result.data.height + '" alt="">');
+                        document.querySelectorAll('[data-image-used][data-for="' + input.dataset.for + '"]').forEach(function (el) {
+                            el.textContent = result.data.used;
+                        });
+                    })
+                    .catch(function (error) {
+                        if (window.showToast) window.showToast(error.message || 'Nie udało się wgrać zdjęcia.', 'error');
+                    })
+                    .finally(function () { button.disabled = false; });
+            });
+        </script>
+    @endonce
+@endif
+
 <div class="mt-1 flex items-start justify-between gap-3">
     <p class="text-xs text-stone-400">
         {{ $slot }}
         @if ($max)
             <span class="whitespace-nowrap text-stone-500"><span data-rich-count data-for="{{ $name }}">0</span> / {{ $max }} znaków (z formatowaniem)</span>
+        @endif
+        @if ($imageUploadUrl && $imageUsage)
+            {{-- Limit „praktycznie bez końca" (sklep dedykowany) nie ma czego pokazywać. --}}
+            <span class="whitespace-nowrap text-stone-500">· Zdjęcia w stronach: <span data-image-used data-for="{{ $name }}">{{ $imageUsage[0] }}</span>@if ($imageUsage[1] < 10000) z {{ $imageUsage[1] }}@endif</span>
         @endif
     </p>
     @if ($aiField)

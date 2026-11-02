@@ -6,6 +6,9 @@
         // przewodni" oraz wirtualną próbkę „custom" przy każdym szablonie.
         $brandColor = $shop->brandColor();
 
+        // Karta „Banery na stronie głównej" (osobny ekran Wygląd → Banery).
+        $bannerCount = $shop->banners()->count();
+
         // Charakter sklepu — krój nagłówków i stopień zaokrągleń (config/themes.php).
         // Te dwie osie są niezależne od szablonu, więc jeden zestaw zmiennych CSS
         // idzie na WSZYSTKIE kafle podglądu naraz. Wypisujemy je serwerowo, żeby
@@ -21,7 +24,22 @@
 
     <div class="grid gap-6 lg:grid-cols-12">
         {{-- Główna kolumna: formularz --}}
-        <div class="lg:col-span-8">
+        <div class="lg:col-span-8 space-y-6">
+            {{-- Banery mają osobny ekran (własne formularze nie zmieszczą się
+                 w tym — formularzy HTML nie da się zagnieżdżać). --}}
+            <div id="banery" class="scroll-mt-24 flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-white/60 bg-white/70 p-6 backdrop-blur">
+                <div>
+                    <h2 class="font-semibold text-stone-900">Banery na stronie głównej</h2>
+                    <p class="mt-1 text-sm text-stone-500">
+                        {{ $bannerCount === 0 ? 'Duży obrazek albo pokaz kilku obrazków pod nazwą sklepu.' : 'Dodane banery: '.$bannerCount.' z '.(int) $shop->entitlement('max_banners').'.' }}
+                    </p>
+                </div>
+                <a href="{{ route('seller.banners.index') }}"
+                    class="shrink-0 rounded-xl border border-stone-200 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition hover:bg-stone-100">
+                    {{ $bannerCount === 0 ? 'Dodaj baner' : 'Zarządzaj banerami' }}
+                </a>
+            </div>
+
             <form method="POST" action="{{ route('seller.appearance.update') }}" class="space-y-6" enctype="multipart/form-data" novalidate data-validate>
                 @csrf
 

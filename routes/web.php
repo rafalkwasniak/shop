@@ -30,6 +30,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RobotsController;
 use App\Http\Controllers\Seller\AnalyticsController;
 use App\Http\Controllers\Seller\AppearanceController;
+use App\Http\Controllers\Seller\BannerController;
 use App\Http\Controllers\Seller\BulkMailingController;
 use App\Http\Controllers\Seller\CompanyLookupController;
 use App\Http\Controllers\Seller\CustomerController;
@@ -40,6 +41,7 @@ use App\Http\Controllers\Seller\IntegrationController;
 use App\Http\Controllers\Seller\OrderController;
 use App\Http\Controllers\Seller\PackageController;
 use App\Http\Controllers\Seller\PageController;
+use App\Http\Controllers\Seller\PageImageController;
 use App\Http\Controllers\Seller\ProductController;
 use App\Http\Controllers\Seller\ProductImageController;
 use App\Http\Controllers\Seller\ShipmentPickupController;
@@ -51,6 +53,7 @@ use App\Http\Controllers\Storefront\AccountController as StorefrontAccount;
 use App\Http\Controllers\Storefront\ActivationController as StorefrontActivation;
 use App\Http\Controllers\Storefront\AuthController as StorefrontAuth;
 use App\Http\Controllers\Storefront\CartController as StorefrontCart;
+use App\Http\Controllers\Storefront\ContactController as StorefrontContact;
 use App\Http\Controllers\Storefront\CheckoutController as StorefrontCheckout;
 use App\Http\Controllers\Storefront\HomeController as StorefrontHome;
 use App\Http\Controllers\Storefront\OrderReturnController as StorefrontOrderReturn;
@@ -412,6 +415,17 @@ Route::middleware(['auth', 'role:seller,employee', 'ensure.consents'])
         Route::middleware('section:content')->group(function () {
             Route::get('/wyglad', [AppearanceController::class, 'edit'])->name('appearance.edit');
             Route::post('/wyglad', [AppearanceController::class, 'update'])->name('appearance.update');
+
+            // Banery strony głównej (slider). Osobny ekran, bo „Wygląd" to jeden
+            // duży formularz, a formularzy HTML nie da się zagnieżdżać.
+            Route::get('/wyglad/banery', [BannerController::class, 'index'])->name('banners.index');
+            Route::get('/wyglad/banery/nowy', [BannerController::class, 'create'])->name('banners.create');
+            Route::post('/wyglad/banery', [BannerController::class, 'store'])->name('banners.store');
+            Route::post('/wyglad/banery/kolejnosc', [BannerController::class, 'reorder'])->name('banners.reorder');
+            Route::post('/wyglad/banery/czas', [BannerController::class, 'interval'])->name('banners.interval');
+            Route::get('/wyglad/banery/{banner}/edycja', [BannerController::class, 'edit'])->name('banners.edit');
+            Route::post('/wyglad/banery/{banner}', [BannerController::class, 'update'])->name('banners.update');
+            Route::post('/wyglad/banery/{banner}/usun', [BannerController::class, 'destroy'])->name('banners.destroy');
         });
 
         // Zamówienia (podgląd + zmiana statusu). Lista i szczegół; zmiana statusu przez POST.
@@ -481,6 +495,9 @@ Route::middleware(['auth', 'role:seller,employee', 'ensure.consents'])
             Route::get('/informacje/nowa', [PageController::class, 'create'])->name('pages.create');
             Route::post('/informacje', [PageController::class, 'store'])->name('pages.store');
             Route::post('/informacje/kolejnosc', [PageController::class, 'reorder'])->name('pages.reorder');
+            // Zdjęcie do treści strony (JSON, przycisk w edytorze). Przed {page},
+            // żeby „zdjecia" nie wpadło w wiązanie modelu.
+            Route::post('/informacje/zdjecia', [PageImageController::class, 'store'])->name('pages.images.store');
             Route::get('/informacje/{page}/edycja', [PageController::class, 'edit'])->name('pages.edit');
             Route::post('/informacje/{page}', [PageController::class, 'update'])->name('pages.update');
             Route::post('/informacje/{page}/usun', [PageController::class, 'destroy'])->name('pages.destroy');
@@ -584,6 +601,10 @@ $storefrontRoutes = function () {
     Route::get('/informacje/{page}', [StorefrontPage::class, 'show'])->name('storefront.page');
     // Stary adres → 301 na nowy kanoniczny (przeniesienie na stałe).
     Route::redirect('/polityka-prywatnosci', '/informacje/'.config('pages.privacy.slug'), 301);
+    // Kontakt: dane firmy + formularz. Limity antyspamowe liczy ContactFormGuard
+    // (z komunikatem dla człowieka), nie middleware `throttle`, które dałoby 429.
+    Route::get('/kontakt', [StorefrontContact::class, 'show'])->name('storefront.contact');
+    Route::post('/kontakt', [StorefrontContact::class, 'store'])->name('storefront.contact.store');
     Route::get('/koszyk', [StorefrontCart::class, 'show'])->name('storefront.cart');
     Route::get('/kasa', [StorefrontCheckout::class, 'show'])->name('storefront.checkout');
     Route::get('/kasa/dziekujemy', [StorefrontCheckout::class, 'confirmation'])->name('storefront.checkout.confirmation');

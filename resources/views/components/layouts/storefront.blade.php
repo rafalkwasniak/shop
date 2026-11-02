@@ -226,6 +226,9 @@
         .st-prose h3 { margin-top: 1.5rem; margin-bottom: 0.5rem; font-size: 1.05rem; font-weight: 600; }
         .st-prose :is(h2, h3):first-child { margin-top: 0; }
         .st-prose p { margin-bottom: 1rem; }
+        /* Zdjęcia w treści stron: nie szersze niż kolumna, proporcje z pliku
+           (`width`/`height` w tagu = brak skakania przy ładowaniu). */
+        .st-prose img { display: block; max-width: 100%; height: auto; margin: 1.25rem 0; border-radius: 1rem; }
         .st-prose ul, .st-prose ol { margin-bottom: 1rem; padding-left: 1.5rem; }
         .st-prose ul { list-style: disc; }
         .st-prose ol { list-style: decimal; }
@@ -304,6 +307,9 @@
                             @foreach ($infoMenu as $item)
                                 <a href="{{ $item['url'] }}" wire:navigate class="st-menu-item st-brand -mx-4 px-4 py-3">{{ $item['label'] }}</a>
                             @endforeach
+                            @if ($shop->contactFormEnabled())
+                                <a href="/kontakt" wire:navigate class="st-menu-item st-brand -mx-4 px-4 py-3">Kontakt</a>
+                            @endif
                             @auth('customer')
                                 @php
                                     $greetName = \App\Support\Vocative::of(auth('customer')->user()->name);
@@ -360,6 +366,9 @@
                      stronami przejmuje lewe menu w skorupie (information-shell). --}}
                 @if (count($infoMenu))
                     <a href="{{ $infoMenu[0]['url'] }}" wire:navigate class="st-brand transition hover:brightness-95">Informacje</a>
+                @endif
+                @if ($shop->contactFormEnabled())
+                    <a href="/kontakt" wire:navigate class="st-brand transition hover:brightness-95">Kontakt</a>
                 @endif
 
                 {{-- Konto — za „Informacje", oddzielone smukłą pionową linią z nieco
@@ -441,10 +450,13 @@
             </div>
 
             {{-- Kontakt --}}
-            @if (filled($shop->contact_email) || filled($shop->contact_phone))
+            @if (filled($shop->contact_email) || filled($shop->contact_phone) || $shop->contactFormEnabled())
                 <div>
                     <h2 class="text-sm font-semibold">Kontakt</h2>
                     <ul class="mt-3 space-y-2 text-sm opacity-80">
+                        @if ($shop->contactFormEnabled())
+                            <li><a href="/kontakt" wire:navigate class="transition hover:opacity-100">Napisz do nas</a></li>
+                        @endif
                         @if (filled($shop->contact_email))
                             <li><a href="mailto:{{ $shop->contact_email }}" class="transition hover:opacity-100">{{ $shop->contact_email }}</a></li>
                         @endif

@@ -36,6 +36,12 @@ class ShopManager extends Component
     /** Ile kont pracowniczych mieści sklep. Zero = funkcji nie ma. */
     public int $max_employees = 0;
 
+    /** Ile banerów na stronie głównej (slider). */
+    public int $max_banners = 0;
+
+    /** Ile zdjęć łącznie w stronach „Informacje" całego sklepu. */
+    public int $max_page_images = 0;
+
     public bool $online_payments = false;
 
     public bool $courier_shipping = false;
@@ -109,6 +115,8 @@ class ShopManager extends Component
             'max_products' => 'Limit produktów',
             'ai_weekly_limit' => 'Zadania AI / tydzień',
             'max_employees' => 'Konta pracowników',
+            'max_banners' => 'Banery na stronie głównej',
+            'max_page_images' => 'Zdjęcia w stronach (łącznie)',
         ];
     }
 

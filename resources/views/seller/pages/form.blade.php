@@ -33,7 +33,8 @@
 
                         <div>
                             <label class="block text-sm font-medium text-stone-700">Treść</label>
-                            <x-rich-editor name="content" :value="old('content', $page->content)" ai-field="page_content" :max="config('pages.content_max')">Napisz treść strony — np. zasady dostawy, zwrotów albo słowo o sklepie.</x-rich-editor>
+                            <x-rich-editor name="content" :value="old('content', $page->content)" ai-field="page_content" :max="config('pages.content_max')"
+                                :image-upload-url="route('seller.pages.images.store')" :image-usage="$imageUsage">Napisz treść strony — np. zasady dostawy, zwrotów albo słowo o sklepie.</x-rich-editor>
                             @if ($page->is_system)
                                 {{-- Wersja wzoru jedzie razem z treścią, a nie osobnym zapisem:
                                      wstawienie do edytora niczego nie utrwala, więc wersję da się

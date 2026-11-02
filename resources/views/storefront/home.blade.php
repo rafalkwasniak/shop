@@ -35,6 +35,9 @@
         <h1 class="st-brand font-serif text-5xl font-normal leading-tight tracking-tight sm:text-6xl lg:text-7xl">{{ $shop->name }}</h1>
     </header>
 
+    {{-- Banery pod nazwą sklepu — na całą szerokość, poza kontenerem treści. --}}
+    <x-storefront.banners :shop="$shop" :banners="$shop->storefrontBanners()" />
+
     <main class="mx-auto max-w-6xl px-6 pt-12">
         {{-- 1 produkt → KAFELEK: zdjęcie w naturalnych proporcjach na górze,
              POD nim info (nazwa w akcencie, wycinek opisu, „Pokaż produkt").

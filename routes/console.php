@@ -47,6 +47,10 @@ Schedule::command('shipments:refresh')->everyMinute()->withoutOverlapping();
 // a paczka potrafi leżeć w skrytce kilka dni.
 Schedule::command('shipments:refresh --deliveries')->hourly()->withoutOverlapping();
 
+// Zdjęcia wgrane do edytora stron, ale nigdy niezapisane w treści (zamknięty
+// edytor bez „Zapisz"). Wycięte przy zapisie strony znikają od razu.
+Schedule::command('pages:prune-images')->dailyAt('03:30')->withoutOverlapping();
+
 // Abonamenty: przypomnienia przed terminem i zamek po karencji. Raz na dobę o
 // świcie — maile idą przez outbox, więc godzina jest tylko chwilą, w której
 // wpadają do kolejki. Komenda jest idempotentna, więc powtórka nic nie psuje.

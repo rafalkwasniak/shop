@@ -28,6 +28,7 @@ class ShopSettingsRequest extends FormRequest
     {
         $this->merge([
             'bank_transfer_enabled' => $this->boolean('bank_transfer_enabled'),
+            'contact_form_enabled' => $this->boolean('contact_form_enabled'),
             'pickup_enabled' => $this->boolean('pickup_enabled'),
             'pay_on_pickup_enabled' => $this->boolean('pay_on_pickup_enabled'),
             'courier_enabled' => $this->boolean('courier_enabled'),
@@ -86,6 +87,7 @@ class ShopSettingsRequest extends FormRequest
             'default_vat_rate' => ['required', Rule::enum(VatRate::class)],
             'default_sale_unit' => ['required', Rule::enum(SaleUnit::class)],
             'bank_transfer_enabled' => ['boolean'],
+            'contact_form_enabled' => ['boolean'],
             'pickup_enabled' => ['boolean'],
             'pay_on_pickup_enabled' => ['boolean'],
             'courier_enabled' => ['boolean'],
@@ -130,6 +132,7 @@ class ShopSettingsRequest extends FormRequest
             'default_vat_rate' => 'domyślna stawka VAT',
             'default_sale_unit' => 'domyślna jednostka sprzedaży',
             'bank_transfer_enabled' => 'przelew na konto',
+            'contact_form_enabled' => 'formularz kontaktowy',
             'pickup_enabled' => 'odbiór osobisty',
             'pay_on_pickup_enabled' => 'płatność przy odbiorze',
             'courier_enabled' => 'dostawa kurierem',

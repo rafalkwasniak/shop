@@ -325,6 +325,25 @@
                     </div>
                 </div>
 
+                {{-- Kontakt — zakładka z formularzem na storefroncie --}}
+                <div class="rounded-3xl border border-white/60 bg-white/70 p-6 backdrop-blur">
+                    <h2 class="font-semibold text-stone-900">Kontakt</h2>
+                    <p class="mt-1 text-sm text-stone-500">Zakładka „Kontakt” w menu sklepu: Twoje dane firmowe i formularz, przez który klienci mogą zadać pytanie.</p>
+
+                    <div class="mt-6 space-y-4">
+                        <div class="flex items-start gap-4 rounded-2xl border border-stone-200 bg-white/60 p-5 sm:p-6">
+                            <input type="hidden" name="contact_form_enabled" value="0">
+                            <input type="checkbox" id="contact_form_enabled" name="contact_form_enabled" value="1"
+                                @checked(old('contact_form_enabled', $shop->contact_form_enabled))
+                                class="mt-0.5 h-5 w-5 shrink-0 rounded-md border-stone-300 text-amber-600 focus:ring-4 focus:ring-amber-500/20">
+                            <label for="contact_form_enabled" class="flex-1 cursor-pointer">
+                                <span class="block text-sm font-medium text-stone-800">Formularz kontaktowy</span>
+                                <span class="mt-0.5 block text-sm text-stone-500">Wiadomości przychodzą na {{ $shop->contactFormRecipient() ?? 'Twój adres e-mail' }} — odpowiadasz zwykłym „Odpowiedz”, prosto do klienta. Formularz jest chroniony przed spamem.</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
                 {{-- Integracje (włączniki; konfiguracja w zakładce Integracje) --}}
                 <div class="rounded-3xl border border-white/60 bg-white/70 p-6 backdrop-blur">
                     <h2 class="font-semibold text-stone-900">Integracje</h2>

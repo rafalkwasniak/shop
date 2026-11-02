@@ -32,7 +32,7 @@ use Illuminate\Support\Facades\DB;
 #[ObservedBy(ShopObserver::class)]
 #[Fillable([
     'name', 'slug', 'domain', 'status', 'description', 'meta_description', 'meta_description_manual', 'company_name', 'nip', 'logo_path',
-    'contact_email', 'contact_phone',
+    'contact_email', 'contact_phone', 'contact_form_enabled', 'banner_interval',
     'template', 'theme',
     'country', 'province', 'city', 'postal_code', 'street', 'building_number', 'apartment_number',
     'default_vat_rate', 'default_sale_unit',
@@ -64,6 +64,7 @@ class Shop extends Model
             'meta_description_manual' => 'boolean',
             'default_vat_rate' => VatRate::class,
             'default_sale_unit' => SaleUnit::class,
+            'contact_form_enabled' => 'boolean',
             'bank_transfer_enabled' => 'boolean',
             'pickup_enabled' => 'boolean',
             'pay_on_pickup_enabled' => 'boolean',
@@ -130,6 +131,47 @@ class Shop extends Model
     public function pages(): HasMany
     {
         return $this->hasMany(Page::class);
+    }
+
+    /**
+     * Banery strony głównej w kolejności ustawionej przez sprzedawcę.
+     *
+     * @return HasMany<ShopBanner, $this>
+     */
+    public function banners(): HasMany
+    {
+        return $this->hasMany(ShopBanner::class)->orderBy('position')->orderBy('id');
+    }
+
+    /**
+     * Banery do pokazania DZIŚ na stronie głównej.
+     *
+     * Limit pakietu liczymy po KOLEJNOŚCI wszystkich banerów, nie tylko
+     * widocznych: po zejściu na niższy pakiet gasną te z końca listy, a nie
+     * losowe — i sprzedawca widzi w panelu, które to. Niczego nie kasujemy;
+     * po powrocie na wyższy pakiet wracają same.
+     *
+     * @return \Illuminate\Support\Collection<int, ShopBanner>
+     */
+    public function storefrontBanners(): \Illuminate\Support\Collection
+    {
+        $allowed = $this->banners()
+            ->limit(max(0, (int) $this->entitlement('max_banners')))
+            ->pluck('id');
+
+        return $this->banners()
+            ->whereIn('id', $allowed)
+            ->showingToday()
+            ->get();
+    }
+
+    /** Sekundy między slajdami, w granicach z configu. */
+    public function bannerInterval(): int
+    {
+        return max(
+            (int) config('shop.banners.interval_min'),
+            min((int) config('shop.banners.interval_max'), (int) ($this->banner_interval ?: config('shop.banners.interval_default'))),
+        );
     }
 
     /**
@@ -1184,6 +1226,43 @@ class Shop extends Model
     public function contactPhoneHref(): ?string
     {
         return app(PhoneService::class)->href($this->contact_phone);
+    }
+
+    /**
+     * Czy storefront pokazuje zakładkę „Kontakt" z formularzem. Włącznik to
+     * decyzja sprzedawcy, ale bez adresu odbiorcy formularz nie miałby dokąd
+     * wysłać wiadomości — wtedy zakładki nie ma, zamiast przyjmować listy,
+     * których nikt nie przeczyta.
+     */
+    public function contactFormEnabled(): bool
+    {
+        return (bool) $this->contact_form_enabled && $this->contactFormRecipient() !== null;
+    }
+
+    /**
+     * Dokąd idą wiadomości z formularza: e-mail kontaktowy sklepu (ten, który
+     * sprzedawca podał klientom), a gdy go brak — adres właściciela konta.
+     */
+    public function contactFormRecipient(): ?string
+    {
+        $email = trim((string) $this->contact_email) ?: trim((string) $this->owner?->email);
+
+        return $email !== '' ? $email : null;
+    }
+
+    /**
+     * Link „Pokaż na mapie" na stronie Kontakt — wyszukiwanie adresu w Mapach
+     * Google w nowej karcie. Celowo link, nie osadzona mapa: osadzenie ładuje
+     * skrypty i ciasteczka Google przy samym wejściu na stronę (zgoda na
+     * cookies) i spowalnia ją. Null, gdy sklep nie podał adresu.
+     */
+    public function mapUrl(): ?string
+    {
+        $address = $this->addressLine();
+
+        return $address !== null
+            ? 'https://www.google.com/maps/search/?api=1&query='.rawurlencode($address)
+            : null;
     }
 
     /**

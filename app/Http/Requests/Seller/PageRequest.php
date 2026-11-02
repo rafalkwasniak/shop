@@ -42,7 +42,11 @@ class PageRequest extends FormRequest
         ];
 
         if ($this->has('content')) {
-            $merge['content'] = app(HtmlSanitizer::class)->clean((string) $this->input('content'));
+            // Strony to jedyna treść ze zdjęciami — tylko z plików TEGO sklepu.
+            $merge['content'] = app(HtmlSanitizer::class)->cleanPage(
+                (string) $this->input('content'),
+                (int) $this->user()?->currentShop()?->id,
+            );
         }
 
         $this->merge($merge);

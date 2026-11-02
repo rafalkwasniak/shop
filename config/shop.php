@@ -119,6 +119,40 @@ return [
     |
     */
 
+    /*
+    | Banery strony głównej (slider). Liczbę banerów wyznacza pakiet
+    | (`max_banners`); tutaj tylko parametry techniczne obrazków.
+    |
+    | `widths` — szerokości wariantów WebP do `srcset`. Przeglądarka bierze
+    | najmniejszy wystarczający, więc telefon nie ciągnie obrazka 1920 px.
+    | Wariantów szerszych niż oryginał nie robimy (powiększanie = rozmycie).
+    */
+    'banners' => [
+        'widths' => [640, 1280, 1920],
+        'quality' => 82,
+        'max_upload_kb' => 20480,
+        'min_width' => 800,
+        'interval_default' => 6,
+        'interval_min' => 3,
+        'interval_max' => 10,
+    ],
+
+    /*
+    | Zdjęcia w stronach „Informacje" (Regulamin, Dzierżawa itp.). Limit
+    | sztuk to uprawnienie pakietu `max_page_images`, liczone na CAŁY sklep,
+    | nie na stronę — regulamin nie ma zdjęć, a instrukcja „krok po kroku"
+    | ma dziesięć. Tu tylko parametry techniczne (jak zdjęcia produktów).
+    |
+    | `orphan_hours` — zdjęcie wgrane, ale niezapisane w żadnej stronie
+    | (sprzedawca zamknął edytor bez „Zapisz"), znika po tylu godzinach.
+    */
+    'page_images' => [
+        'max_side' => 1600,
+        'quality' => 82,
+        'max_upload_kb' => 20480,
+        'orphan_hours' => 24,
+    ],
+
     'product_images' => [
         'max_side' => (int) env('PRODUCT_IMAGE_MAX_SIDE', 1600),
         'quality' => (int) env('PRODUCT_IMAGE_QUALITY', 82),
@@ -233,6 +267,8 @@ return [
             'entitlements' => [
                 'max_products' => 60,
                 'max_employees' => 0,
+                'max_banners' => 1,
+                'max_page_images' => 5,
                 'ai_weekly_limit' => 100,
                 'online_payments' => false,
                 'courier_shipping' => false,
@@ -253,6 +289,8 @@ return [
             'entitlements' => [
                 'max_products' => 300,
                 'max_employees' => 0,
+                'max_banners' => 6,
+                'max_page_images' => 20,
                 'ai_weekly_limit' => 400,
                 'online_payments' => true,
                 'courier_shipping' => true,
@@ -273,6 +311,8 @@ return [
             'entitlements' => [
                 'max_products' => 600,
                 'max_employees' => 5,
+                'max_banners' => 10,
+                'max_page_images' => 40,
                 'ai_weekly_limit' => 800,
                 'online_payments' => true,
                 'courier_shipping' => true,
@@ -313,6 +353,8 @@ return [
             'entitlements' => [
                 'max_products' => 1000000,
                 'max_employees' => 1000,
+                'max_banners' => 10,
+                'max_page_images' => 100000,
                 'ai_weekly_limit' => 100000,
                 'online_payments' => true,
                 'courier_shipping' => true,

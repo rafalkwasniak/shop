@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Seller\PageRequest;
 use App\Http\Requests\Seller\SellerTermsRequest;
 use App\Models\Page;
+use App\Models\PageImage;
+use App\Services\PageImageService;
 use App\Support\LoyaltyRules;
 use App\Support\SellerTerms;
 use Illuminate\Contracts\Support\Renderable;
@@ -42,6 +44,7 @@ class PageController extends Controller
         return view('seller.pages.form', [
             'page' => new Page,
             'homepage' => $this->homepageInfo($request),
+            'imageUsage' => $this->imageUsage($request),
         ]);
     }
 
@@ -66,12 +69,14 @@ class PageController extends Controller
         return view('seller.pages.form', [
             'page' => $page,
             'homepage' => $this->homepageInfo($request),
+            'imageUsage' => $this->imageUsage($request),
         ]);
     }
 
-    public function update(PageRequest $request, Page $page): RedirectResponse
+    public function update(PageRequest $request, Page $page, PageImageService $images): RedirectResponse
     {
         $this->authorizePage($request, $page);
+        $previous = $page->content;
 
         if ($page->isLocked()) {
             // Regulamin i Zasady punktów: wolno wypełnić treść, ale tytuł jest stały, strona zostaje
@@ -83,17 +88,22 @@ class PageController extends Controller
             $page->update($request->safe()->only('title', 'slug', 'content', 'meta_description', 'published', 'show_on_homepage'));
         }
 
+        // Zdjęcie wycięte z treści zwalnia miejsce w limicie od razu.
+        $images->releaseRemoved($page->shop, $previous);
+
         return redirect()->route('seller.pages.edit', $page)->with('success', 'Zapisano zmiany.');
     }
 
-    public function destroy(Request $request, Page $page): RedirectResponse
+    public function destroy(Request $request, Page $page, PageImageService $images): RedirectResponse
     {
         $this->authorizePage($request, $page);
 
         // Regulamin jest nieusuwalny, Zasady punktów — dopóki punkty są włączone.
         abort_unless($page->isDeletable(), 403);
 
+        $previous = $page->content;
         $page->delete();
+        $images->releaseRemoved($page->shop, $previous);
 
         return redirect()->route('seller.pages.index')->with('success', 'Strona została usunięta.');
     }
@@ -207,6 +217,21 @@ class PageController extends Controller
             ->route('seller.pages.edit', $page)
             ->withInput(['content' => LoyaltyRules::render($request->user()->currentShop())])
             ->with('success', 'Treść domyślna wstawiona do edytora. Przeczytaj ją i zapisz — dopiero zapis publikuje zmiany w Twoim sklepie.');
+    }
+
+    /**
+     * Licznik pod edytorem: [zdjęcia w stronach sklepu, limit z pakietu].
+     *
+     * @return array{0: int, 1: int}
+     */
+    private function imageUsage(Request $request): array
+    {
+        $shop = $request->user()->currentShop();
+
+        return [
+            PageImage::query()->where('shop_id', $shop->id)->count(),
+            max(0, (int) $shop->entitlement('max_page_images')),
+        ];
     }
 
     /**
