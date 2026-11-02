@@ -1,12 +1,15 @@
 ---
 name: demo-shop-aracaffee
-description: "Sklep demo Aracaffee (shop 20, aracaffee.kramio.pl) założony 14.10 dla klienta — uprawnienia Straganu+punkty przy pakiecie Kram"
+description: "USUNIĘTY z Kramio 02.11.2026 (bez śladu, sklep żyje jako dedykowany). Dawniej: Sklep demo Aracaffee (shop 20, aracaffee.kramio.pl) założony 14.10 dla klienta — uprawnienia Straganu+punkty przy pakiecie Kram"
 metadata:
   node_type: memory
   type: project
   originSessionId: c618c1df-18ce-4b5f-8801-c52884901a75
   modified: 2026-10-23T09:09:54.082Z
 ---
+
+> **02.11.2026: SKLEP 20 I KONTO 22 USUNIĘTE Z KRAMIO BEZ ŚLADU** (prośba Rafała). Aracaffee żyje dalej jako sklep dedykowany — [[plan-aracaffee-dedicated]]. Usunięte ręcznie tą samą drogą co `ShopEraser::erase()`, ale **bez maila pożegnalnego** (klient dostawałby „sklep usunięty”) i **bez kwarantanny adresu** (`reserved_slugs`). Sprawdzone: zero wierszy, zero wzmianek „aracaffee”/„tekawa” w bazie, pliki skasowane, `aracaffee.kramio.pl` = strona „adres wolny”. W automatycznych kopiach zapasowych dane zostają do ich rotacji (14 dni).
+
 
 14.10.2026 założony z oferty `sklep.aracaffee.com` (za zgodą właściciela, FHU TEKAWA Maciej Kaczkowski, Tychy) jako **demo dla klienta**.
 

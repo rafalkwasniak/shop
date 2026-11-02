@@ -22,7 +22,7 @@
 
 ## Otwarte / do decyzji
 - [Pracownicy sklepu: kroki 1-2 WDROŻONE](plan-shop-employees.md) — krok 3 w toku. **Cherry-pick do Magellana jeszcze NIE zrobiony.**
-- [Sklep demo Aracaffee](demo-shop-aracaffee.md) — shop 20, Kram + uprawnienia Straganu i punkty. **Zakup Straganu zgasi punkty.** Od 15.10 u klienta; od 23.10 login `tekawa7@gmail.com`.
+- [Sklep demo Aracaffee — USUNIĘTY 02.11](demo-shop-aracaffee.md) — sklep 20 i konto 22 skasowane z Kramio bez śladu; klient jest teraz w instalacji dedykowanej.
 - [Aracaffee — sklep dedykowany](plan-aracaffee-dedicated.md) — 02.11 **SKLEP STOI**; formularz, banery, zdjęcia w stronach — zrobione i JUŻ W KRAMIO. Zostało: „umowa Tekawa” (czeka na klienta), bramka płatności. Na domenie klienta `SEO_INDEXING=true`. Po akceptacji shop 20 w Kramio kasujemy.
 - [Magellan Bay — osobny projekt](plan-magellan-bay-separate-project.md) — **oferta 6 000 zł wysłana 01.09, czekamy.** NIE część roadmapy Kramio.
 - [OTWARTE: limit 250 procesów](open-hosting-process-limit.md) — **w trakcie pracy testy FILTROWANE**, pełna suita raz przed commitem.
