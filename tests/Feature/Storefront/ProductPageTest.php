@@ -3,6 +3,7 @@
 namespace Tests\Feature\Storefront;
 
 use App\Enums\UserRole;
+use App\Livewire\AddToCart;
 use App\Models\Product;
 use App\Models\Shop;
 use App\Models\User;
@@ -40,7 +41,7 @@ class ProductPageTest extends TestCase
             ->assertOk()
             ->assertSee('Kubek Ceramiczny')
             ->assertSee('29,90 zł')
-            ->assertSeeLivewire(\App\Livewire\AddToCart::class);
+            ->assertSeeLivewire(AddToCart::class);
     }
 
     public function test_product_page_shows_delivery_and_payment_summary(): void
@@ -198,5 +199,30 @@ class ProductPageTest extends TestCase
             ->assertSee('BreadcrumbList', false)
             ->assertSee('"name":"Srebrny Kram"', false)
             ->assertSee('"name":"Bransoletka"', false);
+    }
+
+    public function test_gallery_stacks_all_photos_so_thumbnails_stay_put(): void
+    {
+        $shop = Shop::factory()->active()->sellable()->create();
+        $product = $this->product($shop);
+
+        foreach (range(1, 3) as $position) {
+            $product->images()->create([
+                'path' => 'products/'.$product->id.'/zdjecie-'.$position.'.webp',
+                'position' => $position,
+            ]);
+        }
+
+        // Wszystkie zdjęcia są w HTML-u od razu, jedno na drugim: komórka ma
+        // wysokość najwyższego, więc miniatury nie skaczą przy przełączaniu.
+        // Widać pierwsze; reszta ukryta przez `visibility`, ale zajmuje miejsce.
+        $html = $this->get($this->host($shop).$product->storefrontPath())
+            ->assertOk()
+            ->assertSee('data-gallery-interval="5000"', false)
+            ->getContent();
+
+        $this->assertSame(3, substr_count($html, ' data-gallery-slide'));
+        $this->assertSame(2, substr_count($html, 'opacity: 0; visibility: hidden;'));
+        $this->assertSame(3, substr_count($html, ' data-gallery-thumb'));
     }
 }

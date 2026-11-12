@@ -15,12 +15,27 @@
         <div class="mt-8 grid gap-8 md:grid-cols-5">
             {{-- Galeria — szersza kolumna (3/5) --}}
             <div class="md:col-span-3">
-                @php($main = $product->mainImage())
-                {{-- Karta produktu: zdjęcie takie, jak dodał sprzedawca — naturalne
-                     proporcje, bez przycinania i bez wypełniania. --}}
-                @if ($main)
-                    <img id="st-gallery-main" src="{{ $main->url() }}" alt="{{ $product->name }}"
-                        class="st-border w-full rounded-3xl border">
+                {{-- #st-gallery obejmuje TYLKO zdjęcia i miniatury — to strefa pauzy
+                     samoczynnej zmiany. Gdyby w kolumnie było coś jeszcze (np. opis),
+                     najechanie na to nie może zatrzymywać galerii. --}}
+                <div id="st-gallery" data-gallery-interval="5000">
+                {{-- Karta produktu: zdjęcia takie, jak dodał sprzedawca — naturalne
+                     proporcje, bez przycinania i bez wypełniania.
+
+                     Wszystkie zdjęcia leżą jedno na drugim w tej samej komórce siatki,
+                     widać tylko aktywne. Komórka ma wysokość NAJWYŻSZEGO zdjęcia, więc
+                     miniatury pod spodem stoją w miejscu — przy przełączaniu zmienia się
+                     tylko wolna przestrzeń pod niższym zdjęciem. Ukryte przez
+                     `visibility`, nie `display: none`: muszą dalej zajmować miejsce.
+                     Style inline, a nie klasy Tailwinda — działa bez przebudowy CSS. --}}
+                @if ($product->images->isNotEmpty())
+                    <div style="display: grid;">
+                        @foreach ($product->images as $img)
+                            <img src="{{ $img->url() }}" alt="{{ $product->name }}" data-gallery-slide
+                                class="st-border w-full rounded-3xl border"
+                                style="grid-area: 1 / 1; align-self: start; transition: opacity .6s ease, visibility .6s;{{ $loop->first ? '' : ' opacity: 0; visibility: hidden;' }}">
+                        @endforeach
+                    </div>
                 @else
                     <div class="st-card st-border flex items-center justify-center overflow-hidden rounded-3xl border" style="aspect-ratio: 1 / 1;">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="h-16 w-16 opacity-70" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5" fill="currentColor" stroke="none"/><path d="M4 17l4.5-4.5 3 3L15 12l5 5"/></svg>
@@ -34,15 +49,21 @@
                                  `aria-label` na przycisku, bo jego jedyną treścią jest obrazek —
                                  bez nazwy czytnik ekranu mówi tylko „przycisk". Zdjęcie w środku
                                  zostaje z pustym `alt`: opisuje je etykieta przycisku, więc
-                                 powtórzenie byłoby szumem. --}}
-                            <button type="button" data-gallery-thumb="{{ $img->url() }}"
+                                 powtórzenie byłoby szumem.
+                                 Aktywna miniatura: obwódka w kolorze sklepu (`--brand`). Ramka
+                                 + cień 1px zamiast grubszej ramki — rozmiar przycisku się nie
+                                 zmienia, więc nic nie drga. Pierwszą zaznaczamy już w HTML-u,
+                                 resztą zarządza skrypt galerii. --}}
+                            <button type="button" data-gallery-thumb
                                 aria-label="Pokaż zdjęcie {{ $loop->iteration }} z {{ $loop->count }}: {{ $product->name }}"
+                                @if ($loop->first) aria-current="true" style="border-color: var(--brand); box-shadow: 0 0 0 1px var(--brand);" @endif
                                 class="st-border h-16 w-16 overflow-hidden rounded-xl border transition hover:brightness-105">
                                 <img src="{{ $img->url() }}" alt="" class="h-full w-full object-cover">
                             </button>
                         @endforeach
                     </div>
                 @endif
+                </div>
             </div>
 
             {{-- Zakup — węższa kolumna po prawej (2/5). Całość wyrównana do prawej
@@ -114,16 +135,59 @@
         @endif
     </div>
 
-    {{-- Przełączanie zdjęcia głównego z miniatur (zero zależności). --}}
+    {{-- Galeria: przełączanie z miniatur + samoczynna zmiana co kilka sekund
+         (zero zależności). Przejście to animacja samego `opacity` — liczy ją
+         karta graficzna, bez przeliczania układu strony. Pauza, gdy kursor albo
+         fokus klawiatury jest nad galerią. Przy „ogranicz ruch” w systemie nie
+         ma ani przejścia, ani samoczynnej zmiany. --}}
     <script>
         (function () {
-            var main = document.getElementById('st-gallery-main');
-            if (!main) return;
-            document.querySelectorAll('[data-gallery-thumb]').forEach(function (btn) {
-                btn.addEventListener('click', function () {
-                    main.src = btn.getAttribute('data-gallery-thumb');
+            var root = document.getElementById('st-gallery');
+            if (!root) return;
+            var slides = root.querySelectorAll('[data-gallery-slide]');
+            var thumbs = root.querySelectorAll('[data-gallery-thumb]');
+            if (slides.length < 2) return;
+
+            var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            var interval = parseInt(root.getAttribute('data-gallery-interval'), 10) || 5000;
+            var current = 0, timer = null, hovered = false, focused = false;
+
+            if (reduced) slides.forEach(function (s) { s.style.transition = 'none'; });
+
+            function show(i) {
+                current = (i + slides.length) % slides.length;
+                slides.forEach(function (s, n) {
+                    s.style.opacity = n === current ? '1' : '0';
+                    s.style.visibility = n === current ? 'visible' : 'hidden';
                 });
+                thumbs.forEach(function (t, n) {
+                    var on = n === current;
+                    if (on) t.setAttribute('aria-current', 'true');
+                    else t.removeAttribute('aria-current');
+                    t.style.borderColor = on ? 'var(--brand)' : '';
+                    t.style.boxShadow = on ? '0 0 0 1px var(--brand)' : '';
+                });
+            }
+
+            function stop() { clearInterval(timer); timer = null; }
+            function start() {
+                stop();
+                if (reduced || hovered || focused) return;
+                timer = setInterval(function () { show(current + 1); }, interval);
+            }
+
+            thumbs.forEach(function (btn, n) {
+                btn.addEventListener('click', function () { show(n); start(); });
             });
+            root.addEventListener('mouseenter', function () { hovered = true; stop(); });
+            root.addEventListener('mouseleave', function () { hovered = false; start(); });
+            root.addEventListener('focusin', function () { focused = true; stop(); });
+            root.addEventListener('focusout', function (e) {
+                if (!root.contains(e.relatedTarget)) { focused = false; start(); }
+            });
+
+            show(0);
+            start();
         })();
     </script>
 </x-layouts.storefront>
