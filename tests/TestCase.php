@@ -65,6 +65,12 @@ abstract class TestCase extends BaseTestCase
         $this->isolateDisks();
         $this->isolateLogChannels();
         $this->skipShopCardRendering();
+
+        // Przyciski AI pokazują się tylko przy ustawionym kluczu dostawcy. Bez tej
+        // linii testy widoków zależałyby od tego, czy w `.env` danej instalacji
+        // akurat jest klucz. Fałszywy klucz jest bezpieczny: preventStrayRequests()
+        // wyżej i tak nie wypuści żadnego żądania do API.
+        config(['ai.providers.deepseek.key' => 'test-key']);
     }
 
     /**

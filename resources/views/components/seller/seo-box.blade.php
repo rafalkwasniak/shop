@@ -80,7 +80,8 @@
             Po wpisaniu własnego tekstu zostaje on na stałe — automat go nie zmieni. Aby wrócić do automatycznego, wyczyść pole.
         </p>
 
-        @if ($sourceField)
+        {{-- Bez klucza AI przycisk i licznik znikają — kliknięcie i tak nie miałoby szans. --}}
+        @if ($sourceField && \App\Services\Ai\AiProfile::available(\App\Services\SeoDescriptionWriter::TASK))
             {{-- Przycisk domyka lukę, którą tworzy reguła „ręczna edycja wygrywa":
                  kto raz napisał opis sam, bez tego przycisku nie mógłby już poprosić
                  automatu o nową wersję. --}}

@@ -145,7 +145,8 @@
             <span class="whitespace-nowrap text-stone-500">· Zdjęcia w stronach: <span data-image-used data-for="{{ $name }}">{{ $imageUsage[0] }}</span>@if ($imageUsage[1] < 10000) z {{ $imageUsage[1] }}@endif</span>
         @endif
     </p>
-    @if ($aiField)
+    {{-- Bez klucza AI przycisk i licznik znikają — kliknięcie i tak nie miałoby szans. --}}
+    @if ($aiField && \App\Services\Ai\AiProfile::available(\App\Services\AiTextImprover::TASK))
         {{-- Wyrównanie DO PRAWEJ: szerokość bloku wyznacza dłuższy od przycisku
              licznik użyć, więc bez tego przycisk odklejałby się od prawej krawędzi
              i wyglądał na zgubiony w środku wiersza. --}}

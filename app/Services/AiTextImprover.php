@@ -20,7 +20,7 @@ use RuntimeException;
 class AiTextImprover
 {
     /** Zadanie z `config('ai.tasks')` obsługujące redakcję tekstu. */
-    private const TASK = 'proofread';
+    public const TASK = 'proofread';
 
     public function __construct(private readonly AiClient $ai) {}
 

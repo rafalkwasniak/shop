@@ -68,4 +68,14 @@ class AiProfile
     {
         return $this->key !== '' && $this->model !== '' && $this->baseUrl !== '';
     }
+
+    /**
+     * Skrót dla widoków: czy pokazywać przyciski danego zadania. Bez klucza
+     * przycisk prowadziłby tylko do komunikatu „chwilowo niedostępna", który
+     * kłamie — usługa nie zadziała nigdy, więc przycisku po prostu nie ma.
+     */
+    public static function available(string $task): bool
+    {
+        return self::forTask($task)->isConfigured();
+    }
 }

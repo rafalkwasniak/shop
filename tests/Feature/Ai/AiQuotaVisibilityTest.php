@@ -7,6 +7,7 @@ use App\Models\Shop;
 use App\Models\User;
 use App\Services\AiQuota;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
@@ -71,6 +72,38 @@ class AiQuotaVisibilityTest extends TestCase
             ->assertSee('399');
     }
 
+    public function test_ai_buttons_show_when_the_key_is_set(): void
+    {
+        [$seller, $shop] = $this->sellerWithLimit(100);
+        $product = Product::factory()->create(['shop_id' => $shop->id]);
+
+        $this->actingAs($seller)->get(route('seller.products.edit', $product))
+            ->assertOk()
+            ->assertSee('data-ai-button', escape: false)
+            ->assertSee('data-ai-generate', escape: false)
+            ->assertSee('data-ai-quota', escape: false);
+    }
+
+    public function test_ai_buttons_disappear_without_the_key(): void
+    {
+        // Bez klucza kliknięcie kończyło się komunikatem „chwilowo niedostępna",
+        // choć usługa nie zadziałałaby nigdy. Lepiej nie kusić przyciskiem.
+        config(['ai.providers.deepseek.key' => '']);
+        [$seller, $shop] = $this->sellerWithLimit(100);
+        $product = Product::factory()->create(['shop_id' => $shop->id]);
+
+        $this->actingAs($seller)->get(route('seller.products.edit', $product))
+            ->assertOk()
+            ->assertDontSee('data-ai-button', escape: false)
+            ->assertDontSee('data-ai-generate', escape: false)
+            ->assertDontSee('data-ai-quota', escape: false);
+
+        $this->actingAs($seller)->get(route('seller.shop.edit'))
+            ->assertOk()
+            ->assertDontSee('data-ai-button', escape: false)
+            ->assertDontSee('data-ai-generate', escape: false);
+    }
+
     public function test_counter_is_read_once_per_request(): void
     {
         [$seller, $shop] = $this->sellerWithLimit(100, used: 3);
@@ -78,12 +111,12 @@ class AiQuotaVisibilityTest extends TestCase
 
         // Formularz produktu ma edytor z przyciskiem AI i box SEO z drugim —
         // licznik nie może przez to odpytywać bazy kilka razy na jedno wejście.
-        \Illuminate\Support\Facades\DB::enableQueryLog();
+        DB::enableQueryLog();
         $this->actingAs($seller)->get(route('seller.products.edit', $product))->assertOk();
-        $queries = collect(\Illuminate\Support\Facades\DB::getQueryLog())
+        $queries = collect(DB::getQueryLog())
             ->filter(fn ($q) => str_contains($q['query'], 'ai_usages'))
             ->count();
-        \Illuminate\Support\Facades\DB::disableQueryLog();
+        DB::disableQueryLog();
 
         $this->assertSame(1, $queries);
     }

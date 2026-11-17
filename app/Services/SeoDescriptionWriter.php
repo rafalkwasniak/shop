@@ -24,7 +24,7 @@ use RuntimeException;
 class SeoDescriptionWriter
 {
     /** Zadanie z `config('ai.tasks')`. */
-    private const TASK = 'seo_description';
+    public const TASK = 'seo_description';
 
     /**
      * Poniżej tylu znaków treści źródłowej nie ma czego streszczać — model
