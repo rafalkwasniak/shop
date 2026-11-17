@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: ad2d01af-7396-446a-bc53-3263cd9693a7
-  modified: 2026-08-15T14:13:09.585Z
+  modified: 2026-11-17T20:41:00.819Z
 ---
 
 Funkcja „Popraw przez AI" (redakcja tekstu: ortografia, interpunkcja, styl — bez dodawania treści) przeniesiona z kociaczek.com.pl (2026-06-28). Elementy w Kramio:
@@ -28,5 +28,7 @@ Funkcja „Popraw przez AI" (redakcja tekstu: ortografia, interpunkcja, styl —
 **RODO — USTALONE (Rafał, 2026-08-15):** do DeepSeeka **nie idą żadne dane osobowe** — wyłącznie treść opisowa: CO jest sprzedawane, nigdy KTO sprzedaje. Że użytkownik może sobie sam coś wpisać w pole opisu, nie czyni z tego naszych danych. Konsekwencja: **DeepSeek nie jest podwykonawcą przetwarzania** i nie musi być na liście podprocesorów w Polityce Prywatności (§17 ust. 5 regulaminu). Nie podnosić tego ponownie przy audytach prawnych. Powiązane: [[plan-ai-chunked-correction]].
 
 Przy okazji naprawiono `bootstrap/app.php`: `shouldRenderJsonWhen` teraz `api/*` LUB `$request->expectsJson()` — żeby AJAX dostawał błędy w JSON (wcześniej tylko `api/*`, więc AJAX-owe 401/422 wracały jako redirect). Formularze webowe nadal dostają redirect z błędami. Powiązane: [[frontend-stack-decision]] (brak publicznego JSON API — to wewnętrzny AJAX dla Livewire/JS, nie kontrakt).
+
+**BEZ KLUCZA = BEZ PRZYCISKÓW (2026-11-17, decyzja Rafała):** puste `DEEPSEEK_API_KEY` → „Popraw przez AI”, „Wygeneruj z AI” (box SEO) i licznik limitu ZNIKAJĄ (`AiProfile::available($task)` w `rich-editor` i `seo-box`). Wcześniej przycisk był, a kliknięcie dawało kłamliwe „chwilowo niedostępna” (503, wyjątek połknięty → BEZ alertu na Discordzie). `tests/TestCase.php` ustawia fałszywy klucz `test-key`, żeby testy widoków nie zależały od `.env` instalacji. Wdrożone w Kramio `497854d`, Magellan `3c4fb48`, Aracaffee `82298f3` (w Magellanie `rich-editor` różni się od Kramio — łatka szła ręcznie). Przy NOWYM przycisku AI: ten sam warunek, inaczej wraca martwy przycisk.
 
 **ADMIN BEZ SKLEPU (2026-10-01):** administrator nie ma sklepu, a redaguje wiadomości platformy (`mailing_body`). `AiClient` przyjmuje `?Shop` BEZ wartości domyślnej — `null` = praca platformy, bez puli. Kontroler przepuszcza `null` tylko dla `isAdmin()`. Front pokazuje `message` serwera przy 4xx, nie tylko 429. Patrz [[handoff-2026-10-01]].
