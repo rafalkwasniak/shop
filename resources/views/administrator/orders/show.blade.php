@@ -217,7 +217,7 @@
                     <div>
                         <dt class="text-xs text-stone-400">Płatność</dt>
                         <dd class="mt-0.5 text-stone-900">
-                            {{ $order->payment_method?->label() ?? '—' }}
+                            {{ $order->paymentMethodLabel() }}
                             @if (filled($order->payment_status))
                                 <span class="block text-xs text-stone-500">status operatora: {{ $order->payment_status }}</span>
                             @endif

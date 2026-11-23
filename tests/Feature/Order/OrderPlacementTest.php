@@ -202,6 +202,7 @@ class OrderPlacementTest extends TestCase
 
         $order = app(OrderService::class)->place($shop, array_merge($this->buyerData(), [
             'payment_method' => 'online',
+            'payment_provider' => 'przelewy24',
         ]));
 
         $this->assertSame(OrderStatus::AwaitingPayment, $order->status);
@@ -209,7 +210,8 @@ class OrderPlacementTest extends TestCase
         $lines = collect(EmailMessage::where('to_email', 'jan@example.com')->firstOrFail()->intro_lines)->flatten()->all();
         $joined = implode("\n", $lines);
 
-        $this->assertStringContainsString('Sposób płatności: Płatność online Paynow', $joined);
+        // Klient widzi operatora, którym naprawdę płaci — nie „Paynow" na sztywno.
+        $this->assertStringContainsString('Sposób płatności: Płatność online (Przelewy24)', $joined);
         $this->assertStringContainsString('czeka na opłacenie', $joined);
         $this->assertStringNotContainsString('przy odbiorze', $joined);
     }

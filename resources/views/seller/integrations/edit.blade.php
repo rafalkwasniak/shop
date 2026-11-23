@@ -118,6 +118,141 @@
                         </div>
                     </div>
                 </div>
+
+                {{-- Przelewy24 — druga bramka, pod tym samym uprawnieniem. Sklep może
+                     mieć obie naraz; kupujący wybiera w kasie. CRC i klucz API to
+                     sekrety (pola `password`, nigdy nie wracają do przeglądarki).
+                     Adresu powiadomień sprzedawca NIE wkleja — P24 przyjmuje go przy
+                     każdej transakcji. Za to P24 wpuszcza API tylko z IP wpisanych w
+                     panelu sprzedawcy, więc pokazujemy nasz adres do przeklejenia. --}}
+                <div class="rounded-3xl border border-white/60 bg-white/70 p-6 backdrop-blur">
+                    <div class="flex items-start gap-4">
+                        <span class="mt-0.5 shrink-0 text-2xl">💳</span>
+                        <div class="flex-1">
+                            <h2 class="font-semibold text-stone-900">Płatności online (Przelewy24)</h2>
+                            <p class="mt-1 text-sm text-stone-500">
+                                Przyjmuj płatności BLIK, kartą i szybkim przelewem przez
+                                <a href="https://www.przelewy24.pl" target="_blank" rel="noopener" class="font-medium text-stone-600 underline decoration-amber-300 underline-offset-2">Przelewy24</a>.
+                                Potrzebujesz konta w Przelewy24 i danych z zakładki <span class="text-stone-600">Moje dane → Dane API i konfiguracja</span>. Pieniądze trafiają prosto na Twoje konto. Możesz mieć jednocześnie Paynow i Przelewy24 — klient wybierze w kasie.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 space-y-5">
+                        <div class="grid gap-5 sm:grid-cols-2">
+                            <div>
+                                <label for="przelewy24_merchant_id" class="block text-sm font-medium text-stone-700">ID sprzedawcy (Merchant ID)</label>
+                                <input type="text" id="przelewy24_merchant_id" name="przelewy24_merchant_id" inputmode="numeric"
+                                    value="{{ old('przelewy24_merchant_id', $przelewy24MerchantId) }}"
+                                    placeholder="np. 123456"
+                                    autocomplete="off" spellcheck="false"
+                                    class="mt-1.5 block w-full rounded-2xl border border-stone-200 bg-white/80 px-4 py-3 font-mono text-sm shadow-sm transition focus:border-amber-500 focus:outline-none focus:ring-4 focus:ring-amber-500/15">
+                                @error('przelewy24_merchant_id')
+                                    <p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p>
+                                @enderror
+                                <p class="mt-1.5 text-xs text-stone-400">W panelu Przelewy24 to pole <span class="text-stone-500">„Dane konta”</span> (sam numer). Wyczyść to pole, aby odłączyć Przelewy24.</p>
+                            </div>
+
+                            <div>
+                                <label for="przelewy24_pos_id" class="block text-sm font-medium text-stone-700">ID punktu (POS ID)</label>
+                                <input type="text" id="przelewy24_pos_id" name="przelewy24_pos_id" inputmode="numeric"
+                                    value="{{ old('przelewy24_pos_id', $przelewy24PosId) }}"
+                                    placeholder="taki sam jak ID sprzedawcy"
+                                    autocomplete="off" spellcheck="false"
+                                    class="mt-1.5 block w-full rounded-2xl border border-stone-200 bg-white/80 px-4 py-3 font-mono text-sm shadow-sm transition focus:border-amber-500 focus:outline-none focus:ring-4 focus:ring-amber-500/15">
+                                @error('przelewy24_pos_id')
+                                    <p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p>
+                                @enderror
+                                <p class="mt-1.5 text-xs text-stone-400">Zwykle taki sam jak ID sprzedawcy — wtedy zostaw puste.</p>
+                            </div>
+
+                            <div>
+                                <label for="przelewy24_crc_key" class="block text-sm font-medium text-stone-700">Klucz CRC</label>
+                                <input type="password" id="przelewy24_crc_key" name="przelewy24_crc_key"
+                                    value=""
+                                    placeholder="{{ $przelewy24Configured ? '•••••••• (zapisany)' : 'Wklej klucz CRC z Przelewy24' }}"
+                                    autocomplete="off" spellcheck="false"
+                                    class="mt-1.5 block w-full rounded-2xl border border-stone-200 bg-white/80 px-4 py-3 font-mono text-sm shadow-sm transition focus:border-amber-500 focus:outline-none focus:ring-4 focus:ring-amber-500/15">
+                                @error('przelewy24_crc_key')
+                                    <p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p>
+                                @enderror
+                                <p class="mt-1.5 text-xs text-stone-400">
+                                    Sekret — w panelu Przelewy24 „Klucz do CRC”. Podpisuje płatności i weryfikuje powiadomienia.
+                                    @if ($przelewy24Configured)
+                                        Klucz jest zapisany — zostaw pole puste, aby go nie zmieniać.
+                                    @endif
+                                </p>
+                            </div>
+
+                            <div>
+                                <label for="przelewy24_api_key" class="block text-sm font-medium text-stone-700">Klucz API (klucz do raportów)</label>
+                                <input type="password" id="przelewy24_api_key" name="przelewy24_api_key"
+                                    value=""
+                                    placeholder="{{ $przelewy24Configured ? '•••••••• (zapisany)' : 'Wklej klucz do raportów z Przelewy24' }}"
+                                    autocomplete="off" spellcheck="false"
+                                    class="mt-1.5 block w-full rounded-2xl border border-stone-200 bg-white/80 px-4 py-3 font-mono text-sm shadow-sm transition focus:border-amber-500 focus:outline-none focus:ring-4 focus:ring-amber-500/15">
+                                @error('przelewy24_api_key')
+                                    <p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p>
+                                @enderror
+                                <p class="mt-1.5 text-xs text-stone-400">
+                                    Sekret — w panelu Przelewy24 nazywa się „Klucz do raportów”.
+                                    @if ($przelewy24Configured)
+                                        Klucz jest zapisany — zostaw pole puste, aby go nie zmieniać.
+                                    @endif
+                                </p>
+                            </div>
+                        </div>
+
+                        <p class="text-xs text-stone-400">„Klucz do zamówień” z panelu Przelewy24 nie jest potrzebny — nie wpisuj go nigdzie. Po zapisaniu sprawdzimy połączenie z Przelewy24.</p>
+
+                        <div class="flex items-start gap-3 rounded-2xl border border-stone-200 bg-white/60 p-4">
+                            {{-- hidden = wartość bazowa (odznaczone = produkcja); checkbox nadpisuje na sandbox --}}
+                            <input type="hidden" name="przelewy24_sandbox" value="0">
+                            <input type="checkbox" id="przelewy24_sandbox" name="przelewy24_sandbox" value="1"
+                                @checked(old('przelewy24_sandbox', $przelewy24Environment === 'sandbox'))
+                                class="mt-0.5 h-5 w-5 shrink-0 rounded-md border-stone-300 text-amber-600 focus:ring-4 focus:ring-amber-500/20">
+                            <label for="przelewy24_sandbox" class="flex-1 cursor-pointer">
+                                <span class="block text-sm font-medium text-stone-800">Włącz środowisko testowe (sandbox)</span>
+                                <span class="mt-0.5 block text-xs text-stone-400">Zaznacz do testów danymi z konta sandbox Przelewy24. Odznacz, gdy podłączasz dane produkcyjne i chcesz przyjmować prawdziwe płatności.</span>
+                            </label>
+                        </div>
+
+                        @if ($przelewy24Configured)
+                            <div class="flex items-start gap-3 rounded-2xl border border-stone-200 bg-white/60 p-4 text-sm">
+                                <span class="mt-0.5 shrink-0 font-semibold {{ $przelewy24Enabled ? 'text-emerald-600' : 'text-rose-600' }}">
+                                    {{ $przelewy24Enabled ? '✓' : '✕' }}
+                                </span>
+                                <p class="text-stone-600">
+                                    @if ($przelewy24Enabled)
+                                        Przelewy24 są połączone i <span class="font-medium text-stone-800">aktywne</span> ({{ $przelewy24Environment === 'production' ? 'produkcja' : 'sandbox' }}).
+                                    @else
+                                        Dane są zapisane, ale Przelewy24 są <span class="font-medium text-stone-800">wyłączone</span>. Włącz je w
+                                        <a href="{{ route('seller.settings.edit') }}" class="font-medium underline decoration-amber-300 underline-offset-2">Ustawieniach</a>, aby przyjmować płatności.
+                                    @endif
+                                </p>
+                            </div>
+                        @endif
+
+                        {{-- Adres IP serwera: bez wpisu w panelu P24 każde wywołanie API
+                             się odbije. Pokazujemy tylko, gdy serwer zna swój adres. --}}
+                        @if (filled($serverIp))
+                            <div class="rounded-2xl border border-amber-200 bg-amber-50/70 p-4">
+                                <p class="text-sm font-medium text-stone-800">Adres IP do wpisania w Przelewy24</p>
+                                <p class="mt-1 text-xs text-stone-500">
+                                    Wpisz ten adres w panelu Przelewy24 → <span class="text-stone-600">Moje dane → Dane API i konfiguracja → Adres IP</span>. Przelewy24 przyjmuje połączenia tylko z adresów z tej listy — bez wpisu płatności nie ruszą. Adresu powiadomień nie musisz nigdzie wklejać, przekazujemy go sami.
+                                </p>
+                                <div class="mt-3 flex items-stretch gap-2">
+                                    <input type="text" id="przelewy24_server_ip" value="{{ $serverIp }}" readonly
+                                        onclick="this.select()"
+                                        class="min-w-0 flex-1 rounded-xl border border-amber-200 bg-white px-3 py-2 font-mono text-xs text-stone-700 shadow-sm">
+                                    <button type="button"
+                                        onclick="navigator.clipboard.writeText(document.getElementById('przelewy24_server_ip').value); this.textContent='Skopiowano ✓'; setTimeout(() => this.textContent='Kopiuj', 1500);"
+                                        class="shrink-0 rounded-xl border border-amber-300 bg-white px-4 py-2 text-xs font-medium text-amber-800 transition hover:bg-amber-100">Kopiuj</button>
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+                </div>
                 @endif
 
                 {{-- Nadawanie przesyłek InPost (ShipX) — etykieta prosto z zamówienia.

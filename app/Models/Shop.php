@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\DeliveryMethod;
 use App\Enums\IntegrationType;
 use App\Enums\PaymentMethod;
+use App\Enums\PaymentProvider;
 use App\Enums\SaleUnit;
 use App\Enums\SendingMethod;
 use App\Enums\ShopStatus;
@@ -1019,35 +1020,87 @@ class Shop extends Model
     }
 
     /**
-     * Stan efektywny płatności online: uprawnienie pakietu ORAZ włącznik
-     * (Ustawienia) ORAZ komplet kluczy. To warunek, pod którym metoda „Płatność
-     * online" pojawia się w kasie. Uprawnienie na pierwszym miejscu = centralna
-     * brama: sklep bez `online_payments` (np. Kram lub po zejściu z pakietu) nie
-     * oferuje płatności online nigdzie, choćby integracja była skonfigurowana.
+     * Czy bramka jest gotowa do przyjmowania płatności: uprawnienie pakietu ORAZ
+     * włącznik (Ustawienia) ORAZ komplet kluczy. Uprawnienie na pierwszym miejscu
+     * = centralna brama: sklep bez `online_payments` (np. Kram lub po zejściu z
+     * pakietu) nie oferuje płatności online nigdzie, choćby klucze były wpisane.
+     *
+     * `$forUnfinishedOrder` = pytamy o zamówienie ZŁOŻONE WCZEŚNIEJ, które ma się
+     * dać dopłacić, choć uprawnienie już zgasło. Wyjątek celowy: gdyby bramka
+     * zamknęła się z dnia na dzień, pieniądze za wczorajsze zamówienie utknęłyby
+     * w pół drogi, a winnym byłby sklep. Zamówienie czekające na płatność online
+     * mogło powstać TYLKO przy otwartej bramce, więc jego istnienie jest dowodem
+     * — stąd `rawEntitlement` (co klient kupił, nie stan po wygaśnięciu).
      */
-    public function onlinePaymentsEnabled(): bool
+    public function paymentProviderReady(PaymentProvider $provider, bool $forUnfinishedOrder = false): bool
     {
-        return $this->entitlement('online_payments') === true
-            && $this->integration(IntegrationType::Payments)?->enabled === true
-            && $this->onlinePaymentsConfigured();
+        $entitled = $forUnfinishedOrder
+            ? $this->rawEntitlement('online_payments')
+            : $this->entitlement('online_payments');
+
+        $configured = match ($provider) {
+            PaymentProvider::Paynow => $this->onlinePaymentsConfigured(),
+            PaymentProvider::Przelewy24 => $this->przelewy24Configured(),
+        };
+
+        return $entitled === true
+            && $this->integration($provider->integrationType())?->enabled === true
+            && $configured;
     }
 
     /**
-     * Czy zamówienie ZŁOŻONE WCZEŚNIEJ może jeszcze dokończyć płatność online,
-     * choć uprawnienie pakietu już zgasło.
+     * Bramki, którymi kupujący może zapłacić w kasie — w kolejności enuma. Sklep
+     * może mieć kilka naraz (wybór sprzedawcy); każda to osobna opcja w kasie.
      *
-     * Wyjątek celowy: gdyby bramka zamknęła się z dnia na dzień, klient nie
-     * dokończyłby przelewu za wczorajsze zamówienie, pieniądze utknęłyby w
-     * pół drogi, a winnym byłby sklep. Data nie jest tu potrzebna — zamówienie
-     * czekające na płatność online mogło powstać TYLKO przy otwartej bramce,
-     * więc samo jego istnienie jest dowodem. Czytamy `rawEntitlement`, bo pytamy
-     * o to, co klient kupił, nie o stan po wygaśnięciu.
+     * @return list<PaymentProvider>
+     */
+    public function activePaymentProviders(): array
+    {
+        return array_values(array_filter(
+            PaymentProvider::cases(),
+            fn (PaymentProvider $p) => $this->paymentProviderReady($p),
+        ));
+    }
+
+    /**
+     * Bramki, którymi da się DOKOŃCZYĆ płatność za złożone już zamówienie (także
+     * po wygaśnięciu pakietu — patrz `paymentProviderReady()`).
+     *
+     * @return list<PaymentProvider>
+     */
+    public function payableProvidersForUnfinishedOrders(): array
+    {
+        return array_values(array_filter(
+            PaymentProvider::cases(),
+            fn (PaymentProvider $p) => $this->paymentProviderReady($p, forUnfinishedOrder: true),
+        ));
+    }
+
+    /**
+     * Stan efektywny Paynow (uprawnienie + włącznik + klucze).
+     */
+    public function paynowEnabled(): bool
+    {
+        return $this->paymentProviderReady(PaymentProvider::Paynow);
+    }
+
+    /**
+     * Czy sklep przyjmuje JAKĄKOLWIEK płatność online. To warunek, pod którym
+     * metoda „online" istnieje w sklepie (kasa, regulamin, karta produktu) —
+     * którą bramką, rozstrzyga `activePaymentProviders()`.
+     */
+    public function onlinePaymentsEnabled(): bool
+    {
+        return $this->activePaymentProviders() !== [];
+    }
+
+    /**
+     * Czy zamówienie złożone wcześniej da się jeszcze dopłacić online — choć
+     * jedną bramką (patrz `paymentProviderReady()`, wyjątek po wygaśnięciu).
      */
     public function canFinishOnlinePayment(): bool
     {
-        return $this->rawEntitlement('online_payments') === true
-            && $this->integration(IntegrationType::Payments)?->enabled === true
-            && $this->onlinePaymentsConfigured();
+        return $this->payableProvidersForUnfinishedOrders() !== [];
     }
 
     /**
@@ -1073,6 +1126,88 @@ class Shop extends Model
     public function paynowWebhookUrl(): string
     {
         return 'https://'.$this->host().'/platnosci/paynow/webhook';
+    }
+
+    /**
+     * Adres powiadomień Przelewy24 (`urlStatus`) — na hoście sklepu, jak przy
+     * Paynow. Tego adresu sprzedawca NIE wkleja: przekazujemy go przy każdej
+     * rejestracji transakcji.
+     */
+    public function przelewy24WebhookUrl(): string
+    {
+        return 'https://'.$this->host().'/platnosci/przelewy24/webhook';
+    }
+
+    /**
+     * Merchant ID Przelewy24 (ID konta sprzedawcy). Jawny — wraca w formularzu i
+     * steruje odłączaniem: puste pole = usunięcie integracji. null, gdy brak.
+     */
+    public function przelewy24MerchantId(): ?int
+    {
+        $id = $this->integration(IntegrationType::Przelewy24)?->config['merchant_id'] ?? null;
+
+        return $id !== null ? (int) $id : null;
+    }
+
+    /**
+     * POS ID Przelewy24 — login do API (Basic Auth) i pole każdego żądania. U
+     * większości sprzedawców równy Merchant ID, dlatego pole jest opcjonalne, a
+     * brak wartości znaczy „taki sam jak Merchant ID" (tak definiuje to P24).
+     */
+    public function przelewy24PosId(): ?int
+    {
+        $id = $this->integration(IntegrationType::Przelewy24)?->config['pos_id'] ?? null;
+
+        return $id !== null ? (int) $id : $this->przelewy24MerchantId();
+    }
+
+    /**
+     * Klucz CRC Przelewy24 (sekret: składnik każdego podpisu `sign`, także przy
+     * weryfikacji powiadomień). Zaszyfrowany; w UI nigdy nie odbijany.
+     */
+    public function przelewy24CrcKey(): ?string
+    {
+        return $this->integration(IntegrationType::Przelewy24)?->config['crc_key'] ?? null;
+    }
+
+    /**
+     * Klucz API Przelewy24 („klucz do raportów" w panelu P24) — hasło Basic Auth.
+     * Sekret: z POS ID rejestruje transakcje na koncie sprzedawcy. W UI nigdy nie
+     * odbijany.
+     */
+    public function przelewy24ApiKey(): ?string
+    {
+        return $this->integration(IntegrationType::Przelewy24)?->config['api_key'] ?? null;
+    }
+
+    /**
+     * Środowisko Przelewy24: 'sandbox' (domyślnie) albo 'production' — wybiera
+     * adres z config('services.przelewy24.base_url').
+     */
+    public function przelewy24Environment(): string
+    {
+        return $this->integration(IntegrationType::Przelewy24)?->config['environment'] ?? 'sandbox';
+    }
+
+    /**
+     * Czy Przelewy24 jest w pełni skonfigurowane (Merchant ID + CRC + klucz API;
+     * POS ID ma wartość domyślną). Sama gotowość integracji — bez włącznika i
+     * uprawnienia pakietu, jak `onlinePaymentsConfigured()` dla Paynow.
+     */
+    public function przelewy24Configured(): bool
+    {
+        return $this->przelewy24MerchantId() !== null
+            && filled($this->przelewy24CrcKey())
+            && filled($this->przelewy24ApiKey());
+    }
+
+    /**
+     * Stan efektywny Przelewy24: uprawnienie pakietu ORAZ włącznik (Ustawienia)
+     * ORAZ komplet kluczy — bliźniak `onlinePaymentsEnabled()` Paynow.
+     */
+    public function przelewy24Enabled(): bool
+    {
+        return $this->paymentProviderReady(PaymentProvider::Przelewy24);
     }
 
     /**

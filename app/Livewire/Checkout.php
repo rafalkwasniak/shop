@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use App\Enums\DeliveryMethod;
 use App\Enums\PaymentMethod;
+use App\Enums\PaymentProvider;
 use App\Exceptions\CartNeedsReviewException;
 use App\Models\Customer;
 use App\Models\Shop;
@@ -14,6 +15,7 @@ use App\Services\LoyaltyLedger;
 use App\Services\NipService;
 use App\Services\OrderService;
 use App\Services\PhoneService;
+use App\Services\Przelewy24Service;
 use App\Support\DiscountAllocation;
 use App\Support\Money;
 use Illuminate\Support\Facades\Auth;
@@ -164,7 +166,11 @@ class Checkout extends Component
         }
 
         // Metoda płatności — po dostawie (jej opcje zależą od wyboru dostawy).
-        $lastPayment = $last->payment_method?->value;
+        // Płatność online pamiętamy razem z bramką — klient, który płacił
+        // Przelewy24, dostaje zaznaczone Przelewy24, nie pierwszą z brzegu.
+        $lastPayment = $last->payment_method === PaymentMethod::Online && $last->payment_provider !== null
+            ? self::onlineOption($last->payment_provider)
+            : $last->payment_method?->value;
         if ($lastPayment !== null && array_key_exists($lastPayment, $this->paymentOptions())) {
             $this->payment_method = $lastPayment;
         }
@@ -306,10 +312,40 @@ class Checkout extends Component
                 continue;
             }
 
+            // Płatność online rozwija się na tyle opcji, ile bramek sklep ma
+            // włączonych (wybór sprzedawcy) — kupujący wybiera operatora tutaj.
+            if ($method === PaymentMethod::Online) {
+                foreach ($this->shop()->activePaymentProviders() as $provider) {
+                    $options[self::onlineOption($provider)] = 'Płatność online '.$provider->label();
+                }
+
+                continue;
+            }
+
             $options[$method->value] = $method->label();
         }
 
         return $options;
+    }
+
+    /**
+     * Klucz opcji płatności online w kasie: `online:{bramka}`. Metoda i bramka
+     * jadą jednym radiem, a przed złożeniem zamówienia rozdzielamy je z powrotem
+     * (`splitPaymentOption()`), bo zamówienie trzyma je w dwóch kolumnach.
+     */
+    public static function onlineOption(PaymentProvider $provider): string
+    {
+        return PaymentMethod::Online->value.':'.$provider->value;
+    }
+
+    /**
+     * @return array{0: string, 1: ?string} [metoda płatności, bramka albo null]
+     */
+    private static function splitPaymentOption(string $option): array
+    {
+        [$method, $provider] = array_pad(explode(':', $option, 2), 2, null);
+
+        return [$method, $provider];
     }
 
     /**
@@ -360,6 +396,17 @@ class Checkout extends Component
             // którą sprzedawca zobaczy przed nadaniem.
             $rules['parcel_locker_code'] = ['required', 'string', 'max:20', 'regex:/^[A-Z0-9]+$/'];
             $rules['parcel_locker_address'] = ['nullable', 'string', 'max:255'];
+        }
+
+        if ($this->payment_method === self::onlineOption(PaymentProvider::Przelewy24)) {
+            // P24 odrzuca rejestrację transakcji z e-mailem dłuższym niż 50 znaków.
+            // Mówimy o tym w kasie, zanim powstanie zamówienie, którego klient nie
+            // miałby jak opłacić wybraną bramką.
+            $rules['buyer_email'][] = function (string $attribute, mixed $value, \Closure $fail): void {
+                if (mb_strlen((string) $value) > Przelewy24Service::MAX_EMAIL_LENGTH) {
+                    $fail('Przelewy24 przyjmują adres e-mail do '.Przelewy24Service::MAX_EMAIL_LENGTH.' znaków. Podaj krótszy adres albo wybierz inny sposób płatności.');
+                }
+            };
         }
 
         if ($this->cashOnDelivery()) {
@@ -488,6 +535,9 @@ class Checkout extends Component
         $this->parcel_locker_code = strtoupper(str_replace(' ', '', trim($this->parcel_locker_code)));
 
         $data = $this->validate();
+
+        // `online:przelewy24` → metoda `online` + bramka `przelewy24`.
+        [$data['payment_method'], $data['payment_provider']] = self::splitPaymentOption($data['payment_method']);
 
         try {
             $order = $orders->place($this->shop(), $data, $this->authCustomer());

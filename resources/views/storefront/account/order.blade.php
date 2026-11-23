@@ -90,7 +90,7 @@
         {{-- Płatność + dostawa --}}
         <div class="space-y-6">
             <div class="st-card st-border rounded-3xl border p-6">
-                <h2 class="st-brand st-box-title">Płatność — {{ $order->payment_method->label() }}</h2>
+                <h2 class="st-brand st-box-title">Płatność — {{ $order->paymentMethodLabel() }}</h2>
                 @if ($order->payment_method === PaymentMethod::BankTransfer)
                     <dl class="mt-4 space-y-1.5 text-sm">
                         @if ($shop->bankAccountHolderName())

@@ -157,7 +157,7 @@
                         </div>
                         <div class="flex justify-between gap-3">
                             <span class="text-stone-500">Płatność</span>
-                            <span class="text-right font-medium text-stone-800">{{ $order->payment_method->label() }}</span>
+                            <span class="text-right font-medium text-stone-800">{{ $order->paymentMethodLabel() }}</span>
                         </div>
                         @if (filled($order->ship_street))
                             <div class="mt-2 border-t border-stone-100 pt-2">

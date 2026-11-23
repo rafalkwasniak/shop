@@ -43,6 +43,10 @@ class IntegrationRequest extends FormRequest
         $token = trim((string) $this->input('fakturownia_token'));
         $paynowApiKey = trim((string) $this->input('paynow_api_key'));
         $paynowSignatureKey = trim((string) $this->input('paynow_signature_key'));
+        $p24MerchantId = trim((string) $this->input('przelewy24_merchant_id'));
+        $p24PosId = trim((string) $this->input('przelewy24_pos_id'));
+        $p24CrcKey = trim((string) $this->input('przelewy24_crc_key'));
+        $p24ApiKey = trim((string) $this->input('przelewy24_api_key'));
         $shipxToken = trim((string) $this->input('shipx_token'));
         $shipxOrganizationId = trim((string) $this->input('shipx_organization_id'));
         // Sprzedawca zwykle kopiuje CAŁY meta tag z Google, nie sam kod —
@@ -69,6 +73,12 @@ class IntegrationRequest extends FormRequest
             // sandbox, odznaczony = produkcja. Odznaczony domyślnie znaczy produkcję,
             // więc UI musi renderować stan bieżący, żeby zapis go nie zresetował.
             'paynow_environment' => $this->boolean('paynow_sandbox') ? 'sandbox' : 'production',
+            'przelewy24_merchant_id' => $p24MerchantId === '' ? null : $p24MerchantId,
+            'przelewy24_pos_id' => $p24PosId === '' ? null : $p24PosId,
+            'przelewy24_crc_key' => $p24CrcKey === '' ? null : $p24CrcKey,
+            'przelewy24_api_key' => $p24ApiKey === '' ? null : $p24ApiKey,
+            // Ten sam checkbox „testowe (sandbox)" co przy Paynow i ShipX.
+            'przelewy24_environment' => $this->boolean('przelewy24_sandbox') ? 'sandbox' : 'production',
             'shipx_token' => $shipxToken === '' ? null : $shipxToken,
             'shipx_organization_id' => $shipxOrganizationId === '' ? null : $shipxOrganizationId,
             // Jak przy Paynow: checkbox „testowe (sandbox)". Przy ShipX pomyłka
@@ -90,6 +100,12 @@ class IntegrationRequest extends FormRequest
             'paynow_api_key' => ['nullable', 'string', 'max:255'],
             'paynow_signature_key' => ['nullable', 'string', 'max:255'],
             'paynow_environment' => ['required', 'in:sandbox,production'],
+            // ID konta i punktu P24 to liczby (typ int także w podpisie `sign`).
+            'przelewy24_merchant_id' => ['nullable', 'string', 'regex:/^[0-9]{1,10}$/'],
+            'przelewy24_pos_id' => ['nullable', 'string', 'regex:/^[0-9]{1,10}$/'],
+            'przelewy24_crc_key' => ['nullable', 'string', 'max:255'],
+            'przelewy24_api_key' => ['nullable', 'string', 'max:255'],
+            'przelewy24_environment' => ['required', 'in:sandbox,production'],
             // Token ShipX to JWT — bywa długi (nasz ma ~950 znaków), więc żadnego
             // `max:255` jak przy kluczach Paynow; kolumna jest szyfrowanym JSON-em.
             'shipx_token' => ['nullable', 'string', 'max:4000'],
@@ -127,6 +143,26 @@ class IntegrationRequest extends FormRequest
                 $validator->errors()->add('paynow_signature_key', 'Podaj klucz obliczania podpisu Paynow, aby połączyć konto.');
             }
 
+            // Przelewy24: Merchant ID steruje połączeniem (jawny, wraca w polu).
+            // Oba sekrety (CRC, klucz API) puste = „zostaw zapisany" — ale przy
+            // pierwszej konfiguracji muszą przyjść, bo bez kompletu nie da się
+            // podpisać ani zarejestrować transakcji. Sekretów bez Merchant ID nie
+            // przyjmujemy po cichu — sprzedawca myślałby, że coś podłączył.
+            $p24 = $this->user()?->currentShop()?->integration(IntegrationType::Przelewy24)?->config ?? [];
+            $p24MerchantId = $this->input('przelewy24_merchant_id');
+
+            if (filled($p24MerchantId) && blank($this->input('przelewy24_crc_key')) && blank($p24['crc_key'] ?? null)) {
+                $validator->errors()->add('przelewy24_crc_key', 'Podaj klucz CRC z panelu Przelewy24, aby połączyć konto.');
+            }
+
+            if (filled($p24MerchantId) && blank($this->input('przelewy24_api_key')) && blank($p24['api_key'] ?? null)) {
+                $validator->errors()->add('przelewy24_api_key', 'Podaj klucz API (klucz do raportów) z panelu Przelewy24, aby połączyć konto.');
+            }
+
+            if (blank($p24MerchantId) && (filled($this->input('przelewy24_crc_key')) || filled($this->input('przelewy24_api_key')) || filled($this->input('przelewy24_pos_id')))) {
+                $validator->errors()->add('przelewy24_merchant_id', 'Podaj ID sprzedawcy (Merchant ID) z panelu Przelewy24.');
+            }
+
             // ShipX: obie wartości pochodzą z tego samego ekranu w panelu InPostu
             // i bez kompletu nie da się nadać przesyłki. Reguła działa w OBIE
             // strony (inaczej niż para Fakturowni/Paynow, gdzie tylko token bywa
@@ -156,6 +192,8 @@ class IntegrationRequest extends FormRequest
             'fakturownia_url.url' => 'Podaj poprawny adres konta Fakturowni, np. https://twojadomena.fakturownia.pl.',
             'google_site_verification.regex' => 'Wklej kod weryfikacyjny z Google Search Console (możesz wkleić cały meta tag — wyciągniemy z niego kod).',
             'shipx_organization_id.regex' => 'Organization ID to sam numer z panelu InPost, np. 203242.',
+            'przelewy24_merchant_id.regex' => 'ID sprzedawcy to sam numer z panelu Przelewy24, np. 123456.',
+            'przelewy24_pos_id.regex' => 'ID punktu (POS ID) to sam numer z panelu Przelewy24, np. 123456.',
         ];
     }
 
@@ -171,6 +209,11 @@ class IntegrationRequest extends FormRequest
             'paynow_api_key' => 'klucz dostępu do API Paynow',
             'paynow_signature_key' => 'klucz obliczania podpisu Paynow',
             'paynow_environment' => 'środowisko Paynow',
+            'przelewy24_merchant_id' => 'ID sprzedawcy Przelewy24',
+            'przelewy24_pos_id' => 'ID punktu Przelewy24',
+            'przelewy24_crc_key' => 'klucz CRC Przelewy24',
+            'przelewy24_api_key' => 'klucz API Przelewy24',
+            'przelewy24_environment' => 'środowisko Przelewy24',
             'shipx_token' => 'token ShipX',
             'shipx_organization_id' => 'Organization ID InPost',
             'shipx_environment' => 'środowisko InPost',

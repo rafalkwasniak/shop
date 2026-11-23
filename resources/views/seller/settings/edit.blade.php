@@ -399,6 +399,45 @@
                                 </div>
                             @endif
                         </div>
+
+                        {{-- Przelewy24 — bliźniak karty Paynow: własny włącznik i własna
+                             decyzja o auto-FV (flaga na wierszu TEJ bramki). Obie bramki
+                             mogą być włączone naraz; kupujący wybiera w kasie. --}}
+                        <div class="rounded-2xl border border-stone-200 bg-white/60 p-5 sm:p-6 {{ $przelewy24Configured ? '' : 'opacity-60' }}">
+                            <div class="flex items-start gap-4">
+                                {{-- hidden = wartość bazowa; bez konfiguracji checkbox jest disabled i nic nie wysyła --}}
+                                <input type="hidden" name="przelewy24_enabled" value="{{ $przelewy24Configured ? '0' : ($przelewy24Enabled ? '1' : '0') }}">
+                                <input type="checkbox" id="przelewy24_enabled" name="przelewy24_enabled" value="1"
+                                    @checked(old('przelewy24_enabled', $przelewy24Enabled)) @disabled(! $przelewy24Configured)
+                                    class="mt-0.5 h-5 w-5 shrink-0 rounded-md border-stone-300 text-amber-600 focus:ring-4 focus:ring-amber-500/20 disabled:cursor-not-allowed">
+                                <label for="przelewy24_enabled" class="flex-1 {{ $przelewy24Configured ? 'cursor-pointer' : 'cursor-not-allowed' }}">
+                                    <span class="block text-sm font-medium text-stone-800">Płatności online (Przelewy24)</span>
+                                    <span class="mt-0.5 block text-sm text-stone-500">Udostępnia w kasie płatność BLIK, kartą i szybkim przelewem przez Przelewy24 — pieniądze trafiają prosto na Twoje konto Przelewy24.</span>
+                                    @unless($przelewy24Configured)
+                                        <span class="mt-1.5 block text-xs text-amber-700">Aby móc włączyć, najpierw podaj dane Przelewy24 w <a href="{{ route('seller.integrations.edit') }}" class="font-medium underline decoration-amber-300 underline-offset-2">Integracjach</a>.</span>
+                                    @endunless
+                                </label>
+                            </div>
+
+                            @if ($shop->entitlement('invoices'))
+                                @php($p24AutoInvoiceReady = $przelewy24Enabled && $fakturowniaEnabled)
+                                <div class="mt-4 border-t border-stone-100 pt-4">
+                                    <div class="ml-4 flex items-start gap-3 {{ $p24AutoInvoiceReady ? '' : 'opacity-60' }}">
+                                        <input type="hidden" name="przelewy24_auto_invoice" value="{{ $p24AutoInvoiceReady ? '0' : ($przelewy24AutoInvoice ? '1' : '0') }}">
+                                        <input type="checkbox" id="przelewy24_auto_invoice" name="przelewy24_auto_invoice" value="1"
+                                            @checked(old('przelewy24_auto_invoice', $przelewy24AutoInvoice)) @disabled(! $p24AutoInvoiceReady)
+                                            class="mt-0.5 h-5 w-5 shrink-0 rounded-md border-stone-300 text-amber-600 focus:ring-4 focus:ring-amber-500/20 disabled:cursor-not-allowed">
+                                        <label for="przelewy24_auto_invoice" class="flex-1 {{ $p24AutoInvoiceReady ? 'cursor-pointer' : 'cursor-not-allowed' }}">
+                                            <span class="block text-sm font-medium text-stone-800">Wystaw fakturę VAT automatycznie po opłaceniu</span>
+                                            <span class="mt-0.5 block text-xs text-stone-400">Gdy klient opłaci zamówienie przez Przelewy24, faktura wystawi się sama w Fakturowni — bez klikania.</span>
+                                            @unless($p24AutoInvoiceReady)
+                                                <span class="mt-1.5 block text-xs text-amber-700">Zadziała, gdy włączone są oba: Przelewy24 (wyżej) oraz Fakturownia.</span>
+                                            @endunless
+                                        </label>
+                                    </div>
+                                </div>
+                            @endif
+                        </div>
                         @endif
 
                         @if ($shop->entitlement('invoices'))

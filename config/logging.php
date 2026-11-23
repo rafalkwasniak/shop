@@ -104,6 +104,17 @@ return [
             'replace_placeholders' => true,
         ],
 
+        // Audyt płatności Przelewy24 — rejestracja transakcji, powiadomienia,
+        // weryfikacja. Te same zasady co `paynow`: długa retencja, bo to
+        // pieniądze; klucz CRC i klucz API NIGDY tu nie trafiają.
+        'przelewy24' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/przelewy24.log'),
+            'level' => 'debug',
+            'days' => 365,
+            'replace_placeholders' => true,
+        ],
+
         // Audyt nadawania przesyłek (InPost ShipX): utworzenie przesyłki, wynik
         // zakupu i pobranie etykiety. Dotyczy pieniędzy sprzedawcy (każde nadanie
         // zdejmuje opłatę z jego salda InPost), więc ślad trzymamy długo jak przy

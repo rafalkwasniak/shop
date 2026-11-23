@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\DeliveryMethod;
 use App\Enums\PaymentMethod;
+use App\Enums\PaymentProvider;
 use App\Exceptions\CartNeedsReviewException;
 use App\Exceptions\LoyaltyException;
 use App\Models\Customer;
@@ -258,6 +259,12 @@ class OrderService
             'delivery_method' => $delivery,
             'delivery_cost' => $deliveryCost,
             'payment_method' => $payment,
+            // Bramka wybrana w kasie — tylko przy płatności online. Brak (stary
+            // klient API kasy) = null; strona płatności wybierze wtedy pierwszą
+            // aktywną bramkę sklepu.
+            'payment_provider' => $payment === PaymentMethod::Online
+                ? PaymentProvider::tryFrom((string) ($data['payment_provider'] ?? ''))
+                : null,
             'items_total' => 0,
             // Relacja do liczenia użyć kodu + MIGAWKA (kod i kwota), która przeżyje
             // skasowanie kodu przez sprzedawcę. Kwotę i tak przelicza OrderTotals.

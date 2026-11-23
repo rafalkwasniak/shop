@@ -135,8 +135,9 @@ Czego NIE trzeba przenosić: transkryptów sesji (`*.jsonl`, ~120 MB obok pamię
 3. **Wildcard DNS i wildcard SSL `*.kramio.pl`** — bez tego padają wszystkie storefronty, a nie tylko centrala.
 4. **Jeden wpis crona:** `* * * * * php artisan schedule:run` (pełną ścieżką do PHP 8.5). Wszystko resztę — kopie zapasowe 04:00 i 16:00, strażnik kopii 09:00, wysyłka maili, odświeżanie przesyłek, abonamenty, kasowanie sklepów po karencji — planuje `routes/console.php`. Bez tego jednego wpisu nie działa nic z tej listy, po cichu.
 5. **Klucz SSH i remote gita** — `FOUNDATION.md` sek. 3, tożsamość commitów per-repo (`--local`, nie `--global`).
-6. **Katalog kopii zapasowych** i jego wolne miejsce (patrz ekran Ustawień w panelu admina).
-7. `composer install`, `npm ci && npm run build`, `php artisan migrate --force`, `storage:link`, uprawnienia do `storage/` i `bootstrap/cache/`.
+6. **Adres IP serwera dla Przelewy24.** P24 wpuszcza API tylko z IP wpisanych w panelu sprzedawcy. Nowy serwer = nowe IP: ustawić `SERVER_OUTBOUND_IP` w `.env` (sprawdzić `curl -4 https://api.ipify.org`) i **przed przełączeniem** poprosić każdego sprzedawcę z włączonymi Przelewy24, żeby dopisał nowy adres w swoim panelu (stary zostawić do końca przenosin). Bez tego płatności P24 staną we wszystkich takich sklepach naraz.
+7. **Katalog kopii zapasowych** i jego wolne miejsce (patrz ekran Ustawień w panelu admina).
+8. `composer install`, `npm ci && npm run build`, `php artisan migrate --force`, `storage:link`, uprawnienia do `storage/` i `bootstrap/cache/`.
 
 ### 6.4. Sprawdzian, że wszystko wróciło
 

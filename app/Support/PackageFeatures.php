@@ -230,7 +230,7 @@ class PackageFeatures
             [
                 'icon' => '💳',
                 'title' => 'Integracja płatności online',
-                'description' => 'Podłącz swoje konto Paynow (umowa i weryfikacja po stronie operatora) — klient zapłaci BLIK-iem, kartą lub szybkim przelewem, a pieniądze idą wprost na Twoje konto.',
+                'description' => 'Podłącz swoje konto u operatora płatności (umowa i weryfikacja po jego stronie) — klient zapłaci BLIK-iem, kartą lub szybkim przelewem, a pieniądze idą wprost na Twoje konto.',
                 'requires' => 'online_payments',
             ],
             [
@@ -352,7 +352,9 @@ class PackageFeatures
             // „Integracja z Paynow", nie „Płatności online Paynow" — pakiet daje
             // podłączenie, a nie usługę płatniczą: umowę z operatorem sprzedawca
             // zawiera sam i wkleja własne klucze (patrz Integracje).
-            'payments' => $entitlements['online_payments'] ? 'Integracja płatności online (własne konto Paynow)' : 'Przelew i odbiór osobisty',
+            // Bez nazw operatorów (decyzja Rafała 2026-11-23): bramek jest kilka i
+            // będzie przybywać, a obietnica pakietu to „płatności online", nie marka.
+            'payments' => $entitlements['online_payments'] ? 'Integracja płatności online (własne konto u operatora)' : 'Przelew i odbiór osobisty',
             'shipping' => $entitlements['courier_shipping'] ? 'Paczkomat, kurier i nadawanie paczek InPost — także za pobraniem' : null,
             'invoices' => $entitlements['invoices'] ? 'Integracja z Fakturownią' : null,
             // Google Analytics jest płatny i egzekwowany (`Shop::tracksWith…`),

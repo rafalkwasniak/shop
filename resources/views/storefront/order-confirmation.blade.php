@@ -23,7 +23,7 @@
         {{-- Płatność online: dopóki zamówienie czeka na wpłatę, kupujący kończy ją
              przyciskiem stąd (płatność inicjujemy z podsumowania, nie auto-redirectem
              z kasy). Gdy webhook potwierdzi wpłatę, zamiast przycisku widać ptaszek.
-             Powrót z Paynow wraca właśnie tutaj. --}}
+             Powrót z bramki płatności wraca właśnie tutaj. --}}
         @if ($order->payment_method === PaymentMethod::Online)
             <div class="mt-6">
                 @if ($order->status === OrderStatus::AwaitingPayment)
@@ -68,7 +68,7 @@
             {{-- Prawa: płatność + dostawa --}}
             <div class="space-y-6">
                 <div class="st-card st-border rounded-3xl border p-6">
-                    <h2 class="font-semibold">Płatność — {{ $order->payment_method->label() }}</h2>
+                    <h2 class="font-semibold">Płatność — {{ $order->paymentMethodLabel() }}</h2>
                     @if ($order->payment_method === PaymentMethod::BankTransfer)
                         <dl class="mt-4 space-y-1.5 text-sm">
                             @if ($shop->bankAccountHolderName())

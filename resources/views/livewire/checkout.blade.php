@@ -284,7 +284,7 @@
                                         <span class="block text-xs opacity-60">{{ $bankName }}</span>
                                     @elseif ($value === 'pay_on_pickup' && filled($pickupAddress))
                                         <span class="block text-xs opacity-60">Odbiór i płatność: {{ $pickupAddress }}</span>
-                                    @elseif ($value === 'online')
+                                    @elseif (str_starts_with($value, 'online:'))
                                         <span class="block text-xs opacity-60">BLIK, karta płatnicza, szybki przelew</span>
                                     @endif
                                 </span>

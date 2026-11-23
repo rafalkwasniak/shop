@@ -34,7 +34,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'company_street', 'company_building_number', 'company_apartment_number', 'company_postal_code', 'company_city',
     'ship_street', 'ship_building_number', 'ship_apartment_number', 'ship_postal_code', 'ship_city',
     'parcel_locker_code', 'parcel_locker_address',
-    'delivery_method', 'delivery_cost', 'payment_method',
+    'delivery_method', 'delivery_cost', 'payment_method', 'payment_provider',
     'items_total', 'discount_code_id', 'discount_code', 'discount_amount', 'points_discount',
     'total_net', 'total_vat', 'total_gross', 'note',
 ])]
@@ -52,6 +52,7 @@ class Order extends Model
             'status' => OrderStatus::class,
             'delivery_method' => DeliveryMethod::class,
             'payment_method' => PaymentMethod::class,
+            'payment_provider' => \App\Enums\PaymentProvider::class,
             'is_company' => 'boolean',
             'delivery_cost' => 'decimal:2',
             'items_total' => 'decimal:2',
@@ -269,6 +270,20 @@ class Order extends Model
         return filled($this->shipment_tracking_number)
             ? 'https://inpost.pl/sledzenie-przesylek?number='.$this->shipment_tracking_number
             : null;
+    }
+
+    /**
+     * Nazwa sposobu płatności TEGO zamówienia — przy płatności online z bramką,
+     * np. „Płatność online (Przelewy24)". Jedno źródło dla maili, panelu i „Moje
+     * konto", żeby klient wszędzie widział operatora, którym naprawdę płacił.
+     */
+    public function paymentMethodLabel(): string
+    {
+        $label = $this->payment_method?->label() ?? '—';
+
+        return $this->payment_method === PaymentMethod::Online && $this->payment_provider !== null
+            ? $label.' ('.$this->payment_provider->label().')'
+            : $label;
     }
 
     /**

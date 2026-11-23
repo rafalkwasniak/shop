@@ -11,7 +11,10 @@ enum IntegrationType: string
 {
     case GoogleAnalytics = 'google_analytics';
     case Invoicing = 'invoicing';
+    // Historycznie jedyna bramka, dlatego ogólna nazwa — to wiersz PAYNOW.
+    // Każda bramka ma własny wiersz (unikat shop_id+type), patrz PaymentProvider.
     case Payments = 'payments';
+    case Przelewy24 = 'przelewy24';
     case SearchConsole = 'search_console';
     case Shipping = 'shipping';
 
@@ -24,6 +27,7 @@ enum IntegrationType: string
             self::GoogleAnalytics => 'Google Analytics',
             self::Invoicing => 'Fakturownia',
             self::Payments => 'Płatności online (Paynow)',
+            self::Przelewy24 => 'Płatności online (Przelewy24)',
             self::SearchConsole => 'Google Search Console',
             self::Shipping => 'Nadawanie przesyłek InPost',
         };

@@ -25,6 +25,7 @@ use App\Http\Controllers\CookieConsentController;
 use App\Http\Controllers\LegalController;
 use App\Http\Controllers\PackagePaymentWebhookController;
 use App\Http\Controllers\PaynowWebhookController;
+use App\Http\Controllers\Przelewy24WebhookController;
 use App\Http\Controllers\PlatformUnsubscribeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RobotsController;
@@ -194,6 +195,11 @@ Route::post('/zaproszenie', [EmployeeInvitationController::class, 'store'])
 // zapłacie). Publiczny — Paynow nie ma sesji ani CSRF; broni go podpis (patrz
 // kontroler). Na domenie centrali; adres wpisujemy w panelu Paynow sprzedawcy.
 Route::post('/platnosci/paynow/webhook', PaynowWebhookController::class)->name('payments.paynow.webhook');
+
+// Webhook Przelewy24 (`urlStatus`). Adres przekazujemy przy KAŻDEJ transakcji,
+// więc sprzedawca niczego nie wkleja. Publiczny jak Paynow; broni go podpis
+// kluczem CRC sklepu i obowiązkowa weryfikacja w P24 (patrz kontroler).
+Route::post('/platnosci/przelewy24/webhook', Przelewy24WebhookController::class)->name('payments.przelewy24.webhook');
 
 // Webhooki opłat za PAKIETY Kramio (konto platformy) — osobna trasa, bo podpis
 // weryfikuje klucz platformy z `.env`, nie klucz sklepu. W sklepie dedykowanym

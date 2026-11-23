@@ -74,8 +74,11 @@
     $payments = [];
 
     // Płatność online na czele (preferowana), spójnie z kolejnością w kasie.
+    // Z nazwami bramek („Płatność online (Paynow lub Przelewy24)") — kupujący
+    // często wybiera sklep po tym, czy zapłaci „swoim" operatorem.
     if ($shop->onlinePaymentsEnabled()) {
-        $payments[] = \App\Enums\PaymentMethod::Online->label();
+        $payments[] = \App\Enums\PaymentMethod::Online->label().' ('
+            .collect($shop->activePaymentProviders())->map->label()->join(', ', ' lub ').')';
     }
 
     if ($shop->bankTransferAvailable()) {

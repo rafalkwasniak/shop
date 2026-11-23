@@ -22,7 +22,9 @@ enum PaymentMethod: string
         return match ($this) {
             self::BankTransfer => 'Przelew na konto',
             self::PayOnPickup => 'Płatność przy odbiorze',
-            self::Online => 'Płatność online Paynow',
+            // Bez nazwy operatora: sklep może mieć kilka bramek. Nazwę bramki
+            // dokleja zamówienie (`Order::paymentMethodLabel()`) i kasa.
+            self::Online => 'Płatność online',
             self::CashOnDelivery => 'Płatność za pobraniem',
         };
     }

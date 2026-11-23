@@ -47,7 +47,7 @@ class LandingPackagesTest extends TestCase
     {
         $stragan = $this->featureMap()['Stragan'];
 
-        $this->assertTrue($stragan['Integracja płatności online (własne konto Paynow)']);
+        $this->assertTrue($stragan['Integracja płatności online (własne konto u operatora)']);
         $this->assertTrue($stragan['Paczkomat, kurier i nadawanie paczek InPost — także za pobraniem']);
         $this->assertTrue($stragan['Integracja z Fakturownią']);
         $this->assertTrue($stragan['Google Analytics i Tag Manager']);
@@ -71,7 +71,7 @@ class LandingPackagesTest extends TestCase
         $this->assertTrue($pawilon['Do 600 produktów']);
 
         // Ma je już Stragan, więc w Pawilonie to nie jest nowość.
-        $this->assertFalse($pawilon['Integracja płatności online (własne konto Paynow)']);
+        $this->assertFalse($pawilon['Integracja płatności online (własne konto u operatora)']);
         $this->assertFalse($pawilon['Integracja z Fakturownią']);
     }
 

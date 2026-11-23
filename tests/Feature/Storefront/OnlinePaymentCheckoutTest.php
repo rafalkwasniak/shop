@@ -5,6 +5,7 @@ namespace Tests\Feature\Storefront;
 use App\Enums\IntegrationType;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
+use App\Enums\PaymentProvider;
 use App\Livewire\Checkout;
 use App\Models\Order;
 use App\Models\Shop;
@@ -49,12 +50,12 @@ class OnlinePaymentCheckoutTest extends TestCase
         $shop = $this->shopWithOnlinePayments();
 
         $options = Livewire::test(Checkout::class, ['shopId' => $shop->id])->instance()->paymentOptions();
-        $this->assertArrayHasKey(PaymentMethod::Online->value, $options);
+        $this->assertArrayHasKey(Checkout::onlineOption(PaymentProvider::Paynow), $options);
 
         // Wyłączenie integracji zdejmuje metodę z kasy — sama konfiguracja nie wystarcza.
         $shop->integration(IntegrationType::Payments)->update(['enabled' => false]);
         $options = Livewire::test(Checkout::class, ['shopId' => $shop->fresh()->id])->instance()->paymentOptions();
-        $this->assertArrayNotHasKey(PaymentMethod::Online->value, $options);
+        $this->assertArrayNotHasKey(Checkout::onlineOption(PaymentProvider::Paynow), $options);
     }
 
     public function test_checkout_hides_online_method_without_entitlement(): void
@@ -68,7 +69,7 @@ class OnlinePaymentCheckoutTest extends TestCase
         $this->assertFalse($shop->fresh()->onlinePaymentsEnabled());
 
         $options = Livewire::test(Checkout::class, ['shopId' => $shop->id])->instance()->paymentOptions();
-        $this->assertArrayNotHasKey(PaymentMethod::Online->value, $options);
+        $this->assertArrayNotHasKey(Checkout::onlineOption(PaymentProvider::Paynow), $options);
     }
 
     public function test_confirmation_shows_pay_button_for_unpaid_online_order(): void
@@ -156,6 +157,9 @@ class OnlinePaymentCheckoutTest extends TestCase
         $order->refresh();
         $this->assertSame('PAY-9', $order->payment_external_id);
         $this->assertSame('NEW', $order->payment_status);
+        // Zamówienie pamięta bramkę — przy dwóch operatorach strona płatności,
+        // maile i webhook muszą wiedzieć, którym kupujący płaci.
+        $this->assertSame(PaymentProvider::Paynow, $order->payment_provider);
     }
 
     public function test_order_from_before_expiry_can_still_be_paid(): void

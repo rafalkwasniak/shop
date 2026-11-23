@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\SitemapController;
 use App\Http\Requests\Seller\IntegrationRequest;
 use App\Models\Shop;
+use App\Services\Przelewy24Service;
 use Illuminate\Contracts\Support\Renderable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -35,9 +36,17 @@ class IntegrationController extends Controller
             'fakturowniaEnabled' => $shop->invoicingEnabled(),
             'paynowApiKey' => $shop->paynowApiKey(),
             'paynowConfigured' => $shop->onlinePaymentsConfigured(),
-            'paynowEnabled' => $shop->onlinePaymentsEnabled(),
+            'paynowEnabled' => $shop->paynowEnabled(),
             'paynowEnvironment' => $shop->paynowEnvironment(),
             'paynowWebhookUrl' => $shop->paynowWebhookUrl(),
+            'przelewy24MerchantId' => $shop->przelewy24MerchantId(),
+            // POS ID pokazujemy tylko, gdy różni się od Merchant ID — inaczej
+            // pole zostaje puste („taki sam"), zgodnie z domyślną regułą P24.
+            'przelewy24PosId' => $shop->integration(IntegrationType::Przelewy24)?->config['pos_id'] ?? null,
+            'przelewy24Configured' => $shop->przelewy24Configured(),
+            'przelewy24Enabled' => $shop->przelewy24Enabled(),
+            'przelewy24Environment' => $shop->przelewy24Environment(),
+            'serverIp' => config('services.przelewy24.server_ip'),
             'shipxOrganizationId' => $shop->shipxOrganizationId(),
             'shipxConfigured' => $shop->shipxConfigured(),
             'shipxEnabled' => $shop->shipxEnabled(),
@@ -47,7 +56,7 @@ class IntegrationController extends Controller
         ]);
     }
 
-    public function update(IntegrationRequest $request): RedirectResponse
+    public function update(IntegrationRequest $request, Przelewy24Service $p24): RedirectResponse
     {
         $shop = $request->user()->currentShop();
         $data = $request->validated();
@@ -73,6 +82,19 @@ class IntegrationController extends Controller
                 $data['paynow_signature_key'] ?? null,
                 $data['paynow_environment'] ?? 'sandbox',
             );
+
+            // Druga bramka pod tym samym uprawnieniem — `online_payments` otwiera
+            // płatności online jako takie, niezależnie od liczby operatorów.
+            $p24Before = $this->przelewy24Connection($shop);
+            $this->savePrzelewy24($shop, $data);
+            $shop->load('integrations');
+
+            // Test połączenia TYLKO po zmianie danych połączenia P24 — sprzedawca
+            // od razu wie, czy klucze, środowisko i IP w panelu P24 są dobre, a
+            // zapis innych integracji nie odpytuje P24 za każdym razem.
+            if ($shop->przelewy24Configured() && $this->przelewy24Connection($shop) !== $p24Before) {
+                $p24Connected = $p24->testAccess($shop);
+            }
         }
 
         // Nadawanie przesyłek bramkowane tym samym uprawnieniem co płatna wysyłka
@@ -90,9 +112,20 @@ class IntegrationController extends Controller
         // tylko jedyna droga zgłoszenia mapy strony, którą dostają wszystkie sklepy.
         $this->saveSearchConsole($shop, $data['google_site_verification'] ?? null);
 
-        return redirect()
+        $redirect = redirect()
             ->route('seller.integrations.edit')
-            ->with('success', 'Zapisano ustawienia integracji.');
+            ->with('success', ($p24Connected ?? null) === true
+                ? 'Zapisano ustawienia integracji. Połączenie z Przelewy24 działa.'
+                : 'Zapisano ustawienia integracji.');
+
+        // Dane zapisujemy mimo nieudanego testu — przyczyna bywa po stronie P24
+        // (np. IP jeszcze niewpisane w panelu), a poprawka nie wymaga ponownego
+        // wklejania kluczy.
+        if (($p24Connected ?? null) === false) {
+            $redirect->with('error', 'Przelewy24 nie przyjęły połączenia. Sprawdź ID sprzedawcy, klucz do raportów, środowisko (sandbox/produkcja) oraz czy adres IP serwera jest wpisany w panelu Przelewy24.');
+        }
+
+        return $redirect;
     }
 
     /**
@@ -207,6 +240,70 @@ class IntegrationController extends Controller
                 'config' => $config,
             ]);
         }
+    }
+
+    /**
+     * Zapis konfiguracji Przelewy24. Odłączanie sterowane Merchant ID (jawny,
+     * wraca w polu): puste = usunięcie integracji. CRC i klucz API to sekrety —
+     * puste pole znaczy „zostaw zapisany" (FormRequest pilnuje kompletu przy
+     * pierwszej konfiguracji). POS ID puste = taki sam jak Merchant ID. Flagę
+     * `auto_invoice` (Ustawienia) przepisujemy 1:1, jak przy Paynow.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function savePrzelewy24(Shop $shop, array $data): void
+    {
+        $integration = $shop->integration(IntegrationType::Przelewy24);
+
+        if (blank($data['przelewy24_merchant_id'] ?? null)) {
+            $integration?->delete();
+
+            return;
+        }
+
+        $stored = $integration?->config ?? [];
+
+        $config = [
+            'merchant_id' => (int) $data['przelewy24_merchant_id'],
+            'pos_id' => filled($data['przelewy24_pos_id'] ?? null) ? (int) $data['przelewy24_pos_id'] : null,
+            'crc_key' => filled($data['przelewy24_crc_key'] ?? null) ? $data['przelewy24_crc_key'] : ($stored['crc_key'] ?? null),
+            'api_key' => filled($data['przelewy24_api_key'] ?? null) ? $data['przelewy24_api_key'] : ($stored['api_key'] ?? null),
+            'environment' => $data['przelewy24_environment'] ?? 'sandbox',
+            'auto_invoice' => $stored['auto_invoice'] ?? false,
+        ];
+
+        if ($integration !== null) {
+            $integration->update(['config' => $config]);
+        } else {
+            $shop->integrations()->create([
+                'type' => IntegrationType::Przelewy24,
+                'enabled' => true,
+                'config' => $config,
+            ]);
+        }
+    }
+
+    /**
+     * Dane, od których zależy połączenie z P24 — bez flag z Ustawień (np.
+     * `auto_invoice`), żeby ich zmiana nie wywoływała testu połączenia.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function przelewy24Connection(Shop $shop): ?array
+    {
+        $config = $shop->integration(IntegrationType::Przelewy24)?->config;
+
+        if ($config === null) {
+            return null;
+        }
+
+        return [
+            'merchant_id' => $config['merchant_id'] ?? null,
+            'pos_id' => $config['pos_id'] ?? null,
+            'crc_key' => $config['crc_key'] ?? null,
+            'api_key' => $config['api_key'] ?? null,
+            'environment' => $config['environment'] ?? null,
+        ];
     }
 
     /**

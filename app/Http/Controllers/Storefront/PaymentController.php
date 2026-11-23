@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers\Storefront;
 
+use App\Enums\PaymentProvider;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Models\Shop;
 use App\Services\PaynowService;
+use App\Services\Przelewy24Service;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -13,8 +16,13 @@ use Illuminate\Http\Request;
  * Publiczna strona płatności zamówienia, dostępna po tokenie (zaszyfrowany
  * identyfikator zamówienia — patrz `Order::paymentToken()`). Jedno miejsce, do
  * którego kierują WSZYSTKIE ścieżki dokończenia płatności: mail, „Moje konto",
- * powrót z Paynow i ekran podziękowania. Działa bez logowania — dla kupującego
+ * powrót z bramki i ekran podziękowania. Działa bez logowania — dla kupującego
  * z konta i gościa tak samo, bo prawo dostępu niesie sam token, nie sesja.
+ *
+ * Bramka: ta wybrana w kasie (`orders.payment_provider`). Gdy sprzedawca ją
+ * w międzyczasie wyłączył, strona proponuje pozostałe aktywne — zamówienie nie
+ * może zostać bez sposobu zapłaty. Jedyny styk z bramkami to zwrotnica w
+ * `pay()`; każda ma własną usługę i webhook.
  *
  * Bezpieczeństwo: token rozszyfrowujemy do id, a zamówienie i tak scope'ujemy do
  * sklepu z subdomeny (`shop()->orders()`), więc token jednego sklepu nie sięgnie
@@ -30,20 +38,23 @@ class PaymentController extends Controller
             return redirect()->to('/');
         }
 
+        $shop = $request->attributes->get('shop');
+
         return view('storefront.payment', [
-            'shop' => $request->attributes->get('shop'),
+            'shop' => $shop,
             'order' => $order,
+            'providers' => $this->providersFor($order, $shop),
         ]);
     }
 
     /**
-     * Rozpoczyna płatność online: tworzy płatność w Paynow, zapisuje jej
-     * identyfikator (po nim webhook odnajdzie zamówienie) i przekierowuje do
-     * bramki. Powrót wraca na tę samą stronę (`continueUrl`), a o zapłacie
-     * rozstrzyga webhook. Płacimy tylko za nieopłacone zamówienie online przy
-     * realnie włączonych płatnościach — inaczej wracamy na stronę bez akcji.
+     * Rozpoczyna płatność online wybraną bramką i przekierowuje do niej. Zapisuje
+     * bramkę i identyfikator próby (po nim lub po sesji P24 webhook odnajdzie
+     * zamówienie). Powrót wraca na tę stronę, a o zapłacie rozstrzyga webhook.
+     * Płacimy tylko za nieopłacone zamówienie online przy realnie dostępnej
+     * bramce — inaczej wracamy na stronę bez akcji.
      */
-    public function pay(Request $request, string $token, PaynowService $paynow): RedirectResponse
+    public function pay(Request $request, string $token, PaynowService $paynow, Przelewy24Service $p24): RedirectResponse
     {
         $order = $this->resolve($request, $token);
 
@@ -52,28 +63,89 @@ class PaymentController extends Controller
         }
 
         $shop = $request->attributes->get('shop');
+        $back = '/platnosc/'.$token;
+        $providers = $this->providersFor($order, $shop);
 
-        // `canFinishOnlinePayment`, nie `onlinePaymentsEnabled`: zamówienie
-        // złożone przed wygaśnięciem abonamentu musi dać się dopłacić.
-        if (! $order->isAwaitingOnlinePayment() || ! $shop->canFinishOnlinePayment()) {
-            return redirect()->to('/platnosc/'.$token);
+        // Przycisk konkretnej bramki (gdy strona proponuje kilka) — tylko spośród
+        // tych, które strona sama zaproponowała.
+        $requested = PaymentProvider::tryFrom((string) $request->input('provider'));
+        $provider = $requested !== null && in_array($requested, $providers, true) ? $requested : ($providers[0] ?? null);
+
+        if (! $order->isAwaitingOnlinePayment() || $provider === null) {
+            return redirect()->to($back);
         }
 
-        $continueUrl = $request->getSchemeAndHttpHost().'/platnosc/'.$token;
-        $payment = $paynow->createPayment($order, $continueUrl);
+        $returnUrl = $request->getSchemeAndHttpHost().$back;
 
-        if ($payment === null) {
-            return redirect()
-                ->to('/platnosc/'.$token)
-                ->with('error', 'Nie udało się rozpocząć płatności. Spróbuj ponownie za chwilę.');
+        $attempt = match ($provider) {
+            PaymentProvider::Paynow => $this->startPaynow($paynow, $order, $returnUrl),
+            PaymentProvider::Przelewy24 => $this->startPrzelewy24($p24, $order, $shop, $returnUrl),
+        };
+
+        if ($attempt === null) {
+            $message = $provider === PaymentProvider::Przelewy24
+                && mb_strlen((string) $order->buyer_email) > Przelewy24Service::MAX_EMAIL_LENGTH
+                ? 'Przelewy24 przyjmują adres e-mail do '.Przelewy24Service::MAX_EMAIL_LENGTH.' znaków, a ten jest dłuższy. Skontaktuj się ze sklepem, aby opłacić zamówienie inaczej.'
+                : 'Nie udało się rozpocząć płatności. Spróbuj ponownie za chwilę.';
+
+            return redirect()->to($back)->with('error', $message);
         }
 
         $order->forceFill([
-            'payment_external_id' => $payment['paymentId'],
-            'payment_status' => $payment['status'],
+            'payment_provider' => $provider,
+            'payment_external_id' => $attempt['externalId'],
+            'payment_status' => $attempt['status'],
         ])->save();
 
-        return redirect()->away($payment['redirectUrl']);
+        return redirect()->away($attempt['redirectUrl']);
+    }
+
+    /**
+     * @return array{externalId: string, status: string, redirectUrl: string}|null
+     */
+    private function startPaynow(PaynowService $paynow, Order $order, string $returnUrl): ?array
+    {
+        $payment = $paynow->createPayment($order, $returnUrl);
+
+        return $payment === null ? null : [
+            'externalId' => $payment['paymentId'],
+            'status' => $payment['status'],
+            'redirectUrl' => $payment['redirectUrl'],
+        ];
+    }
+
+    /**
+     * @return array{externalId: string, status: string, redirectUrl: string}|null
+     */
+    private function startPrzelewy24(Przelewy24Service $p24, Order $order, Shop $shop, string $returnUrl): ?array
+    {
+        $transaction = $p24->registerTransaction($order, $returnUrl, $shop->przelewy24WebhookUrl());
+
+        return $transaction === null ? null : [
+            'externalId' => $transaction['sessionId'],
+            'status' => 'REGISTERED',
+            'redirectUrl' => $transaction['redirectUrl'],
+        ];
+    }
+
+    /**
+     * Bramki, którymi można teraz opłacić to zamówienie. Bramka z kasy, jeśli
+     * nadal działa — wtedy tylko ona (klient wybrał świadomie). Inaczej wszystkie
+     * dostępne, żeby wyłączenie jednej nie zostawiło zamówienia bez wyjścia.
+     * Liczone jak dla zamówień złożonych wcześniej (patrz
+     * `Shop::paymentProviderReady()`): dopłata działa także po wygaśnięciu pakietu.
+     *
+     * @return list<PaymentProvider>
+     */
+    private function providersFor(Order $order, Shop $shop): array
+    {
+        $payable = $shop->payableProvidersForUnfinishedOrders();
+
+        if ($order->payment_provider !== null && in_array($order->payment_provider, $payable, true)) {
+            return [$order->payment_provider];
+        }
+
+        return $payable;
     }
 
     /**

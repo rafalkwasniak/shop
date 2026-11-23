@@ -53,6 +53,8 @@ class ShopSettingsRequest extends FormRequest
             // więc mieszka tu, wcięta pod włącznikiem Paynow. Flaga siedzi w configu
             // integracji płatności; zapis merge'uje ją w kontrolerze.
             'paynow_auto_invoice' => $this->boolean('paynow_auto_invoice'),
+            'przelewy24_enabled' => $this->boolean('przelewy24_enabled'),
+            'przelewy24_auto_invoice' => $this->boolean('przelewy24_auto_invoice'),
             'shipx_enabled' => $this->boolean('shipx_enabled'),
             // Domyślna paczka kurierska: wymiary w cm, waga w kg. Ta sama
             // normalizacja co przy kwotach — „2,5" i „2.5" mają znaczyć to samo.
@@ -108,6 +110,8 @@ class ShopSettingsRequest extends FormRequest
             'fakturownia_enabled' => ['boolean'],
             'paynow_enabled' => ['boolean'],
             'paynow_auto_invoice' => ['boolean'],
+            'przelewy24_enabled' => ['boolean'],
+            'przelewy24_auto_invoice' => ['boolean'],
             'shipx_enabled' => ['boolean'],
             // Sposób nadania: wybór jest WIĄŻĄCY przy każdej nadanej przesyłce
             // (InPost nie pozwala go potem zmienić), więc nie przyjmujemy tu
@@ -151,6 +155,8 @@ class ShopSettingsRequest extends FormRequest
             'fakturownia_enabled' => 'Fakturownia',
             'paynow_enabled' => 'płatności online (Paynow)',
             'paynow_auto_invoice' => 'automatyczna faktura po opłaceniu',
+            'przelewy24_enabled' => 'płatności online (Przelewy24)',
+            'przelewy24_auto_invoice' => 'automatyczna faktura po opłaceniu (Przelewy24)',
             'shipx_enabled' => 'nadawanie przesyłek InPost',
             'shipment_sending_method' => 'sposób oddawania paczek',
             'courier_parcel_length_cm' => 'długość paczki',

@@ -125,6 +125,26 @@ return [
         ],
     ],
 
+    'przelewy24' => [
+        // Druga bramka płatności online, model PER-SKLEP jak Paynow: Merchant ID,
+        // POS ID, klucz CRC i klucz API sprzedawcy żyją w shop_integrations,
+        // zaszyfrowane — TU NIE MA sekretów ani wpisów w `.env`. Ten sam host
+        // obsługuje API (`/api/v1/...`) i przekierowanie kupującego
+        // (`/trnRequest/{token}`), więc wystarcza jeden adres na środowisko.
+        'base_url' => [
+            'sandbox' => 'https://sandbox.przelewy24.pl',
+            'production' => 'https://secure.przelewy24.pl',
+        ],
+
+        // Publiczny adres IP, z którego TEN serwer woła API. P24 wpuszcza żądania
+        // tylko z adresów wpisanych w panelu sprzedawcy („Moje dane → Dane API i
+        // konfiguracja → Adres IP"), więc karta integracji pokazuje go do
+        // przeklejenia. Zależy od maszyny, nie od kodu — dlatego `.env`.
+        // PRZEPROWADZKA: nowy serwer = nowe IP = każdy sprzedawca z P24 musi je
+        // zmienić u siebie, inaczej płatności staną.
+        'server_ip' => env('SERVER_OUTBOUND_IP'),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Google Analytics — statystyki CENTRALI

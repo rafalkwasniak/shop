@@ -267,7 +267,7 @@ class OrderMailer
                 // oczekiwane — w mailu o „Zrealizowane" numer konta to szum.
                 $status === OrderStatus::AwaitingPayment
                     ? $this->paymentBlock($order, $shop)
-                    : ['Sposób płatności: '.$order->payment_method->label()],
+                    : ['Sposób płatności: '.$order->paymentMethodLabel()],
                 $this->deliveryBlock($order, $shop),
             ]),
             'action_text' => 'Wróć do sklepu',
@@ -463,7 +463,7 @@ class OrderMailer
                 ),
                 [
                     'Dostawa: '.$order->delivery_method->label(),
-                    'Płatność: '.$order->payment_method->label(),
+                    'Płatność: '.$order->paymentMethodLabel(),
                 ],
                 $this->noteBlock($order, 'Uwagi klienta:'),
             ]),
@@ -898,7 +898,7 @@ class OrderMailer
         if ($order->payment_method === PaymentMethod::Online) {
             // Online = przedpłata: dopóki nie ma potwierdzenia (webhook przenosi na
             // „Opłacone"), zamówienie czeka na wpłatę. Bez „przy odbiorze" — to był błąd.
-            return ['Sposób płatności: '.$order->payment_method->label().
+            return ['Sposób płatności: '.$order->paymentMethodLabel().
                 ($order->status === OrderStatus::AwaitingPayment
                     ? ' — zamówienie czeka na opłacenie.'
                     : ' — opłacone.'),
@@ -912,7 +912,7 @@ class OrderMailer
             // i nie wolno go uogólnić — paczkomat gotówki nie przyjmie, a klient,
             // który się o tym dowie przy skrytce, po prostu nie odbierze paczki.
             return [
-                'Sposób płatności: '.$order->payment_method->label(),
+                'Sposób płatności: '.$order->paymentMethodLabel(),
                 'Do zapłaty przy odbiorze: **'.Money::pln($order->total_gross).'**',
                 $order->delivery_method?->requiresParcelLocker() === true
                     ? 'W paczkomacie zapłacisz BLIK-iem, kartą lub w aplikacji InPost — gotówki paczkomat nie przyjmuje.'
@@ -920,7 +920,7 @@ class OrderMailer
             ];
         }
 
-        return ['Sposób płatności: '.$order->payment_method->label().' — zapłacisz na miejscu przy odbiorze.'];
+        return ['Sposób płatności: '.$order->paymentMethodLabel().' — zapłacisz na miejscu przy odbiorze.'];
     }
 
     /**

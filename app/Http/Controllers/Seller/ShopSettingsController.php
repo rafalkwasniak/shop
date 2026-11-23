@@ -43,6 +43,9 @@ class ShopSettingsController extends Controller
             'paynowConfigured' => $shop->onlinePaymentsConfigured(),
             'paynowEnabled' => (bool) $shop->integration(IntegrationType::Payments)?->enabled,
             'paynowAutoInvoice' => $shop->autoInvoiceAfterPayment(),
+            'przelewy24Configured' => $shop->przelewy24Configured(),
+            'przelewy24Enabled' => (bool) $shop->integration(IntegrationType::Przelewy24)?->enabled,
+            'przelewy24AutoInvoice' => $shop->integration(IntegrationType::Przelewy24)?->autoInvoiceAfterPayment() === true,
             'shipxConfigured' => $shop->shipxConfigured(),
             'shipxEnabled' => (bool) $shop->integration(IntegrationType::Shipping)?->enabled,
             'sendingMethods' => SendingMethod::cases(),
@@ -62,6 +65,8 @@ class ShopSettingsController extends Controller
             'fakturownia_enabled',
             'paynow_enabled',
             'paynow_auto_invoice',
+            'przelewy24_enabled',
+            'przelewy24_auto_invoice',
             'shipx_enabled',
         ]));
         $shop->save();
@@ -82,6 +87,18 @@ class ShopSettingsController extends Controller
 
             $payments->update([
                 'enabled' => $request->boolean('paynow_enabled'),
+                'config' => $config,
+            ]);
+        }
+
+        // Przelewy24: ten sam układ co Paynow — każda bramka niesie własny
+        // włącznik i własną decyzję o auto-FV na swoim wierszu integracji.
+        if ($przelewy24 = $shop->integration(IntegrationType::Przelewy24)) {
+            $config = $przelewy24->config;
+            $config['auto_invoice'] = $request->boolean('przelewy24_auto_invoice');
+
+            $przelewy24->update([
+                'enabled' => $request->boolean('przelewy24_enabled'),
                 'config' => $config,
             ]);
         }

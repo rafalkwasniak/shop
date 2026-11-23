@@ -140,8 +140,8 @@
                          odsprzedawali usługę płatniczą w abonamencie. Nie robimy tego:
                          pakiet daje integrację, umowę z operatorem sprzedawca zawiera
                          sam, a pieniądze nigdy nie przechodzą przez Kramio. --}}
-                    <p class="mt-2 text-stone-600">Płatności online działają na <span class="font-medium text-stone-800">Twojej własnej umowie z Paynow</span> (bramka mBanku) — konto płatnicze zakładasz u operatora i to on Cię weryfikuje. Pakiet daje gotową integrację, w którą wklejasz swoje klucze; pieniądze od klientów idą wprost na Twoje konto, a Kramio nie jest stroną tych transakcji ani ich nie pośredniczy.</p>
-                    {{-- Pobranie postawione OBOK Paynow, a nie w liście funkcji, bo dla
+                    <p class="mt-2 text-stone-600">Płatności online działają na <span class="font-medium text-stone-800">Twojej własnej umowie z operatorem płatności</span> — konto płatnicze zakładasz u operatora i to on Cię weryfikuje. Pakiet daje gotową integrację, w którą wklejasz swoje klucze; pieniądze od klientów idą wprost na Twoje konto, a Kramio nie jest stroną tych transakcji ani ich nie pośredniczy.</p>
+                    {{-- Pobranie postawione OBOK płatności online, a nie w liście funkcji, bo dla
                          części sprzedawców jest odpowiedzią na akapit wyżej: „nie chcę
                          zakładać konta u operatora". Warunki podane wprost (konto InPost,
                          płatny pakiet), żeby zdanie nie obiecywało sprzedaży bez niczego —

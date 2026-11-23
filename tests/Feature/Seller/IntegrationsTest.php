@@ -3,10 +3,12 @@
 namespace Tests\Feature\Seller;
 
 use App\Enums\IntegrationType;
+use App\Models\Product;
 use App\Models\Shop;
 use App\Models\ShopIntegration;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 /**
@@ -422,7 +424,6 @@ class IntegrationsTest extends TestCase
         $this->assertTrue($shop->fresh()->autoInvoiceAfterPayment());
     }
 
-
     public function test_paynow_api_key_without_signature_is_rejected_when_not_yet_configured(): void
     {
         [$seller] = $this->sellerWithShop(onlinePayments: true);
@@ -572,7 +573,7 @@ class IntegrationsTest extends TestCase
             'paynow_sandbox' => '1',
         ]);
 
-        \App\Models\Product::factory()->for($shop)->create(['is_active' => true]);
+        Product::factory()->for($shop)->create(['is_active' => true]);
         $shop->refreshVisibility();
 
         $this->get('https://'.$shop->fresh()->host().'/')
@@ -710,5 +711,324 @@ class IntegrationsTest extends TestCase
             ->assertRedirect(route('seller.integrations.edit'));
 
         $this->assertNull($shop->fresh()->integration(IntegrationType::Shipping));
+    }
+
+    /**
+     * Zapisana konfiguracja Przelewy24 (komplet danych) — punkt wyjścia testów
+     * zapisu i Ustawień.
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    private function configurePrzelewy24(Shop $shop, array $overrides = []): ShopIntegration
+    {
+        return $shop->integrations()->create([
+            'type' => IntegrationType::Przelewy24,
+            'enabled' => true,
+            'config' => array_merge([
+                'merchant_id' => 123456,
+                'pos_id' => null,
+                'crc_key' => 'CRC-KEEP',
+                'api_key' => 'API-KEEP',
+                'environment' => 'sandbox',
+            ], $overrides),
+        ]);
+    }
+
+    public function test_przelewy24_card_is_gated_by_entitlement_and_shows_server_ip(): void
+    {
+        config()->set('services.przelewy24.server_ip', '203.0.113.7');
+
+        [$sellerFree] = $this->sellerWithShop();
+        $this->actingAs($sellerFree)
+            ->get(route('seller.integrations.edit'))
+            ->assertOk()
+            ->assertDontSee('Płatności online (Przelewy24)');
+
+        // P24 wpuszcza API tylko z IP wpisanych w panelu sprzedawcy — bez tego
+        // adresu na karcie sprzedawca nie ma jak uruchomić płatności.
+        [$sellerPaid] = $this->sellerWithShop(onlinePayments: true);
+        $this->actingAs($sellerPaid)
+            ->get(route('seller.integrations.edit'))
+            ->assertOk()
+            ->assertSee('Płatności online (Przelewy24)')
+            ->assertSee('Klucz CRC')
+            ->assertSee('Adres IP do wpisania w Przelewy24')
+            ->assertSee('203.0.113.7');
+    }
+
+    public function test_przelewy24_card_hides_ip_box_when_server_ip_is_unknown(): void
+    {
+        config()->set('services.przelewy24.server_ip', null);
+        [$seller] = $this->sellerWithShop(onlinePayments: true);
+
+        $this->actingAs($seller)
+            ->get(route('seller.integrations.edit'))
+            ->assertOk()
+            ->assertSee('Płatności online (Przelewy24)')
+            ->assertDontSee('Adres IP do wpisania w Przelewy24');
+    }
+
+    public function test_seller_can_configure_przelewy24_and_it_is_enabled_by_default(): void
+    {
+        Http::fake(['*/api/v1/testAccess' => Http::response(['data' => true])]);
+        [$seller, $shop] = $this->sellerWithShop(onlinePayments: true);
+
+        $this->actingAs($seller)
+            ->post(route('seller.integrations.update'), [
+                'przelewy24_merchant_id' => ' 123456 ',
+                'przelewy24_pos_id' => '',
+                'przelewy24_crc_key' => 'a1b2c3d4e5f6a7b8',
+                'przelewy24_api_key' => 'f0e1d2c3b4a5968778695a4b3c2d1e0f',
+                'przelewy24_sandbox' => '1',
+            ])
+            ->assertRedirect(route('seller.integrations.edit'))
+            ->assertSessionHas('success');
+
+        $integration = $shop->integrations()->where('type', IntegrationType::Przelewy24)->first();
+        $this->assertNotNull($integration);
+        $this->assertTrue($integration->enabled);
+        $this->assertSame(123456, $integration->config['merchant_id']);
+        $this->assertSame('a1b2c3d4e5f6a7b8', $integration->config['crc_key']);
+        $this->assertSame('f0e1d2c3b4a5968778695a4b3c2d1e0f', $integration->config['api_key']);
+        $this->assertSame('sandbox', $integration->config['environment']);
+
+        $shop = $shop->fresh();
+        $this->assertTrue($shop->przelewy24Enabled());
+        // Puste POS ID = taki sam jak Merchant ID (domyślna reguła P24).
+        $this->assertSame(123456, $shop->przelewy24PosId());
+    }
+
+    public function test_przelewy24_distinct_pos_id_is_kept(): void
+    {
+        Http::fake(['*/api/v1/testAccess' => Http::response(['data' => true])]);
+        [$seller, $shop] = $this->sellerWithShop(onlinePayments: true);
+
+        $this->actingAs($seller)
+            ->post(route('seller.integrations.update'), [
+                'przelewy24_merchant_id' => '123456',
+                'przelewy24_pos_id' => '654321',
+                'przelewy24_crc_key' => 'CRC',
+                'przelewy24_api_key' => 'API',
+                'przelewy24_sandbox' => '0',
+            ])
+            ->assertSessionHas('success');
+
+        $shop = $shop->fresh();
+        $this->assertSame(654321, $shop->przelewy24PosId());
+        $this->assertSame('production', $shop->przelewy24Environment());
+    }
+
+    public function test_przelewy24_merchant_id_without_secrets_is_rejected_when_not_yet_configured(): void
+    {
+        [$seller] = $this->sellerWithShop(onlinePayments: true);
+
+        $this->actingAs($seller)
+            ->post(route('seller.integrations.update'), [
+                'przelewy24_merchant_id' => '123456',
+                'przelewy24_sandbox' => '1',
+            ])
+            ->assertSessionHasErrors(['przelewy24_crc_key', 'przelewy24_api_key']);
+
+        $this->assertSame(0, ShopIntegration::where('type', IntegrationType::Przelewy24)->count());
+    }
+
+    public function test_przelewy24_secrets_without_merchant_id_are_rejected(): void
+    {
+        // Sekrety bez Merchant ID zostałyby po cichu wyrzucone (puste Merchant ID
+        // = odłączenie) — sprzedawca myślałby, że coś podłączył.
+        [$seller] = $this->sellerWithShop(onlinePayments: true);
+
+        $this->actingAs($seller)
+            ->post(route('seller.integrations.update'), [
+                'przelewy24_crc_key' => 'CRC',
+                'przelewy24_api_key' => 'API',
+                'przelewy24_sandbox' => '1',
+            ])
+            ->assertSessionHasErrors('przelewy24_merchant_id');
+    }
+
+    public function test_przelewy24_merchant_id_must_be_numeric(): void
+    {
+        [$seller] = $this->sellerWithShop(onlinePayments: true);
+
+        $this->actingAs($seller)
+            ->post(route('seller.integrations.update'), [
+                'przelewy24_merchant_id' => 'abc-123',
+                'przelewy24_crc_key' => 'CRC',
+                'przelewy24_api_key' => 'API',
+                'przelewy24_sandbox' => '1',
+            ])
+            ->assertSessionHasErrors('przelewy24_merchant_id');
+    }
+
+    public function test_blank_przelewy24_secrets_on_resave_keep_stored_ones_and_auto_invoice(): void
+    {
+        Http::fake(['*/api/v1/testAccess' => Http::response(['data' => true])]);
+        [$seller, $shop] = $this->sellerWithShop(onlinePayments: true);
+        $this->configurePrzelewy24($shop, ['auto_invoice' => true]);
+
+        $this->actingAs($seller)
+            ->post(route('seller.integrations.update'), [
+                'przelewy24_merchant_id' => '777777',
+                'przelewy24_crc_key' => '',
+                'przelewy24_api_key' => '',
+                'przelewy24_sandbox' => '1',
+            ])
+            ->assertSessionHas('success');
+
+        $config = $shop->integrations()->where('type', IntegrationType::Przelewy24)->first()->config;
+        $this->assertSame(777777, $config['merchant_id']);
+        $this->assertSame('CRC-KEEP', $config['crc_key']);
+        $this->assertSame('API-KEEP', $config['api_key']);
+        // Decyzja z Ustawień nie ginie przy zapisie danych połączenia.
+        $this->assertTrue($config['auto_invoice']);
+    }
+
+    public function test_clearing_przelewy24_merchant_id_disconnects_only_przelewy24(): void
+    {
+        [$seller, $shop] = $this->sellerWithShop(onlinePayments: true);
+        $this->configurePrzelewy24($shop);
+        $shop->integrations()->create([
+            'type' => IntegrationType::Payments,
+            'enabled' => true,
+            'config' => ['api_key' => 'K', 'signature_key' => 'S', 'environment' => 'sandbox'],
+        ]);
+
+        $this->actingAs($seller)
+            ->post(route('seller.integrations.update'), [
+                'paynow_api_key' => 'K',
+                'paynow_sandbox' => '1',
+                'przelewy24_merchant_id' => '',
+                'przelewy24_sandbox' => '1',
+            ])
+            ->assertSessionHas('success');
+
+        $this->assertSame(0, ShopIntegration::where('type', IntegrationType::Przelewy24)->count());
+        // Druga bramka żyje dalej — każda ma własny wiersz.
+        $this->assertTrue($shop->fresh()->onlinePaymentsEnabled());
+    }
+
+    public function test_przelewy24_is_not_saved_without_entitlement(): void
+    {
+        [$seller, $shop] = $this->sellerWithShop();
+
+        $this->actingAs($seller)
+            ->post(route('seller.integrations.update'), [
+                'przelewy24_merchant_id' => '123456',
+                'przelewy24_crc_key' => 'CRC',
+                'przelewy24_api_key' => 'API',
+                'przelewy24_sandbox' => '1',
+            ])
+            ->assertRedirect(route('seller.integrations.edit'));
+
+        $this->assertNull($shop->fresh()->integration(IntegrationType::Przelewy24));
+    }
+
+    public function test_settings_toggle_and_auto_invoice_for_przelewy24_are_independent_of_paynow(): void
+    {
+        [$seller, $shop] = $this->sellerWithShop(['default_vat_rate' => '23'], onlinePayments: true, invoicing: true);
+        $p24 = $this->configurePrzelewy24($shop);
+        $paynow = $shop->integrations()->create([
+            'type' => IntegrationType::Payments,
+            'enabled' => true,
+            'config' => ['api_key' => 'K', 'signature_key' => 'S', 'environment' => 'sandbox'],
+        ]);
+
+        $this->actingAs($seller)
+            ->get(route('seller.settings.edit'))
+            ->assertOk()
+            ->assertSee('Płatności online (Przelewy24)');
+
+        // Paynow wyłączony, P24 włączony z auto-FV — każda bramka osobno.
+        $this->actingAs($seller)
+            ->post(route('seller.settings.update'), [
+                'default_vat_rate' => '23',
+                'przelewy24_enabled' => '1',
+                'przelewy24_auto_invoice' => '1',
+            ])
+            ->assertSessionHas('success');
+
+        $p24 = $p24->fresh();
+        $this->assertTrue($p24->enabled);
+        $this->assertTrue($p24->autoInvoiceAfterPayment());
+        // Klucze nietknięte — merge, nie nadpisanie.
+        $this->assertSame('CRC-KEEP', $p24->config['crc_key']);
+        $this->assertFalse($paynow->fresh()->enabled);
+        $this->assertFalse($paynow->fresh()->autoInvoiceAfterPayment());
+
+        // Wyłączenie P24: checkbox odznaczony = pole nieobecne w POST.
+        $this->actingAs($seller)
+            ->post(route('seller.settings.update'), ['default_vat_rate' => '23']);
+
+        $this->assertFalse($p24->fresh()->enabled);
+        $this->assertFalse($shop->fresh()->przelewy24Enabled());
+    }
+
+    public function test_przelewy24_toggle_is_disabled_until_configured(): void
+    {
+        [$seller] = $this->sellerWithShop(onlinePayments: true);
+
+        $this->actingAs($seller)
+            ->get(route('seller.settings.edit'))
+            ->assertOk()
+            ->assertSee('najpierw podaj dane Przelewy24', false);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function przelewy24Form(array $overrides = []): array
+    {
+        return array_merge([
+            'przelewy24_merchant_id' => '431164',
+            'przelewy24_crc_key' => 'CRC',
+            'przelewy24_api_key' => 'API',
+            'przelewy24_sandbox' => '1',
+        ], $overrides);
+    }
+
+    public function test_saving_przelewy24_checks_the_connection_and_confirms_it(): void
+    {
+        Http::fake(['sandbox.przelewy24.pl/api/v1/testAccess' => Http::response(['data' => true])]);
+        [$seller] = $this->sellerWithShop(onlinePayments: true);
+
+        $this->actingAs($seller)
+            ->post(route('seller.integrations.update'), $this->przelewy24Form())
+            ->assertSessionHas('success', 'Zapisano ustawienia integracji. Połączenie z Przelewy24 działa.')
+            ->assertSessionMissing('error');
+
+        Http::assertSentCount(1);
+    }
+
+    public function test_failed_przelewy24_connection_keeps_data_and_explains_what_to_check(): void
+    {
+        // Najczęstsza przyczyna to IP niewpisane w panelu P24 — dane zostają
+        // zapisane, żeby po poprawce w P24 nie trzeba było wklejać kluczy.
+        Http::fake(['*/api/v1/testAccess' => Http::response(['error' => 'Incorrect authentication', 'code' => 401], 401)]);
+        [$seller, $shop] = $this->sellerWithShop(onlinePayments: true);
+
+        $this->actingAs($seller)
+            ->post(route('seller.integrations.update'), $this->przelewy24Form())
+            ->assertSessionHas('success', 'Zapisano ustawienia integracji.')
+            ->assertSessionHas('error');
+
+        $this->assertTrue($shop->fresh()->przelewy24Configured());
+    }
+
+    public function test_resave_without_przelewy24_changes_does_not_call_przelewy24(): void
+    {
+        Http::fake();
+        [$seller, $shop] = $this->sellerWithShop(onlinePayments: true);
+        $this->configurePrzelewy24($shop, ['merchant_id' => 431164]);
+
+        // Ten sam Merchant ID, puste sekrety = „zostaw" — nic się nie zmieniło.
+        $this->actingAs($seller)
+            ->post(route('seller.integrations.update'), $this->przelewy24Form([
+                'przelewy24_crc_key' => '',
+                'przelewy24_api_key' => '',
+            ]))
+            ->assertSessionHas('success', 'Zapisano ustawienia integracji.');
+
+        Http::assertNothingSent();
     }
 }
