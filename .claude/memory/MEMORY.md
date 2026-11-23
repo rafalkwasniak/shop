@@ -29,7 +29,7 @@
 - [KIERUNEK: NOWY SERWER](plan-dev-environment.md) — przeprowadzka planowana, termin nieustalony.
 - [BACKUP Etap 1+3 wdrożone](open-no-file-backups.md) — kopie 2×/dobę, odtworzenie przećwiczone. Etap 2 (poza serwerem) otwarty.
 - [ZROBIONE: crony ursalogic](disabled-ursalogic-queue-crons.md) — fix `low --max-time=55` WSTRZYMANY do nowego serwera.
-- [ROZEZNANE: Przelewy24](plan-przelewy24-payments.md) — ZERO kodu; obowiązkowy `verify` po webhooku.
+- [WDROŻONE: Przelewy24](plan-przelewy24-payments.md) — 23.11, E2E OK. **Wiele bramek naraz, kupujący wybiera.** Webhook BEZ `verify` = brak zapłaty. P24 wymaga IP serwera w panelu sprzedawcy.
 - [WDROŻONE: punkty za zakupy](idea-loyalty-points.md) — 07.10 start w Pawilonie (włącznik, landing, mail o wygasaniu, kartoteka). **Klientowi same punkty, bez zł.** Zostało: przeklikanie. Punkty na FV = rabat (Rafał).
 - [ODŁOŻONE: sklep na cudzej stronie](plan-embed-shop-on-external-site.md) — ZERO kodu; iframe odpada.
 - [DZIAŁA: zakup pakietu online](plan-package-payments.md) — **NIE planować jako „do zrobienia".**
@@ -123,6 +123,7 @@
 - [Shipping aggregator](shipping-aggregator-idea.md) — **ZAMKNIĘTE: Furgonetka WYPADA.**
 
 ## Handoffy (najnowsze u góry)
+- [11-23 Przelewy24 — od rozeznania do E2E](handoff-2026-11-23.md) — 1950→2079. **Wiele bramek naraz; teksty sprzedażowe bez nazw operatorów.** Oficjalny YAML P24 ujawnił whitelistę IP (przeprowadzka!). Pint 2× ruszył cudzy kod.
 - [11-02 Aracaffee + 3 funkcje WDROŻONE w Kramio](handoff-2026-11-02.md) — formularz/banery/zdjęcia w stronach + teksty + dokumenty v5 (`500459e`). **Sprzedawcy akceptują v5.** Lekcje: ustalenia > własne pomysły; worktree z cudzym `vendor/` testuje produkcję.
 - [10-07 punkty za zakupy — od szkicu do startu](handoff-2026-10-07.md) — 1852→1950. **Temat zamknięty (z własną liczbą punktów w koszyku); wszystkie sklepy na Kramie, więc punkty realnie tylko w Lemoniadach. `confirm()` w panelu zakazany; mail nie może zależeć od punktów.**
 - [10-03 2FA kodem z maila](handoff-2026-10-03.md) — 1834→1852. **Safari podstawia kod. `Artisan::call` z WWW = exec() zablokowany.**
