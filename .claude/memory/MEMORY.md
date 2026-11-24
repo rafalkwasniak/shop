@@ -18,6 +18,7 @@
 ## Prawne
 - [DSA: Kramio = HOSTING](legal-dsa-hosting-classification.md) — decyzja 15.08. **Galeria sklepów zabiłaby argument nr 1.**
 - [Regulamin i polityka v3](legal-audit-2026-08-15.md) — **numeracja się przesunęła**; stare odesłania nieaktualne.
+- [Nowa wersja dokumentu = nowa DATA w treści](gotcha-legal-version-effective-date.md) — v4/v5 zostawiły 15.08. **Dziś obowiązuje v6 (24.11): operator płatności bez nazwy.**
 - [Wzory dokumentów dla sprzedawców](plan-seller-legal-templates.md) — regulamin ZROBIONY, zostaje POLITYKA. NIP nie może być twardym warunkiem.
 
 ## Otwarte / do decyzji
