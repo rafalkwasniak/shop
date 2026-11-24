@@ -1,4 +1,4 @@
-<!-- Źródło treści wersji 3 w `legal_documents` (opublikowana 2026-08-15).
+<!-- Źródło treści wersji 6 w `legal_documents` (opublikowana 2026-11-24).
      Konwencja HTML jak w legal_documents (h2/h3/p/ul — styluje .legal-content).
      Zmiana treści = nowa wersja w bazie (mechanizm ponownej akceptacji), ten plik aktualizować razem z nią.
 
@@ -11,12 +11,19 @@
        dane osób spoza grona sprzedawców i klientów, więc musi to być opisane.
        UWAGA: zdanie „bez Twoich danych kontaktowych" ma pokrycie w kodzie —
        `ContentReportMailer::statementOfReasons()` przekazuje sprzedawcy adres treści,
-       kategorię i uzasadnienie, ale NIE dane zgłaszającego. Zmiana tam = zmiana tutaj. -->
+       kategorię i uzasadnienie, ale NIE dane zgłaszającego. Zmiana tam = zmiana tutaj.
 
+     ZMIANY W WERSJACH 4–6 (wprowadzane migracjami `publish_legal_documents_v*`, plik zsynchronizowany 24.11.2026):
+     - v4 (07.09.2026): pracownicy sklepu.
+     - v5 (02.11.2026): formularz kontaktowy sklepu.
+     - v6 (24.11.2026): operator płatności online sprzedawcy BEZ nazwy („wybranym przez sprzedawcę”) —
+       od 23.11 sklep może mieć Paynow, Przelewy24 lub obie bramki; data obowiązywania poprawiona
+       (v4 i v5 zostawiły 15.08.2026).
+     Treść poniżej = DOKŁADNA kopia opublikowanej wersji 6 z `legal_documents`. -->
 <p>Ta polityka wyjaśnia, jak w serwisie Kramio przetwarzane są dane osobowe. Kramio to serwis, w którym niezależni sprzedawcy prowadzą własne sklepy internetowe — dlatego dokument ma dwie części:</p>
 <ul>
     <li><strong>Część I</strong> dotyczy serwisu Kramio (kramio.pl): kont sprzedawców, rozliczeń i stron samego serwisu. Administratorem danych jest tu operator Kramio.</li>
-    <li><strong>Część II</strong> dotyczy sklepów prowadzonych na Kramio (adresy w rodzaju <em>nazwa-sklepu.kramio.pl</em>): zakupów, kont klientów i newsletterów sklepów. Administratorem danych jest tu sprzedawca prowadzący dany sklep, a Kramio przetwarza dane w jego imieniu.</li>
+    <li><strong>Część II</strong> dotyczy sklepów prowadzonych na Kramio (adresy w rodzaju <em>nazwa-sklepu.kramio.pl</em>): zakupów, kont klientów, newsletterów sklepów i wiadomości wysyłanych przez formularz kontaktowy. Administratorem danych jest tu sprzedawca prowadzący dany sklep, a Kramio przetwarza dane w jego imieniu.</li>
 </ul>
 <p>Na końcu znajdziesz wspólne informacje o plikach cookies oraz o Twoich prawach.</p>
 
@@ -64,17 +71,19 @@
 <h2>Część II — sklepy prowadzone na Kramio</h2>
 
 <h3>Kto jest administratorem Twoich danych, gdy kupujesz w sklepie</h3>
-<p>Każdy sklep dostępny pod adresem w rodzaju <em>nazwa-sklepu.kramio.pl</em> jest prowadzony przez niezależnego sprzedawcę. To <strong>sprzedawca jest administratorem danych osobowych</strong>, które podajesz w jego sklepie — przy zakupie, zakładaniu konta klienta, zapisie na newsletter czy składaniu zwrotu. Dane sprzedawcy (nazwa, adres, kontakt) znajdziesz w stopce sklepu oraz w jego regulaminie.</p>
+<p>Każdy sklep dostępny pod adresem w rodzaju <em>nazwa-sklepu.kramio.pl</em> jest prowadzony przez niezależnego sprzedawcę. To <strong>sprzedawca jest administratorem danych osobowych</strong>, które podajesz w jego sklepie — przy zakupie, zakładaniu konta klienta, zapisie na newsletter, składaniu zwrotu czy wysyłaniu wiadomości przez formularz kontaktowy. Dane sprzedawcy (nazwa, adres, kontakt) znajdziesz w stopce sklepu oraz w jego regulaminie.</p>
 <p>Kramio (Operator wskazany w Części I) przetwarza te dane <strong>w imieniu sprzedawcy</strong>, jako podmiot przetwarzający w rozumieniu art. 28 RODO — na podstawie umowy powierzenia zawartej w Regulaminie serwisu. Oznacza to, że dostarczamy sprzedawcy techniczne narzędzie do prowadzenia sklepu, ale to sprzedawca decyduje o celach wykorzystania danych swoich klientów.</p>
+<p>Sprzedawca może dopuścić do obsługi swojego sklepu współpracujące z nim osoby — na przykład kogoś, kto pakuje przesyłki albo prowadzi rozliczenia. Osoby te dostają w Kramio odrębne konta z dostępem wyłącznie do tych części panelu, które wskaże im sprzedawca, i działają w jego imieniu oraz na jego odpowiedzialność. <strong>Nie są odrębnymi administratorami Twoich danych.</strong></p>
 
 <h3>Jakie dane pojawiają się w sklepach</h3>
 <ul>
     <li><strong>zamówienia</strong> — imię i nazwisko, adres dostawy, e-mail, telefon, a dla firm także NIP i nazwa; sprzedawca potrzebuje ich do realizacji sprzedaży, obsługi reklamacji i zwrotów (konsument ma 14 dni na odstąpienie od umowy zawartej na odległość);</li>
     <li><strong>konto klienta</strong> — jeśli je założysz, jest to konto w konkretnym sklepie (nie ogólnokramiowe) i możesz je w każdej chwili usunąć;</li>
     <li><strong>newsletter sklepu</strong> — wysyłany wyłącznie za Twoją zgodą wyrażoną w danym sklepie; w każdej wiadomości znajdziesz działający bezterminowo link wypisu;</li>
-    <li><strong>płatności online</strong> — realizowane bezpośrednio między Tobą a operatorem płatności sprzedawcy (Paynow); środki trafiają na rachunek sprzedawcy i nie przechodzą przez Kramio;</li>
+    <li><strong>płatności online</strong> — realizowane bezpośrednio między Tobą a operatorem płatności wybranym przez sprzedawcę; środki trafiają na rachunek sprzedawcy i nie przechodzą przez Kramio;</li>
     <li><strong>dostawa</strong> — dane adresowe przekazywane są wybranemu przewoźnikowi (np. InPost) w celu doręczenia przesyłki;</li>
-    <li><strong>wiadomości e-mail sklepu</strong> (potwierdzenia zamówień, zmiany statusu) — wysyłane przez infrastrukturę Kramio w imieniu sprzedawcy.</li>
+    <li><strong>formularz kontaktowy</strong> — jeśli sklep go udostępnia: imię, adres e-mail i treść wiadomości. Wiadomość trafia do sprzedawcy, który odpowiada na podany adres; Tobie nie wysyłamy żadnej kopii. Adres IP jest zapamiętywany najdłużej przez dobę, wyłącznie do ochrony formularza przed spamem;</li>
+ <li><strong>wiadomości e-mail sklepu</strong> (potwierdzenia zamówień, zmiany statusu) — wysyłane przez infrastrukturę Kramio w imieniu sprzedawcy.</li>
 </ul>
 <p>Swoje prawa (opisane niżej) wykonujesz wobec sprzedawcy prowadzącego sklep. Jeżeli napiszesz w takiej sprawie do nas, przekażemy sprawę sprzedawcy i pomożemy technicznie w jej realizacji.</p>
 
@@ -110,4 +119,4 @@
 <h2>Zmiany polityki</h2>
 <p>Polityka może się zmieniać wraz z rozwojem serwisu. O istotnych zmianach poinformujemy w serwisie, a posiadaczy kont — także e-mailem; każda wersja ma datę obowiązywania.</p>
 
-<p>Polityka obowiązuje od dnia: 15.08.2026.</p>
+<p>Polityka obowiązuje od dnia: 24.11.2026.</p>
